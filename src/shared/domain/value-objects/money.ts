@@ -1,0 +1,73 @@
+import { NumberValueObject } from './number'
+
+export class Money {
+  constructor(
+    public readonly amount: number,
+    public readonly currency: string = 'COP'
+  ) {
+    this.ensureIsValidCurrency(currency)
+    this.ensureIsValidAmount(amount)
+  }
+
+  getAmount(): number {
+    return this.amount
+  }
+
+  getCurrency(): string {
+    return this.currency
+  }
+
+  add(other: Money): Money {
+    if (this.currency !== other.currency) {
+      throw new Error('Cannot add money with different currencies')
+    }
+    return new Money(this.amount + other.amount, this.currency)
+  }
+
+  subtract(other: Money): Money {
+    if (this.currency !== other.currency) {
+      throw new Error('Cannot subtract money with different currencies')
+    }
+    const result = this.amount - other.amount
+    if (result < 0) {
+      throw new Error('Cannot have negative money amount')
+    }
+    return new Money(result, this.currency)
+  }
+
+  multiply(multiplier: number): Money {
+    if (multiplier < 0) {
+      throw new Error('Cannot multiply money by negative number')
+    }
+    return new Money(this.amount * multiplier, this.currency)
+  }
+
+  divide(divisor: number): Money {
+    if (divisor === 0) {
+      throw new Error('Cannot divide money by zero')
+    }
+    if (divisor < 0) {
+      throw new Error('Cannot divide money by negative number')
+    }
+    return new Money(this.amount / divisor, this.currency)
+  }
+
+  equals(other: Money): boolean {
+    return this.amount === other.amount && this.currency === other.currency
+  }
+
+  toString(): string {
+    return `${this.amount} ${this.currency}`
+  }
+
+  private ensureIsValidCurrency(currency: string): void {
+    if (!currency || currency.trim().length !== 3) {
+      throw new Error('Currency must be a 3-letter code')
+    }
+  }
+  private ensureIsValidAmount(amount: number): void {
+    if (amount < 0) {
+      throw new Error('Money amount cannot be negative')
+    }
+  }
+}

@@ -1,0 +1,74 @@
+// @ts-check
+import eslint from '@eslint/js'
+import globals from 'globals'
+import tseslint from 'typescript-eslint'
+
+export default tseslint.config(
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      '.env*',
+      'migrations/**',
+      'eslint.config.mjs'
+    ]
+  },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  {
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.jest
+      },
+      sourceType: 'module',
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname
+      }
+    }
+  },
+  {
+    rules: {
+      // Disable ALL formatting rules - let Prettier handle formatting
+      semi: 'off',
+      quotes: 'off',
+      'comma-dangle': 'off',
+      'space-before-function-paren': 'off',
+      'brace-style': 'off',
+      indent: 'off',
+      'keyword-spacing': 'off',
+      'space-infix-ops': 'off',
+      'object-curly-spacing': 'off',
+      'array-bracket-spacing': 'off',
+
+      // TypeScript formatting rules - also disable
+      '@typescript-eslint/semi': 'off',
+      '@typescript-eslint/quotes': 'off',
+      '@typescript-eslint/comma-dangle': 'off',
+      '@typescript-eslint/space-before-function-paren': 'off',
+      '@typescript-eslint/brace-style': 'off',
+      '@typescript-eslint/indent': 'off',
+
+      // Keep ONLY logic/quality rules, no formatting
+      'eol-last': 'error',
+      'no-trailing-spaces': 'error',
+      'no-multiple-empty-lines': ['error', { max: 1 }],
+      'no-var': 'error',
+      'prefer-const': 'error',
+
+      // TypeScript specific - logic only
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-floating-promises': 'warn',
+      '@typescript-eslint/no-unsafe-argument': 'warn',
+      '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-empty-function': 'off',
+      '@typescript-eslint/interface-name-prefix': 'off',
+      '@typescript-eslint/no-inferrable-types': 'off',
+      '@typescript-eslint/no-use-before-define': 'off'
+    }
+  }
+)

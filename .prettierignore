@@ -1,0 +1,8 @@
+dist/
+node_modules/
+coverage/
+.env*
+migrations/
+*.d.ts
+pnpm-lock.yaml
+.git/
