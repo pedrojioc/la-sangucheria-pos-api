@@ -11,10 +11,10 @@ export class Criteria {
 
   static fromPrimitives(plain: {
     filters?: Array<{ field: string; operator: string; value: any }>
-    orderBy?: string
-    orderType?: string
-    page?: number
-    pageSize?: number
+    page: number
+    pageSize: number
+    orderBy: string | null
+    orderType: string | null
   }): Criteria {
     return new Criteria(
       plain.filters && plain.filters.length > 0

@@ -1,5 +1,7 @@
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm'
 import { RecipeEntity } from './recipe.entity'
+import { IngredientEntity } from '@/contexts/inventory/ingredient/infrastructure/persistence/typeorm/ingredient.entity'
+import { UnitEntity } from '@/contexts/shared-kernel/unit/infrastructure/persistence/typeorm/unit.entity'
 
 @Entity('recipe_items')
 export class RecipeItemEntity {
@@ -22,8 +24,20 @@ export class RecipeItemEntity {
   sortOrder: number
 
   @ManyToOne(() => RecipeEntity, recipe => recipe.items, {
-    onDelete: 'CASCADE'
+    onDelete: 'RESTRICT'
   })
   @JoinColumn({ name: 'recipe_id' })
   recipe: RecipeEntity
+
+  @ManyToOne(() => IngredientEntity, {
+    onDelete: 'RESTRICT'
+  })
+  @JoinColumn({ name: 'ingredient_id' })
+  ingredient: IngredientEntity
+
+  @ManyToOne(() => UnitEntity, {
+    onDelete: 'RESTRICT'
+  })
+  @JoinColumn({ name: 'unit_id' })
+  unit: UnitEntity
 }

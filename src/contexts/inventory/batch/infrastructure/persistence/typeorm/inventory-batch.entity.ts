@@ -1,4 +1,15 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm'
+import { IngredientEntity } from '@/contexts/inventory/ingredient/infrastructure/persistence/typeorm/ingredient.entity'
+import { UnitEntity } from '@/contexts/shared-kernel/unit/infrastructure/persistence/typeorm/unit.entity'
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn
+} from 'typeorm'
 
 @Entity('inventory_batches')
 @Index(['ingredientId', 'purchaseDate']) // Para búsquedas FIFO
@@ -43,4 +54,12 @@ export class InventoryBatchEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date
+
+  @ManyToOne(() => IngredientEntity)
+  @JoinColumn({ name: 'ingredient_id' })
+  ingredient: IngredientEntity
+
+  @ManyToOne(() => UnitEntity)
+  @JoinColumn({ name: 'unit_id' })
+  unit: UnitEntity
 }

@@ -1,10 +1,14 @@
+import { ProductCategoryEntity } from '@/contexts/menu/product-category/infrastructure/persistence/typeorm/product-category.entity'
+import { RecipeEntity } from '@/contexts/kitchen/recipe/infrastructure/persistence/typeorm/recipe.entity'
 import {
   Entity,
   PrimaryColumn,
   Column,
   Index,
   CreateDateColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn
 } from 'typeorm'
 
 @Entity('products')
@@ -63,4 +67,12 @@ export class ProductEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date
+
+  @ManyToOne(() => ProductCategoryEntity)
+  @JoinColumn({ name: 'category_id' })
+  category: ProductCategoryEntity
+
+  @ManyToOne(() => RecipeEntity)
+  @JoinColumn({ name: 'recipe_id' })
+  recipe: RecipeEntity
 }

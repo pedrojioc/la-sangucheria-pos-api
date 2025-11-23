@@ -2,15 +2,18 @@ import { NestFactory, Reflector } from '@nestjs/core'
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common'
 import { AppModule } from './app.module'
 import { DomainExceptionFilter } from './core/filters/domain-exception.filter'
+import { NestExpressApplication } from '@nestjs/platform-express'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule)
+
+  app.set('query parser', 'extended')
 
   // Global pipes
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false, // Allow dynamic filter properties
       transform: true,
       transformOptions: {
         enableImplicitConversion: true

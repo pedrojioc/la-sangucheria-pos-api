@@ -1,4 +1,12 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm'
+import { ProductEntity } from '@/contexts/menu/product/infrastructure/persistence/typeorm/product.entity'
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany
+} from 'typeorm'
 
 @Entity('product_categories')
 export class ProductCategoryEntity {
@@ -25,4 +33,7 @@ export class ProductCategoryEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date
+
+  @OneToMany(() => ProductEntity, product => product.category)
+  products: ProductEntity[]
 }

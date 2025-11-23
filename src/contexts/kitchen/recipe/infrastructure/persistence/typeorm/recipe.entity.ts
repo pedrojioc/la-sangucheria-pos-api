@@ -4,9 +4,12 @@ import {
   Column,
   OneToMany,
   CreateDateColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn
 } from 'typeorm'
 import { RecipeItemEntity } from './recipe-item.entity'
+import { UnitEntity } from '@/contexts/shared-kernel/unit/infrastructure/persistence/typeorm/unit.entity'
 
 @Entity('recipes')
 export class RecipeEntity {
@@ -36,6 +39,10 @@ export class RecipeEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date
+
+  @ManyToOne(() => UnitEntity)
+  @JoinColumn({ name: 'yield_unit_id' })
+  yieldUnit: UnitEntity
 
   @OneToMany(() => RecipeItemEntity, item => item.recipe, {
     cascade: true,

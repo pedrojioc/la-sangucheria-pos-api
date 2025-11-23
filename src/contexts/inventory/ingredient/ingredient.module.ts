@@ -7,7 +7,6 @@ import { IngredientEntity } from './infrastructure/persistence/typeorm/ingredien
 // Repositories
 import { IngredientRepository } from './domain/repositories/ingredient.repository'
 import { TypeOrmIngredientRepository } from './infrastructure/persistence/typeorm/typeorm-ingredient.repository'
-import { IngredientCategoryRepository } from '../ingredient-category/domain/repositories/ingredient-category.repository'
 
 // Events
 import { EventBus } from '@/shared/domain/events'
@@ -33,6 +32,8 @@ import { IngredientController } from './presentation/http/controllers/ingredient
 // Utils
 import { createUseCaseProvider } from '@/core/utils/createUseCaseProvider'
 import { IngredientCategoryModule } from '../ingredient-category/ingredient-category.module'
+import { IngredientQueryService } from './application/services/ingredient-query.service'
+import { TypeormIngredientQueryService } from './infrastructure/query-services/typeorm-ingredient-query.service'
 
 const CommandHandlers = [CreateIngredientCommandHandler]
 
@@ -50,6 +51,10 @@ const QueryHandlers = [
     {
       provide: IngredientRepository,
       useClass: TypeOrmIngredientRepository
+    },
+    {
+      provide: IngredientQueryService,
+      useClass: TypeormIngredientQueryService
     },
 
     // USE CASES

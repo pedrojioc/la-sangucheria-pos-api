@@ -1,4 +1,15 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, Index, Unique } from 'typeorm'
+import { UnitEntity } from '@/contexts/shared-kernel/unit/infrastructure/persistence/typeorm/unit.entity'
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  Unique,
+  ManyToOne,
+  JoinColumn
+} from 'typeorm'
 
 @Entity('unit_conversions')
 @Unique(['fromUnitId', 'toUnitId']) // Una conversión por par de unidades
@@ -26,4 +37,12 @@ export class UnitConversionEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date
+
+  @ManyToOne(() => UnitEntity, unit => unit.conversionsFrom)
+  @JoinColumn({ name: 'from_unit_id' })
+  fromUnit: UnitEntity
+
+  @ManyToOne(() => UnitEntity, unit => unit.conversionsTo)
+  @JoinColumn({ name: 'to_unit_id' })
+  toUnit: UnitEntity
 }

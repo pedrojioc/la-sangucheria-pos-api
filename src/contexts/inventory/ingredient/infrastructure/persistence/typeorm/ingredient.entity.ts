@@ -28,16 +28,8 @@ export class IngredientEntity {
   @Column({ name: 'ingredient_category_id', type: 'uuid' })
   ingredientCategoryId: string
 
-  @ManyToOne(() => IngredientCategoryEntity)
-  @JoinColumn({ name: 'ingredient_category_id' })
-  category: IngredientCategoryEntity
-
   @Column({ name: 'unit_id', type: 'uuid' })
   unitId: string
-
-  @ManyToOne(() => UnitEntity)
-  @JoinColumn({ name: 'unit_id' })
-  unit: IngredientCategoryEntity
 
   @Column({ name: 'preferred_supplier_id', type: 'uuid', nullable: true })
   preferredSupplierId: string | null
@@ -65,4 +57,12 @@ export class IngredientEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date
+
+  @ManyToOne(() => IngredientCategoryEntity)
+  @JoinColumn({ name: 'ingredient_category_id' })
+  category: IngredientCategoryEntity
+
+  @ManyToOne(() => UnitEntity)
+  @JoinColumn({ name: 'unit_id' })
+  unit: UnitEntity
 }

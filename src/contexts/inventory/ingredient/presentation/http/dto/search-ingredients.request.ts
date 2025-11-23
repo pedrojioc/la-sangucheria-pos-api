@@ -17,6 +17,7 @@ export class SearchIngredientsRequest {
   pageSize: number = 20
 
   @IsOptional()
+  @Type(() => Object)
   filters?: Record<string, any>
 
   @IsOptional()
@@ -30,22 +31,33 @@ export class SearchIngredientsRequest {
   toCriteria(): Criteria {
     return Criteria.fromPrimitives({
       filters: this.buildFilters(),
-      orderBy: this.orderBy,
-      orderType: this.orderType,
+      orderBy: this.orderBy || null,
+      orderType: this.orderType || null,
       page: this.page || 1,
       pageSize: this.pageSize || 20
     })
   }
 
   private buildFilters(): Array<{ field: string; operator: string; value: any }> {
+    console.log('🔍 DEBUG buildFilters - this.filters:', this.filters)
+    console.log('🔍 DEBUG buildFilters - typeof this.filters:', typeof this.filters)
+    console.log(
+      '🔍 DEBUG buildFilters - Object.keys(this.filters):',
+      this.filters ? Object.keys(this.filters) : 'filters is undefined'
+    )
+
     if (!this.filters) {
+      console.log('⚠️ filters is undefined or null, returning empty array')
       return []
     }
 
-    return Object.entries(this.filters).map(([field, value]) => ({
+    const result = Object.entries(this.filters).map(([field, value]) => ({
       field,
       operator: '=',
       value
     }))
+
+    console.log('✅ Built filters:', result)
+    return result
   }
 }

@@ -1,4 +1,16 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm'
+import { IngredientEntity } from '@/contexts/inventory/ingredient/infrastructure/persistence/typeorm/ingredient.entity'
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+  OneToMany
+} from 'typeorm'
+import { IngredientTransformationEntity } from './ingredient-transformation.entity'
 
 @Entity('preparation_recipes')
 export class PreparationRecipeEntity {
@@ -38,4 +50,15 @@ export class PreparationRecipeEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date
+
+  @ManyToOne(() => IngredientEntity)
+  @JoinColumn({ name: 'base_ingredient_id' })
+  baseIngredient: IngredientEntity
+
+  @ManyToOne(() => IngredientEntity)
+  @JoinColumn({ name: 'output_ingredient_id' })
+  outputIngredient: IngredientEntity
+
+  @OneToMany(() => IngredientTransformationEntity, transformation => transformation.recipe)
+  transformations: IngredientTransformationEntity[]
 }

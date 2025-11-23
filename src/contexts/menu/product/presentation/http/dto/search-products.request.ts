@@ -30,8 +30,8 @@ export class SearchProductsRequest {
   toCriteria(): Criteria {
     return Criteria.fromPrimitives({
       filters: this.buildFilters(),
-      orderBy: this.orderBy,
-      orderType: this.orderType,
+      orderBy: this.orderBy || null,
+      orderType: this.orderType || null,
       page: this.page || 1,
       pageSize: this.pageSize || 20
     })

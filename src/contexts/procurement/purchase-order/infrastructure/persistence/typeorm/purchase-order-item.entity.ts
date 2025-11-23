@@ -64,6 +64,10 @@ export class PurchaseOrderItemEntity {
 
   // Relación con Unit
   @ManyToOne(() => UnitEntity, { nullable: false, onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'unit_id' })
-  unit: UnitEntity
+  @JoinColumn({ name: 'quantity_requested_unit_id' })
+  quantityRequestedUnit: UnitEntity
+
+  @ManyToOne(() => UnitEntity, { nullable: false, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'quantity_received_unit_id' })
+  quantityReceivedUnit: UnitEntity
 }

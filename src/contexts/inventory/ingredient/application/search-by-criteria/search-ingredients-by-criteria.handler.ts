@@ -8,14 +8,16 @@ import { IngredientResponse } from '../dto/ingredient.response'
 export class SearchIngredientsByCriteriaHandler
   implements IQueryHandler<SearchIngredientsByCriteriaQuery>
 {
-  constructor(
-    private readonly searchIngredientsByCriteria: SearchIngredientsByCriteria
-  ) {}
+  constructor(private readonly searchIngredientsByCriteria: SearchIngredientsByCriteria) {}
 
-  async execute(
-    query: SearchIngredientsByCriteriaQuery
-  ): Promise<PaginatedIngredientListResponse> {
-    const result = await this.searchIngredientsByCriteria.run(query.criteria)
+  async execute(query: SearchIngredientsByCriteriaQuery): Promise<PaginatedIngredientListResponse> {
+    const result = await this.searchIngredientsByCriteria.run(
+      query.page,
+      query.pageSize,
+      query.filters,
+      query.orderBy,
+      query.orderType
+    )
 
     const items = result.data.map(ingredient => IngredientResponse.fromDomain(ingredient))
 

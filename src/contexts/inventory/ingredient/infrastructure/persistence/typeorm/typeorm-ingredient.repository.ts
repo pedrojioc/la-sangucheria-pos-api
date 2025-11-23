@@ -70,11 +70,12 @@ export class TypeOrmIngredientRepository implements IngredientRepository {
 
   async matching(criteria: Criteria): Promise<PaginatedResult<Ingredient>> {
     const converter = new TypeOrmCriteriaConverter<IngredientEntity>()
-    const qb = converter.convert(
-      this.repository.createQueryBuilder('ingredient'),
-      criteria,
-      'ingredient'
-    )
+    let qb = this.repository.createQueryBuilder('ingredient')
+    qb.leftJoinAndSelect('ingredient.ingredientCategory', 'category')
+    qb.leftJoinAndSelect('ingredient.unit', 'unit')
+    qb.leftJoinAndSelect('ingredient.preferredSupplier', 'supplier')
+
+    qb = converter.convert(qb, criteria, 'ingredient')
 
     const [items, total] = await qb.getManyAndCount()
 

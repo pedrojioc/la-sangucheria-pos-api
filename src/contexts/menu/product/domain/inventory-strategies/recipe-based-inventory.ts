@@ -4,7 +4,7 @@ import { GetIngredientFifoCost } from '@contexts/inventory/stock-level/applicati
 import { CheckIngredientStock } from '@contexts/inventory/stock-level/application/check-stock/check-ingredient-stock'
 
 import { InventoryStrategy } from './inventory-strategy'
-import { Recipe } from '../recipe/recipe'
+import { Recipe } from '@contexts/kitchen/recipe/domain/recipe'
 
 /**
  * Estrategia de inventario basada en recetas

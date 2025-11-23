@@ -1,15 +1,17 @@
-import { RecipeItem } from '@contexts/kitchen/recipe/domain/recipe-item'
+import { RecipeItem } from '@/contexts/kitchen/recipe/domain/recipe-item'
 import { IngredientId } from '@contexts/inventory/ingredient/domain/ingredient-id'
 import { Quantity } from '@/shared/domain/value-objects/quantity'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 import { NumberMother } from '@test/shared/__mothers__/NumberMother'
 
 export class RecipeIngredientMother {
-  static create(params: Partial<{
-    ingredientId: string
-    quantity: number
-    unitId: string
-  }> = {}): RecipeItem {
+  static create(
+    params: Partial<{
+      ingredientId: string
+      quantity: number
+      unitId: string
+    }> = {}
+  ): RecipeItem {
     const ingredientId = params.ingredientId ?? UuidMother.random()
     const quantity = params.quantity ?? NumberMother.random({ min: 0.1, max: 10 })
     const unitId = params.unitId ?? UuidMother.random()

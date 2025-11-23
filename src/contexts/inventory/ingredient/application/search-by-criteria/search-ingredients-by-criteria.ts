@@ -6,7 +6,20 @@ import { Ingredient } from '../../domain/ingredient'
 export class SearchIngredientsByCriteria {
   constructor(private readonly ingredientRepository: IngredientRepository) {}
 
-  async run(criteria: Criteria): Promise<PaginatedResult<Ingredient>> {
+  async run(
+    page: number,
+    pageSize: number,
+    filters: Array<{ field: string; operator: string; value: any }>,
+    orderBy: string | null,
+    orderType: string | null
+  ): Promise<PaginatedResult<Ingredient>> {
+    const criteria = Criteria.fromPrimitives({
+      page,
+      pageSize,
+      filters,
+      orderBy,
+      orderType
+    })
     return this.ingredientRepository.matching(criteria)
   }
 }
