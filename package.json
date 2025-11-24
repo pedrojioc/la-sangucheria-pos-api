@@ -30,9 +30,10 @@
     "schema:drop": "npm run typeorm -- schema:drop -d ormconfig.ts",
     "schema:sync": "npm run typeorm -- schema:sync -d ormconfig.ts",
     "schema:log": "npm run typeorm -- schema:log -d ormconfig.ts",
-    "seed:run": "ts-node -r tsconfig-paths/register src/shared/infrastructure/database/seeders/seed.service.ts",
-    "db:seed:rollback": "ts-node src/shared/infrastructure/database/scripts/rollback-seeds.ts",
-    "db:reset": "npm run schema:drop && npm run migration:run && npm run seed:run",
+    "seed:run": "ts-node -r tsconfig-paths/register src/shared/infrastructure/database/seeders/seed.ts",
+    "seed:clear": "ts-node -r tsconfig-paths/register src/shared/infrastructure/database/seeders/clear-and-seed.ts",
+    "seed:refresh": "pnpm seed:clear && pnpm seed:run",
+    "db:reset": "pnpm schema:drop && pnpm migration:run && pnpm seed:run",
     "query": "npm run typeorm -- query -d ormconfig.ts",
     "cache:clear": "npm run typeorm -- cache:clear -d ormconfig.ts",
     "views:refresh": "ts-node src/shared/infrastructure/database/scripts/refresh-views.ts"
