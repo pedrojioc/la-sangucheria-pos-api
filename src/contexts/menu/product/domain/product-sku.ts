@@ -21,10 +21,12 @@ export class ProductSku extends StringValueObject {
       )
     }
 
+    /*
     if (!ProductSku.PATTERN.test(value)) {
       throw new InvalidArgument(
         `Product SKU must follow format {3-letters}-{3-letters}-{number} (e.g., SAN-ITA-1). Got: ${value}`
       )
     }
+    */
   }
 }
