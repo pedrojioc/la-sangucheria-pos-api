@@ -29,6 +29,8 @@ import { SearchProductsByCriteriaQuery } from '@contexts/menu/product/applicatio
 import { ProductResponse } from '@contexts/menu/product/application/dto/product.response'
 import { PaginatedProductListResponse } from '@contexts/menu/product/application/dto/paginated-product-list.response'
 import { FileAdapter } from '@/shared/presentation/dto/file-adapter'
+import { GenerateProductSkuQuery } from '@contexts/menu/product/application/generate-sku/generate-product-sku.query'
+import { GenerateProductSkuResponse } from '../dto/generate-product-sku.response'
 
 @Controller('products')
 export class ProductController {
@@ -69,6 +71,13 @@ export class ProductController {
     )
 
     await this.commandBus.execute(command)
+  }
+
+  @Get('generate-sku')
+  async generateSku(): Promise<GenerateProductSkuResponse> {
+    const query = new GenerateProductSkuQuery()
+    const sku = await this.queryBus.execute<GenerateProductSkuQuery, string>(query)
+    return GenerateProductSkuResponse.create(sku)
   }
 
   @Get()

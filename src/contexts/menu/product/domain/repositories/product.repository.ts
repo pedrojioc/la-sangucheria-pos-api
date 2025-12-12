@@ -14,4 +14,6 @@ export abstract class ProductRepository {
   abstract matching(criteria: Criteria): Promise<PaginatedResult<Product>>
 
   abstract delete(id: ProductId): Promise<void>
+
+  abstract getLastSkuNumber(): Promise<number | null>
 }

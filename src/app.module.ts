@@ -21,6 +21,9 @@ import { UnitModule } from '@contexts/shared-kernel/unit/unit.module'
 import { ProductCategoryModule } from '@contexts/menu/product-category/product-category.module'
 import { ProductModule } from '@contexts/menu/product/product.module'
 import { PurchaseOrderModule } from '@contexts/procurement/purchase-order/purchase-order.module'
+import { SupplierModule } from '@contexts/procurement/supplier/supplier.module'
+import { TransformationModule } from './contexts/kitchen/transformation/transformation.module'
+import { RecipeModule } from '@contexts/kitchen/recipe/recipe.module'
 
 @Module({
   imports: [
@@ -48,7 +51,10 @@ import { PurchaseOrderModule } from '@contexts/procurement/purchase-order/purcha
     IngredientModule,
     ProductCategoryModule,
     ProductModule,
-    PurchaseOrderModule
+    PurchaseOrderModule,
+    SupplierModule,
+    TransformationModule,
+    RecipeModule
   ],
 
   providers: [

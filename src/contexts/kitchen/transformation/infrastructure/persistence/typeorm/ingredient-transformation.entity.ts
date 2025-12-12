@@ -48,8 +48,8 @@ export class IngredientTransformationEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2, name: 'base_cost' })
   baseCost: number
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'additionals_cost' })
-  additionalsCost: number
+  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'additional_cost' })
+  additionalCost: number
 
   @Column({ type: 'decimal', precision: 12, scale: 2, name: 'total_cost' })
   totalCost: number

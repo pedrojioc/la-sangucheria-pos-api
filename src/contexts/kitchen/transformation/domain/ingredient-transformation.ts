@@ -16,7 +16,7 @@ export interface IngredientTransformationPrimitives {
   outputUnitId: string
   wasteQuantity: number
   baseCost: number
-  additionalsCost: number
+  additionalCost: number
   totalCost: number
   currency: string
   outputUnitCost: number // Costo por unidad del output (incluye waste)
@@ -55,7 +55,7 @@ export class IngredientTransformation extends AggregateRoot {
     private readonly outputQuantity: Quantity,
     private readonly wasteQuantity: Quantity,
     private readonly baseCost: Money,
-    private readonly additionalsCost: Money,
+    private readonly additionalCost: Money,
     private readonly totalCost: Money,
     private readonly outputUnitCost: Money, // Costo ajustado por unidad
     public readonly performedBy: string | null,
@@ -77,7 +77,7 @@ export class IngredientTransformation extends AggregateRoot {
     outputUnitId: string,
     wasteQuantity: number,
     baseCost: number,
-    additionalsCost: number,
+    additionalCost: number,
     currency: string,
     performedBy: string | null = null,
     notes: string | null = null,
@@ -88,8 +88,8 @@ export class IngredientTransformation extends AggregateRoot {
     const wasteQty = new Quantity(wasteQuantity, inputUnitId)
 
     const baseCostMoney = new Money(baseCost, currency)
-    const additionalsCostMoney = new Money(additionalsCost, currency)
-    const totalCostMoney = baseCostMoney.add(additionalsCostMoney)
+    const additionalCostMoney = new Money(additionalCost, currency)
+    const totalCostMoney = baseCostMoney.add(additionalCostMoney)
 
     // Calcular costo por unidad del output (incluye waste)
     const outputUnitCostMoney = totalCostMoney.divide(outputQuantity)
@@ -103,7 +103,7 @@ export class IngredientTransformation extends AggregateRoot {
       outputQty,
       wasteQty,
       baseCostMoney,
-      additionalsCostMoney,
+      additionalCostMoney,
       totalCostMoney,
       outputUnitCostMoney,
       performedBy,
@@ -137,7 +137,7 @@ export class IngredientTransformation extends AggregateRoot {
       outputUnitId: this.outputQuantity.unitId,
       wasteQuantity: this.wasteQuantity.value,
       baseCost: this.baseCost.amount,
-      additionalsCost: this.additionalsCost.amount,
+      additionalCost: this.additionalCost.amount,
       totalCost: this.totalCost.amount,
       currency: this.totalCost.currency,
       outputUnitCost: this.outputUnitCost.amount,
@@ -148,9 +148,7 @@ export class IngredientTransformation extends AggregateRoot {
     }
   }
 
-  static fromPrimitives(
-    primitives: IngredientTransformationPrimitives
-  ): IngredientTransformation {
+  static fromPrimitives(primitives: IngredientTransformationPrimitives): IngredientTransformation {
     return new IngredientTransformation(
       new TransformationId(primitives.id),
       new PreparationRecipeId(primitives.recipeId),
@@ -160,7 +158,7 @@ export class IngredientTransformation extends AggregateRoot {
       new Quantity(primitives.outputQuantity, primitives.outputUnitId),
       new Quantity(primitives.wasteQuantity, primitives.inputUnitId),
       new Money(primitives.baseCost, primitives.currency),
-      new Money(primitives.additionalsCost, primitives.currency),
+      new Money(primitives.additionalCost, primitives.currency),
       new Money(primitives.totalCost, primitives.currency),
       new Money(primitives.outputUnitCost, primitives.currency),
       primitives.performedBy,

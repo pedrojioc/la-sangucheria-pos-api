@@ -73,6 +73,6 @@ const QueryHandlers = [
     // QUERY HANDLERS
     ...QueryHandlers
   ],
-  exports: [IngredientRepository]
+  exports: [IngredientRepository, CreateIngredient, FindIngredient]
 })
 export class IngredientModule {}

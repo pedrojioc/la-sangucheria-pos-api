@@ -4,6 +4,10 @@ import { RecipeItem } from './recipe-item'
 import { RecipeYield } from './recipe-yield'
 import { RecipeName } from './recipe-name'
 import { RecipeDescription } from './recipe-description'
+import { RecipeMustHaveItems } from './exceptions/recipe-must-have-items.exception'
+import { RecipeCreatedEvent } from './events/recipe-created.event'
+import { RecipeUpdatedEvent } from './events/recipe-updated.event'
+import { RecipeDeletedEvent } from './events/recipe-deleted.event'
 
 export interface RecipePrimitives {
   id: string
@@ -49,6 +53,17 @@ export class Recipe extends AggregateRoot {
       new Date()
     )
 
+    recipe.record(
+      new RecipeCreatedEvent({
+        recipeId: id,
+        name,
+        description: description ?? null,
+        itemsCount: items.length,
+        yieldQuantity: recipeYield.quantity.value,
+        yieldUnitId: recipeYield.quantity.unitId
+      })
+    )
+
     return recipe
   }
 
@@ -69,6 +84,31 @@ export class Recipe extends AggregateRoot {
       throw new Error('Quantity must be greater than zero')
     }
     return this.items.map(item => item.multiplyBy(quantity))
+  }
+
+  update(
+    name: string,
+    items: RecipeItem[],
+    recipeYield: RecipeYield,
+    description?: string | null
+  ): void {
+    this.ensureHasItemsArray(items)
+    this.name = new RecipeName(name)
+    this.description = description ? new RecipeDescription(description) : null
+    this.items = items
+    this.recipeYield = recipeYield
+    this.updatedAt = new Date()
+
+    this.record(
+      new RecipeUpdatedEvent({
+        recipeId: this.id.value,
+        name,
+        description: description ?? null,
+        itemsCount: items.length,
+        yieldQuantity: recipeYield.quantity.value,
+        yieldUnitId: recipeYield.quantity.unitId
+      })
+    )
   }
 
   updateItems(items: RecipeItem[]): void {
@@ -138,7 +178,7 @@ export class Recipe extends AggregateRoot {
 
   private ensureHasItemsArray(items: RecipeItem[]): void {
     if (items.length === 0) {
-      throw new Error('Recipe must have at least one item')
+      throw new RecipeMustHaveItems()
     }
   }
 }

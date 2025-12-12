@@ -66,4 +66,21 @@ export class TypeOrmProductRepository implements ProductRepository {
   async delete(id: ProductId): Promise<void> {
     await this.repository.delete({ id: id.value })
   }
+
+  async getLastSkuNumber(): Promise<number | null> {
+    const result = await this.repository
+      .createQueryBuilder('product')
+      .select('product.sku')
+      .where('product.sku LIKE :prefix', { prefix: 'PROD-%' })
+      .orderBy('product.sku', 'DESC')
+      .limit(1)
+      .getOne()
+
+    if (!result || !result.sku) {
+      return null
+    }
+
+    const match = result.sku.match(/^PROD-(\d+)$/)
+    return match ? parseInt(match[1], 10) : null
+  }
 }

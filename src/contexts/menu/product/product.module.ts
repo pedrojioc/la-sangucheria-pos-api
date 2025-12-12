@@ -22,6 +22,7 @@ import { DeleteProductCommandHandler } from '@/contexts/menu/product/application
 // Query Handlers
 import { FindProductHandler } from '@/contexts/menu/product/application/find/find-product.handler'
 import { SearchProductsByCriteriaHandler } from '@/contexts/menu/product/application/search-by-criteria/search-products-by-criteria.handler'
+import { GenerateProductSkuHandler } from '@/contexts/menu/product/application/generate-sku/generate-product-sku.handler'
 
 // Use Cases
 import { CreateProduct } from '@/contexts/menu/product/application/create/create-product'
@@ -29,6 +30,7 @@ import { UpdateProduct } from '@/contexts/menu/product/application/update/update
 import { DeleteProduct } from '@/contexts/menu/product/application/delete/delete-product'
 import { FindProduct } from '@/contexts/menu/product/application/find/find-product'
 import { SearchProductsByCriteria } from '@/contexts/menu/product/application/search-by-criteria/search-products-by-criteria'
+import { GenerateProductSku } from '@/contexts/menu/product/application/generate-sku/generate-product-sku'
 
 // Controllers
 import { ProductController } from '@/contexts/menu/product/presentation/http/controllers/product.controller'
@@ -45,7 +47,7 @@ const CommandHandlers = [
   DeleteProductCommandHandler
 ]
 
-const QueryHandlers = [FindProductHandler, SearchProductsByCriteriaHandler]
+const QueryHandlers = [FindProductHandler, SearchProductsByCriteriaHandler, GenerateProductSkuHandler]
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductEntity]), ProductCategoryModule],
@@ -77,6 +79,7 @@ const QueryHandlers = [FindProductHandler, SearchProductsByCriteriaHandler]
     createUseCaseProvider(DeleteProduct, [ProductRepository, FileStorageRepository, EventBus]),
     createUseCaseProvider(FindProduct, [ProductRepository]),
     createUseCaseProvider(SearchProductsByCriteria, [ProductRepository]),
+    createUseCaseProvider(GenerateProductSku, [ProductRepository]),
 
     // COMMAND HANDLERS
     ...CommandHandlers,

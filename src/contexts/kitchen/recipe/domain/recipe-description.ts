@@ -1,4 +1,5 @@
 import { StringValueObject } from '@/shared/domain/value-objects/string'
+import { RecipeDescriptionTooLong } from './exceptions/recipe-description-too-long.exception'
 
 export class RecipeDescription extends StringValueObject {
   private static readonly MAX_LENGTH = 500
@@ -10,9 +11,7 @@ export class RecipeDescription extends StringValueObject {
 
   private ensureDescriptionIsNotTooLong(value: string): void {
     if (value.length > RecipeDescription.MAX_LENGTH) {
-      throw new Error(
-        `Recipe description cannot exceed ${RecipeDescription.MAX_LENGTH} characters`
-      )
+      throw new RecipeDescriptionTooLong()
     }
   }
 }

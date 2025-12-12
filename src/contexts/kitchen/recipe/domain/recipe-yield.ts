@@ -1,4 +1,5 @@
 import { Quantity } from '@/shared/domain/value-objects/quantity'
+import { InvalidRecipeYield } from './exceptions/invalid-recipe-yield.exception'
 
 export class RecipeYield {
   constructor(
@@ -41,7 +42,7 @@ export class RecipeYield {
 
   private ensureQuantityIsValid(quantity: Quantity): void {
     if (quantity.value <= 0) {
-      throw new Error('Recipe yield quantity must be greater than zero')
+      throw new InvalidRecipeYield()
     }
   }
 }
