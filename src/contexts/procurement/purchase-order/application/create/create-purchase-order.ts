@@ -2,6 +2,7 @@ import { EventBus } from '@/shared/domain/events'
 import { PurchaseOrder } from '../../domain/purchase-order'
 import { PurchaseOrderRepository } from '../../domain/repositories/purchase-order.repository'
 import { PurchaseOrderValidationService } from '../../domain/services/purchase-order-validation.service'
+import { PurchaseOrderNumber } from '../../domain/purchase-order-number'
 
 /**
  * CreatePurchaseOrder - Use Case
@@ -11,7 +12,7 @@ import { PurchaseOrderValidationService } from '../../domain/services/purchase-o
  * Business Rules:
  * - Order is created in DRAFT status with at least one item
  * - Order can be modified while in DRAFT
- * - Order number must be unique
+ * - Order number is generated automatically by the system (PO-YYYY-NNN)
  * - All items must use the same currency as the order
  *
  * Domain Events:
@@ -26,7 +27,6 @@ export class CreatePurchaseOrder {
 
   async run(
     id: string,
-    orderNumber: string,
     supplierId: string,
     requestedBy: string,
     currency: string,
@@ -35,6 +35,7 @@ export class CreatePurchaseOrder {
     items: Array<{
       id: string
       ingredientId: string
+      ingredientName: string
       quantityRequested: number
       unitId: string
       unitCost: number
@@ -50,9 +51,13 @@ export class CreatePurchaseOrder {
     // TODO: validate supplier exists
     // TODO: validate units exists
 
+    // Generate order number from backend (system-generated resource)
+    const sequence = await this.repository.getNextSequenceNumber()
+    const orderNumber = PurchaseOrderNumber.generate(sequence)
+
     const purchaseOrder = PurchaseOrder.create(
       id,
-      orderNumber,
+      orderNumber.value,
       supplierId,
       requestedBy,
       currency,

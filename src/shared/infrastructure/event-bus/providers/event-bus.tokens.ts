@@ -2,18 +2,16 @@ import { DomainEventSubscriber, DomainEvent } from '@/shared/domain/events'
 import { ReactOnIngredientCategoryCreated } from '@contexts/inventory/ingredient-category/application/subscribers/react-on-category-ingredient-created'
 import { ReactOnIngredientCreated } from '@contexts/inventory/ingredient/application/subscribers/react-on-ingredient-created'
 
-// Importar todos los domain event subscribers del proyecto
-// TODO: Actualizar esta lista cuando se agreguen nuevos subscribers
-
 /**
- * Array centralizado de todos los Domain Event Subscribers
- * Agregar nuevos subscribers aquí para auto-registro
+ * Array centralizado de Domain Event Subscribers SIN dependencias externas.
+ *
+ * Subscribers que requieren dependencias de feature modules (use cases, repositories)
+ * deben registrarse en su propio feature module usando OnModuleInit + EventBus.addSubscribers().
+ *
+ * @see InventoryBatchModule - CreateInventoryBatchOnPurchaseOrderReceived
+ * @see StockLevelModule - CreateInventoryMovementOnInventoryBatchCreated, UpdateInventoryLevelOnInventoryMovementCreated
  */
 export const DOMAIN_SUBSCRIBERS = [
-  // Agregar nuevos subscribers aquí:
-  // PaymentProcessedSubscriber,
-  // InventoryUpdatedSubscriber,
-  // NotificationSentSubscriber,
   ReactOnIngredientCategoryCreated,
   ReactOnIngredientCreated
 ] as const

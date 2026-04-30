@@ -9,6 +9,9 @@ import { ProductCategorySeeder } from './product-category.seeder'
 import { RecipeSeeder } from './recipe.seeder'
 import { ProductSeeder } from './product.seeder'
 import { InventoryBatchSeeder } from './inventory-batch.seeder'
+import { SupplierSeeder } from './supplier.seeder'
+import { InventoryLevelSeeder } from './inventory-level.seeder'
+import { PurchaseOrderSeeder } from './purchase-order.seeder'
 
 // Load environment variables
 config({
@@ -39,14 +42,17 @@ async function runSeeders() {
 
     // Define seeders in dependency order
     const seeders: Seeder[] = [
-      new UnitSeeder(),                    // 1. No dependencies
-      new UnitConversionSeeder(),          // 2. Depends on: Units
-      new IngredientCategorySeeder(),      // 3. No dependencies
-      new IngredientSeeder(),              // 4. Depends on: Units, IngredientCategories
-      new ProductCategorySeeder(),         // 5. No dependencies
-      new RecipeSeeder(),                  // 6. Depends on: Ingredients, Units
-      new ProductSeeder(),                 // 7. Depends on: ProductCategories, Recipes
-      new InventoryBatchSeeder()           // 8. Depends on: Ingredients
+      new UnitSeeder(), // 1. No dependencies
+      new UnitConversionSeeder(), // 2. Depends on: Units
+      new IngredientCategorySeeder(), // 3. No dependencies
+      new IngredientSeeder(), // 4. Depends on: Units, IngredientCategories
+      new ProductCategorySeeder(), // 5. No dependencies
+      new RecipeSeeder(), // 6. Depends on: Ingredients, Units
+      new ProductSeeder(), // 7. Depends on: ProductCategories, Recipes
+      new InventoryBatchSeeder(), // 8. Depends on: Ingredients
+      new InventoryLevelSeeder(), // 9. Depends on: Ingredients
+      new SupplierSeeder(), // 10. No dependencies
+      new PurchaseOrderSeeder() // 11. Depends on: Suppliers, Ingredients, Units
     ]
 
     // Run each seeder

@@ -8,12 +8,12 @@ export class FindPurchaseOrderHandler implements IQueryHandler<FindPurchaseOrder
   constructor(private readonly useCase: FindPurchaseOrder) {}
 
   async execute(query: FindPurchaseOrderQuery): Promise<PurchaseOrderResponse | null> {
-    const purchaseOrder = await this.useCase.run(query.id)
+    const readModel = await this.useCase.run(query.id)
 
-    if (!purchaseOrder) {
+    if (!readModel) {
       return null
     }
 
-    return PurchaseOrderResponse.fromDomain(purchaseOrder)
+    return PurchaseOrderResponse.fromReadModel(readModel)
   }
 }

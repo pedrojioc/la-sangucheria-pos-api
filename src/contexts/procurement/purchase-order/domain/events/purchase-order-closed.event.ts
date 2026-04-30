@@ -7,7 +7,7 @@ import {
 interface PurchaseOrderClosedPayload {
   purchaseOrderId: string
   orderNumber: string
-  closedBy: string
+  closedBy: string | null
   closedDate: Date
   totalAmount: number
   currency: string
@@ -20,7 +20,7 @@ export class PurchaseOrderClosedEvent extends DomainEvent {
 
   readonly purchaseOrderId: string
   readonly orderNumber: string
-  readonly closedBy: string
+  readonly closedBy: string | null
   readonly closedDate: Date
   readonly totalAmount: number
   readonly currency: string

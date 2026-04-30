@@ -48,9 +48,5 @@ export class RegisterTransformationRequest {
 
   @IsOptional()
   @IsString()
-  performedBy?: string
-
-  @IsOptional()
-  @IsString()
   notes?: string
 }

@@ -2,20 +2,26 @@ import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { PurchaseOrderEntity } from './purchase-order.entity'
-import { PurchaseOrderItemEntity } from './purchase-order-item.entity'
 import { PurchaseOrderRepository } from '../../../domain/repositories/purchase-order.repository'
 import { PurchaseOrder, PurchaseOrderPrimitives } from '../../../domain/purchase-order'
 import { PurchaseOrderId } from '../../../domain/purchase-order-id'
 import { PurchaseOrderStatus } from '../../../domain/purchase-order-status'
+import { PurchaseOrderItemEntity } from './purchase-order-item.entity'
 
 /**
- * TypeOrmPurchaseOrderRepository
+ * TypeOrmPurchaseOrderRepository - Infrastructure Implementation (WRITE Operations)
  *
  * Implementación de persistencia usando TypeORM para Purchase Orders.
+ * Este repositorio se enfoca en operaciones de ESCRITURA y búsquedas
+ * necesarias para comandos.
+ *
+ * Para operaciones de LECTURA complejas (listados con paginación, filtros,
+ * búsqueda por supplierName), usar TypeOrmPurchaseOrderQueryService.
  *
  * Responsabilidades:
  * - Guardar órdenes de compra con sus items
- * - Recuperar órdenes por diferentes criterios
+ * - Recuperar órdenes por ID o orderNumber (para comandos)
+ * - Buscar órdenes por estado (para procesos batch)
  * - Manejar la relación OneToMany con items
  * - Generar números de secuencia para orderNumber
  */
@@ -31,7 +37,7 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
   async save(purchaseOrder: PurchaseOrder): Promise<void> {
     const primitives = purchaseOrder.toPrimitives()
 
-    // Crear entidad principal
+    // 1. Guardar entidad principal
     const entity = this.repository.create({
       id: primitives.id,
       orderNumber: primitives.orderNumber,
@@ -41,7 +47,10 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
       approvedBy: primitives.approvedBy,
       rejectedBy: primitives.rejectedBy,
       sentBy: primitives.sentBy,
+      receivedBy: primitives.receivedBy,
       closedBy: primitives.closedBy,
+      purchaseMethod: primitives.purchaseMethod,
+      purchaseMethodDetails: primitives.purchaseMethodDetails,
       totalAmount: primitives.totalAmount,
       currency: primitives.currency,
       requestedDate: primitives.requestedDate,
@@ -50,34 +59,78 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
       sentDate: primitives.sentDate,
       receivedDate: primitives.receivedDate,
       closedDate: primitives.closedDate,
-      notes: primitives.notes
+      notes: primitives.notes,
+      itemCount: primitives.itemCount
     })
 
-    // Crear items asociados
-    entity.items = primitives.items.map(itemPrimitives =>
-      this.itemRepository.create({
-        id: itemPrimitives.id,
-        purchaseOrderId: primitives.id,
-        ingredientId: itemPrimitives.ingredientId,
-        quantityRequested: itemPrimitives.quantityRequested,
-        quantityRequestedUnitId: itemPrimitives.quantityRequestedUnitId,
-        quantityReceived: itemPrimitives.quantityReceived,
-        quantityReceivedUnitId: itemPrimitives.quantityReceivedUnitId,
-        unitCost: itemPrimitives.unitCost,
-        totalCost: itemPrimitives.totalCost,
-        currency: itemPrimitives.currency,
-        notes: itemPrimitives.notes
-      })
-    )
-
-    // Guardar con cascade
     await this.repository.save(entity)
+
+    // 2. Eliminar items huérfanos (que ya no están en el dominio)
+    const currentItemIds = primitives.items.map(i => i.id)
+    await this.deleteOrphanedItems(primitives.id, currentItemIds)
+
+    // 3. Upsert items actuales
+    if (primitives.items.length > 0) {
+      const items = primitives.items.map(itemPrimitives =>
+        this.itemRepository.create({
+          id: itemPrimitives.id,
+          purchaseOrderId: primitives.id,
+          ingredientId: itemPrimitives.ingredientId,
+          quantityRequested: itemPrimitives.quantityRequested,
+          quantityRequestedUnitId: itemPrimitives.quantityRequestedUnitId,
+          quantityReceived: itemPrimitives.quantityReceived,
+          quantityReceivedUnitId: itemPrimitives.quantityReceivedUnitId,
+          unitCost: itemPrimitives.unitCost,
+          totalCost: itemPrimitives.totalCost,
+          currency: itemPrimitives.currency,
+          notes: itemPrimitives.notes,
+          isCancelled: itemPrimitives.isCancelled,
+          cancellationReason: itemPrimitives.cancellationReason
+        })
+      )
+      await this.itemRepository.save(items)
+    }
   }
 
+  /**
+   * Elimina items que ya no pertenecen a la orden (fueron removidos del dominio)
+   */
+  private async deleteOrphanedItems(
+    purchaseOrderId: string,
+    currentItemIds: string[]
+  ): Promise<void> {
+    if (currentItemIds.length === 0) {
+      // Si no hay items, eliminar todos los de esta orden
+      await this.itemRepository
+        .createQueryBuilder()
+        .delete()
+        .where('purchase_order_id = :purchaseOrderId', { purchaseOrderId })
+        .execute()
+    } else {
+      // Eliminar solo los que no están en la lista actual
+      await this.itemRepository
+        .createQueryBuilder()
+        .delete()
+        .where('purchase_order_id = :purchaseOrderId', { purchaseOrderId })
+        .andWhere('id NOT IN (:...currentItemIds)', { currentItemIds })
+        .execute()
+    }
+  }
+
+  /**
+   * Busca una orden por su ID (para comandos que necesitan el agregado)
+   * Carga items con datos de ingredientes para lógica de negocio
+   */
   async findById(id: PurchaseOrderId): Promise<PurchaseOrder | null> {
     const entity = await this.repository.findOne({
       where: { id: id.value },
-      relations: ['items']
+      relations: {
+        items: {
+          ingredient: true,
+          quantityRequestedUnit: true,
+          quantityReceivedUnit: true
+        }
+      }
     })
 
     if (!entity) {
@@ -87,10 +140,19 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
     return this.toDomain(entity)
   }
 
+  /**
+   * Busca una orden por su número (para validación de unicidad)
+   */
   async findByOrderNumber(orderNumber: string): Promise<PurchaseOrder | null> {
     const entity = await this.repository.findOne({
       where: { orderNumber },
-      relations: ['items']
+      relations: {
+        items: {
+          ingredient: true,
+          quantityRequestedUnit: true,
+          quantityReceivedUnit: true
+        }
+      }
     })
 
     if (!entity) {
@@ -100,29 +162,19 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
     return this.toDomain(entity)
   }
 
-  async findBySupplierId(supplierId: string): Promise<PurchaseOrder[]> {
-    const entities = await this.repository.find({
-      where: { supplierId },
-      relations: ['items'],
-      order: { requestedDate: 'DESC' }
-    })
-
-    return entities.map(entity => this.toDomain(entity))
-  }
-
+  /**
+   * Busca órdenes por estado (para procesos batch/background)
+   */
   async findByStatus(status: PurchaseOrderStatus): Promise<PurchaseOrder[]> {
     const entities = await this.repository.find({
       where: { status },
-      relations: ['items'],
-      order: { requestedDate: 'DESC' }
-    })
-
-    return entities.map(entity => this.toDomain(entity))
-  }
-
-  async findAll(): Promise<PurchaseOrder[]> {
-    const entities = await this.repository.find({
-      relations: ['items'],
+      relations: {
+        items: {
+          ingredient: true,
+          quantityRequestedUnit: true,
+          quantityReceivedUnit: true
+        }
+      },
       order: { requestedDate: 'DESC' }
     })
 
@@ -140,16 +192,22 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
 
   /**
    * Convierte una entidad TypeORM a objeto de dominio
+   *
+   * IMPORTANTE: El agregado NO contiene datos de otros agregados.
+   * Solo incluye supplierId, NO supplierName.
+   * Para datos enriquecidos, usar PurchaseOrderQueryService.
    */
   private toDomain(entity: PurchaseOrderEntity): PurchaseOrder {
     const primitives: PurchaseOrderPrimitives = {
       id: entity.id,
       orderNumber: entity.orderNumber,
       supplierId: entity.supplierId,
+      // NOTE: No supplierName here - that belongs to Read Models
       status: entity.status as PurchaseOrderStatus,
-      items: entity.items.map(item => ({
+      items: (entity.items ?? []).map(item => ({
         id: item.id,
         ingredientId: item.ingredientId,
+        ingredientName: item.ingredient?.name ?? '',
         quantityRequested: Number(item.quantityRequested),
         quantityRequestedUnitId: item.quantityRequestedUnitId,
         quantityReceived: item.quantityReceived ? Number(item.quantityReceived) : null,
@@ -157,13 +215,19 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
         unitCost: Number(item.unitCost),
         currency: item.currency,
         totalCost: Number(item.totalCost),
-        notes: item.notes
+        notes: item.notes,
+        isCancelled: item.isCancelled,
+        cancellationReason: item.cancellationReason
       })),
+      itemCount: entity.itemCount,
       requestedBy: entity.requestedBy,
       approvedBy: entity.approvedBy,
       rejectedBy: entity.rejectedBy,
       sentBy: entity.sentBy,
+      receivedBy: entity.receivedBy,
       closedBy: entity.closedBy,
+      purchaseMethod: entity.purchaseMethod,
+      purchaseMethodDetails: entity.purchaseMethodDetails,
       totalAmount: Number(entity.totalAmount),
       currency: entity.currency,
       requestedDate: entity.requestedDate,

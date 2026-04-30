@@ -18,9 +18,7 @@ export class SubmitForApproval {
   constructor(private readonly repository: PurchaseOrderRepository) {}
 
   async run(purchaseOrderId: string): Promise<void> {
-    const purchaseOrder = await this.repository.findById(
-      new PurchaseOrderId(purchaseOrderId)
-    )
+    const purchaseOrder = await this.repository.findById(new PurchaseOrderId(purchaseOrderId))
 
     if (!purchaseOrder) {
       throw new Error(`Purchase order ${purchaseOrderId} not found`)

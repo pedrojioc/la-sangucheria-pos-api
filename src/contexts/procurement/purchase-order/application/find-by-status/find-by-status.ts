@@ -1,21 +1,32 @@
-import { PurchaseOrder } from '../../domain/purchase-order'
-import { PurchaseOrderRepository } from '../../domain/repositories/purchase-order.repository'
+import { PurchaseOrderQueryService } from '../services/purchase-order-query.service'
+import { PurchaseOrderListItem } from '../dto/purchase-order-list-item'
 import { PurchaseOrderStatus } from '../../domain/purchase-order-status'
+import { Criteria } from '@/shared/domain/criteria/criteria'
 
 /**
- * FindPurchaseOrdersByStatus - Query
+ * FindPurchaseOrdersByStatus - Query (Read Operation)
  *
  * Finds all purchase orders with a specific status.
+ * Uses QueryService because this returns data for UI display.
  *
  * Common use cases:
  * - Find all PENDING_APPROVAL orders (for approvers)
- * - Find all SENT orders (for reception tracking)
+ * - Find all APPROVED orders (for reception tracking)
  * - Find all DRAFT orders (for editing)
  */
 export class FindPurchaseOrdersByStatus {
-  constructor(private readonly repository: PurchaseOrderRepository) {}
+  constructor(private readonly queryService: PurchaseOrderQueryService) {}
 
-  async run(status: PurchaseOrderStatus): Promise<PurchaseOrder[]> {
-    return this.repository.findByStatus(status)
+  async run(status: PurchaseOrderStatus): Promise<PurchaseOrderListItem[]> {
+    const criteria = Criteria.fromPrimitives({
+      filters: [{ field: 'status', operator: '=', value: status }],
+      orderBy: 'requestedDate',
+      orderType: 'desc',
+      page: 1,
+      pageSize: 100 // Reasonable limit for status-based queries
+    })
+
+    const result = await this.queryService.search(criteria)
+    return result.data
   }
 }

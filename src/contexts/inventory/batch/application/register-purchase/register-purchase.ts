@@ -1,28 +1,40 @@
 import { InventoryBatch } from '@contexts/inventory/batch/domain/inventory-batch'
 import { InventoryBatchRepository } from '@contexts/inventory/batch/domain/repositories/inventory-batch.repository'
-import { InventoryLevelRepository } from '@contexts/inventory/stock-level/domain/repositories/inventory-level.repository'
-import { InventoryMovementRepository } from '@/contexts/inventory/stock-level/domain/repositories/inventory-movement.repository'
-import { InventoryMovement } from '@/contexts/inventory/stock-level/domain/inventory-movement'
-import { MovementType } from '@/contexts/inventory/stock-level/domain/movement-type'
+import { IngredientRepository } from '@/contexts/inventory/ingredient/domain/repositories/ingredient.repository'
 import { IngredientId } from '@/contexts/inventory/ingredient/domain/ingredient-id'
-import { Quantity } from '@/shared/domain/value-objects/quantity'
-import { Uuid } from '@/shared/domain/value-objects/uuid'
+import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
+import { UnitConversionNotFound } from '@/contexts/shared-kernel/unit-conversion/domain/exceptions/unit-conversion-not-found.exception'
+import { NotFoundException } from '@/shared/domain/exceptions/domain.exception'
+import { EventBus } from '@/shared/domain/events'
 
 /**
  * RegisterPurchase - Use Case
  *
- * Registra la compra de un ingrediente, creando:
- * 1. Un nuevo InventoryBatch (lote de compra con precio)
- * 2. Un InventoryMovement (registro de entrada)
- * 3. Actualiza InventoryLevel (aumenta stock actual)
+ * Registra la compra de un ingrediente, creando un InventoryBatch.
+ * Los movimientos e inventarios se actualizan via eventos (InventoryBatchCreatedEvent).
  *
- * Esta es la entrada principal al sistema de inventario.
+ * IMPORTANTE: Conversión Automática de Unidades
+ * ---------------------------------------------
+ * Si la unidad de compra difiere de la unidad base del ingrediente,
+ * el sistema convierte automáticamente:
+ *
+ * Ejemplo:
+ * - Ingrediente "Lomo de res" tiene unidad base: gramos
+ * - Compra: 10 kg a $150,000/kg
+ * - Se convierte a: 10,000 g a $150/g
+ * - El batch se guarda en gramos (unidad base)
+ *
+ * Esto garantiza:
+ * - Consistencia en inventario (todo en unidad base)
+ * - FIFO funciona sin problemas de conversión
+ * - Recetas pueden consumir sin conversiones adicionales
  */
 export class RegisterPurchase {
   constructor(
     private readonly batchRepository: InventoryBatchRepository,
-    private readonly movementRepository: InventoryMovementRepository,
-    private readonly levelRepository: InventoryLevelRepository
+    private readonly ingredientRepository: IngredientRepository,
+    private readonly unitConversionRepository: UnitConversionRepository,
+    private readonly eventBus: EventBus
   ) {}
 
   async run(
@@ -35,16 +47,38 @@ export class RegisterPurchase {
     purchaseDate: Date,
     expirationDate: Date | null = null,
     supplier: string | null = null,
-    referenceCode: string | null = null,
-    performedBy: string | null = null
+    referenceCode: string | null = null
   ): Promise<void> {
-    // 1. Crear el batch (lote de compra)
+    // 1. Obtener el ingrediente para conocer su unidad base
+    const ingredient = await this.ingredientRepository.search(new IngredientId(ingredientId))
+
+    if (!ingredient) {
+      throw new NotFoundException(`Ingredient with id '${ingredientId}' not found`)
+    }
+
+    const ingredientPrimitives = ingredient.toPrimitives()
+    const baseUnitId = ingredientPrimitives.unitId
+
+    // 2. Convertir cantidad y costo si las unidades difieren
+    let finalQuantity = quantity
+    let finalUnitId = unitId
+    let finalUnitCost = unitCost
+
+    if (unitId !== baseUnitId) {
+      const conversionResult = await this.convertToBaseUnit(quantity, unitId, baseUnitId, unitCost)
+
+      finalQuantity = conversionResult.convertedQuantity
+      finalUnitId = conversionResult.convertedUnitId
+      finalUnitCost = conversionResult.convertedUnitCost
+    }
+
+    // 3. Crear el batch en la unidad base del ingrediente
     const batch = InventoryBatch.create(
       batchId,
       ingredientId,
-      quantity,
-      unitId,
-      unitCost,
+      finalQuantity,
+      finalUnitId,
+      finalUnitCost,
       currency,
       purchaseDate,
       expirationDate,
@@ -54,46 +88,53 @@ export class RegisterPurchase {
 
     await this.batchRepository.save(batch)
 
-    // 2. Registrar el movimiento (entrada)
-    // Debe escuchar el evento InventoryBatchCreated
-    /*
-    const movementId = Uuid.random().value
-    const movement = InventoryMovement.create(
-      movementId,
-      ingredientId,
-      MovementType.PURCHASE,
-      quantity,
-      unitId,
-      unitCost,
-      currency,
-      batchId,
-      `Compra de ingrediente`,
-      referenceCode,
-      performedBy,
-      purchaseDate
-    )
+    const events = batch.pullDomainEvents()
+    await this.eventBus.publish(events)
+  }
 
-    await this.movementRepository.save(movement)
-    */
+  /**
+   * Convierte la cantidad y el costo unitario a la unidad base del ingrediente.
+   *
+   * Ejemplo:
+   * - Input: 10 kg a $150,000/kg
+   * - Output: 10,000 g a $150/g
+   *
+   * El factor de conversión se aplica:
+   * - Cantidad: multiplicar por factor (10 × 1000 = 10,000)
+   * - Costo: dividir por factor ($150,000 ÷ 1000 = $150)
+   */
+  private async convertToBaseUnit(
+    quantity: number,
+    fromUnitId: string,
+    toUnitId: string,
+    unitCost: number
+  ): Promise<{
+    convertedQuantity: number
+    convertedUnitId: string
+    convertedUnitCost: number
+  }> {
+    // Buscar la regla de conversión
+    const conversionRule = await this.unitConversionRepository.findByUnits(fromUnitId, toUnitId)
 
-    // 3. Actualizar o crear InventoryLevel
-    // Debe escuchar el evento InventoryMovementCreated
-    /*
-    const ingredientIdVO = new IngredientId(ingredientId)
-    let level = await this.levelRepository.findByIngredient(ingredientIdVO)
-
-    if (!level) {
-      // Primera compra de este ingrediente, crear nivel
-      const levelId = Uuid.random().value
-      level = InventoryLevel.create(levelId, ingredientId, quantity, unitId)
-    } else {
-      // Ya existe, aumentar stock
-      level.increase(new Quantity(quantity, unitId))
+    if (!conversionRule) {
+      throw new UnitConversionNotFound(fromUnitId, toUnitId)
     }
 
-    await this.levelRepository.save(level)
+    // Obtener el factor de conversión
+    const factor = conversionRule.getFactor().value
 
-    // TODO: Publicar evento IngredientPurchased
-    */
+    // Convertir cantidad (multiplicar por factor)
+    // Ejemplo: 10 kg × 1000 = 10,000 g
+    const convertedQuantity = quantity * factor
+
+    // Convertir costo unitario (dividir por factor)
+    // Ejemplo: $150,000/kg ÷ 1000 = $150/g
+    const convertedUnitCost = unitCost / factor
+
+    return {
+      convertedQuantity,
+      convertedUnitId: toUnitId,
+      convertedUnitCost
+    }
   }
 }

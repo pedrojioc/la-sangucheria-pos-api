@@ -9,9 +9,7 @@ export class SearchSuppliersByCriteriaHandler
 {
   constructor(private readonly searchSuppliers: SearchSuppliersByCriteria) {}
 
-  async execute(
-    query: SearchSuppliersByCriteriaQuery
-  ): Promise<PaginatedSupplierListResponse> {
+  async execute(query: SearchSuppliersByCriteriaQuery): Promise<PaginatedSupplierListResponse> {
     const result = await this.searchSuppliers.run(query.criteria)
 
     return PaginatedSupplierListResponse.fromDomain(result)

@@ -1,5 +1,3 @@
-import { NumberValueObject } from './number'
-
 export class Quantity {
   constructor(
     public readonly value: number,

@@ -23,11 +23,9 @@ export interface UnitConversionPrimitives {
  * - L → ml: factor = 1000 (1L = 1000ml)
  * - docena → unidades: factor = 12
  *
- * IMPORTANTE: Para conversiones bidireccionales, se crean dos registros:
- * - kg → g (factor: 1000)
- * - g → kg (factor: 0.001)
- *
- * Esto simplifica las búsquedas y evita cálculos complejos.
+ * Las conversiones son bidireccionales automáticamente:
+ * solo se necesita registrar una dirección (ej: kg → g, factor 1000).
+ * La dirección inversa (g → kg, factor 0.001) se calcula en el repositorio.
  */
 export class UnitConversion extends AggregateRoot {
   private constructor(

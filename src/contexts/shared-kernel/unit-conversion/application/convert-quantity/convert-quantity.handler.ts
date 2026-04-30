@@ -4,9 +4,7 @@ import { ConvertQuantity } from './convert-quantity'
 import { Quantity } from '@/shared/domain/value-objects/quantity'
 
 @QueryHandler(ConvertQuantityQuery)
-export class ConvertQuantityHandler
-  implements IQueryHandler<ConvertQuantityQuery, Quantity>
-{
+export class ConvertQuantityHandler implements IQueryHandler<ConvertQuantityQuery, Quantity> {
   constructor(private readonly useCase: ConvertQuantity) {}
 
   async execute(query: ConvertQuantityQuery): Promise<Quantity> {

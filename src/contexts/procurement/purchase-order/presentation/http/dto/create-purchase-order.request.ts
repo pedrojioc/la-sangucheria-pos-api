@@ -25,6 +25,10 @@ export class CreatePurchaseOrderItemDto {
   @IsNotEmpty()
   ingredientId: string
 
+  @IsString()
+  @IsNotEmpty()
+  ingredientName: string
+
   @IsNumber()
   @IsPositive()
   quantityRequested: number
@@ -50,18 +54,9 @@ export class CreatePurchaseOrderRequest {
   @IsNotEmpty()
   id: string
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
-  orderNumber: string
-
   @IsUUID()
   @IsNotEmpty()
   supplierId: string
-
-  @IsUUID()
-  @IsNotEmpty()
-  requestedBy: string
 
   @IsString()
   @IsNotEmpty()
@@ -73,6 +68,9 @@ export class CreatePurchaseOrderRequest {
   @ValidateNested({ each: true })
   @Type(() => CreatePurchaseOrderItemDto)
   items: CreatePurchaseOrderItemDto[]
+
+  @IsISO8601()
+  requestedDate?: string
 
   @IsISO8601()
   @IsOptional()

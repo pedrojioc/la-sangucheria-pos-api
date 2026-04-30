@@ -7,6 +7,11 @@ export class SendPurchaseOrderHandler implements ICommandHandler<SendPurchaseOrd
   constructor(private readonly useCase: SendPurchaseOrder) {}
 
   async execute(command: SendPurchaseOrderCommand): Promise<void> {
-    await this.useCase.run(command.purchaseOrderId, command.sentBy)
+    await this.useCase.run(
+      command.purchaseOrderId,
+      command.sentBy,
+      command.purchaseMethod,
+      command.purchaseMethodDetails
+    )
   }
 }

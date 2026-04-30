@@ -27,7 +27,7 @@ import { FindAllIngredientCategories } from '@contexts/inventory/ingredient-cate
 import { IngredientCategoryController } from '@contexts/inventory/ingredient-category/presentation/http/controllers/ingredient-category.controller'
 
 // Utils
-import { createUseCaseProvider } from '@core/utils/createUseCaseProvider'
+import { createProvider } from '@/core/utils/create-provider'
 
 const CommandHandlers = [CreateIngredientCategoryCommandHandler]
 
@@ -44,9 +44,9 @@ const QueryHandlers = [FindIngredientCategoryHandler, FindAllIngredientCategoryH
     },
 
     // USE CASES
-    createUseCaseProvider(CreateIngredientCategory, [IngredientCategoryRepository, EventBus]),
-    createUseCaseProvider(FindIngredientCategory, [IngredientCategoryRepository]),
-    createUseCaseProvider(FindAllIngredientCategories, [IngredientCategoryRepository]),
+    createProvider(CreateIngredientCategory, [IngredientCategoryRepository, EventBus]),
+    createProvider(FindIngredientCategory, [IngredientCategoryRepository]),
+    createProvider(FindAllIngredientCategories, [IngredientCategoryRepository]),
 
     // COMMAND HANDLERS
     ...CommandHandlers,

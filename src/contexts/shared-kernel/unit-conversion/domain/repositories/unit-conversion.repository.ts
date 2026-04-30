@@ -9,10 +9,7 @@ export abstract class UnitConversionRepository {
   /**
    * Busca conversión directa entre dos unidades
    */
-  abstract findByUnits(
-    fromUnitId: string,
-    toUnitId: string
-  ): Promise<UnitConversion | null>
+  abstract findByUnits(fromUnitId: string, toUnitId: string): Promise<UnitConversion | null>
 
   /**
    * Busca todas las conversiones desde una unidad específica

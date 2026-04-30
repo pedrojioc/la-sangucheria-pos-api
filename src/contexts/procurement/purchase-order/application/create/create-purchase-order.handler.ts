@@ -9,13 +9,12 @@ export class CreatePurchaseOrderHandler implements ICommandHandler<CreatePurchas
   async execute(command: CreatePurchaseOrderCommand): Promise<void> {
     await this.useCase.run(
       command.id,
-      command.orderNumber,
       command.supplierId,
       command.requestedBy,
       command.currency,
       command.expectedDeliveryDate,
       command.notes,
-      command.items // ← Pasar items al use case
+      command.items
     )
   }
 }

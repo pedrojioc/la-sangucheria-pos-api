@@ -8,6 +8,7 @@ import { SupplierEntity } from './supplier.entity'
 import { Criteria } from '@/shared/domain/criteria/criteria'
 import { PaginatedResult } from '@/shared/domain/criteria/paginated-result'
 import { TypeOrmCriteriaConverter } from '@/shared/infrastructure/persistence/typeorm/typeorm-criteria-converter'
+import { SupplierStatistics } from '../../../domain/supplier-statistics'
 
 @Injectable()
 export class TypeOrmSupplierRepository implements SupplierRepository {
@@ -58,5 +59,32 @@ export class TypeOrmSupplierRepository implements SupplierRepository {
       criteria.pagination?.page || 1,
       criteria.pagination?.pageSize || 20
     )
+  }
+
+  async getStatistics(): Promise<SupplierStatistics> {
+    const result = await this.repository
+      .createQueryBuilder('supplier')
+      .select([
+        'COUNT(supplier.id) AS "totalSuppliers"',
+        'SUM(CASE WHEN supplier.is_active = true THEN 1 ELSE 0 END) AS "activeSuppliers"',
+        'AVG(CASE WHEN supplier.rating IS NOT NULL THEN supplier.rating ELSE NULL END) AS "averageRating"',
+        'COUNT(DISTINCT CASE WHEN po.status IN (:...validStatuses) THEN po.id ELSE NULL END) AS "totalOrders"'
+      ])
+      .leftJoin('purchase_orders', 'po', 'po.supplier_id = supplier.id')
+      .setParameter('validStatuses', [
+        'APPROVED',
+        'SENT',
+        'PARTIALLY_RECEIVED',
+        'RECEIVED',
+        'CLOSED'
+      ])
+      .getRawOne()
+
+    return {
+      totalSuppliers: parseInt(result.totalSuppliers || '0', 10),
+      activeSuppliers: parseInt(result.activeSuppliers || '0', 10),
+      averageRating: result.averageRating ? parseFloat(result.averageRating) : null,
+      totalOrders: parseInt(result.totalOrders || '0', 10)
+    }
   }
 }

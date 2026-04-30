@@ -1,7 +1,6 @@
 export class CreatePurchaseOrderCommand {
   constructor(
     public readonly id: string,
-    public readonly orderNumber: string,
     public readonly supplierId: string,
     public readonly requestedBy: string,
     public readonly currency: string,
@@ -10,6 +9,7 @@ export class CreatePurchaseOrderCommand {
     public readonly items: {
       id: string
       ingredientId: string
+      ingredientName: string
       quantityRequested: number
       unitId: string
       unitCost: number

@@ -34,7 +34,7 @@ import { ProductCategoriesController } from '@/contexts/menu/product-category/pr
 import { ReactOnCategoryCreated } from '@/contexts/menu/product-category/application/subscribers/react-on-category-created'
 
 // Utils
-import { createUseCaseProvider } from '@/core/utils/createUseCaseProvider'
+import { createProvider } from '@/core/utils/create-provider'
 
 const CommandHandlers = [
   CreateProductCategoryHandler,
@@ -57,11 +57,11 @@ const Subscribers = [ReactOnCategoryCreated]
     },
 
     // USE CASES
-    createUseCaseProvider(CreateProductCategory, [ProductCategoryRepository, EventBus]),
-    createUseCaseProvider(UpdateProductCategory, [ProductCategoryRepository, EventBus]),
-    createUseCaseProvider(DeleteProductCategory, [ProductCategoryRepository, EventBus]),
-    createUseCaseProvider(FindProductCategory, [ProductCategoryRepository]),
-    createUseCaseProvider(FindAllProductCategories, [ProductCategoryRepository]),
+    createProvider(CreateProductCategory, [ProductCategoryRepository, EventBus]),
+    createProvider(UpdateProductCategory, [ProductCategoryRepository, EventBus]),
+    createProvider(DeleteProductCategory, [ProductCategoryRepository, EventBus]),
+    createProvider(FindProductCategory, [ProductCategoryRepository]),
+    createProvider(FindAllProductCategories, [ProductCategoryRepository]),
 
     // COMMAND HANDLERS
     ...CommandHandlers,

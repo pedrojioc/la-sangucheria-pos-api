@@ -13,12 +13,7 @@ export class PaginatedResult<T> {
     public readonly meta: PaginationMeta
   ) {}
 
-  static create<T>(
-    data: T[],
-    total: number,
-    page: number,
-    pageSize: number
-  ): PaginatedResult<T> {
+  static create<T>(data: T[], total: number, page: number, pageSize: number): PaginatedResult<T> {
     const totalPages = Math.ceil(total / pageSize)
 
     return new PaginatedResult(data, {

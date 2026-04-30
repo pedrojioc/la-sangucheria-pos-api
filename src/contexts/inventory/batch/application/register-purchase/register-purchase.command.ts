@@ -9,7 +9,6 @@ export class RegisterPurchaseCommand {
     public readonly purchaseDate: Date,
     public readonly expirationDate: Date | null,
     public readonly supplier: string | null,
-    public readonly referenceCode: string | null,
-    public readonly performedBy: string | null
+    public readonly referenceCode: string | null
   ) {}
 }

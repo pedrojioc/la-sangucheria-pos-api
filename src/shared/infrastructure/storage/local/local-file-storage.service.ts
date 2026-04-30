@@ -42,7 +42,9 @@ export class LocalFileStorage implements FileStorageRepository {
       await fs.mkdir(directory, { recursive: true })
 
       // 3. Write file to disk
-      this.logger.log(`Saving file locally: ${storageKey} (${this.formatFileSize(primitives.size)})`)
+      this.logger.log(
+        `Saving file locally: ${storageKey} (${this.formatFileSize(primitives.size)})`
+      )
       await fs.writeFile(filePath, primitives.buffer)
 
       // 4. Create public URL

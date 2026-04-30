@@ -1,7 +1,2 @@
-import { IsUUID, IsNotEmpty } from 'class-validator'
-
-export class ClosePurchaseOrderRequest {
-  @IsUUID()
-  @IsNotEmpty()
-  closedBy: string
-}
+// Empty DTO - closedBy is taken from authenticated user
+export class ClosePurchaseOrderRequest {}

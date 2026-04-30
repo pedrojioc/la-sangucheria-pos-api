@@ -29,12 +29,15 @@ export class InventoryBatchSeeder implements Seeder {
       for (let i = 0; i < batchCount; i++) {
         const initialQuantity = faker.number.float({ min: 10, max: 100, fractionDigits: 2 })
         const consumedPercentage = faker.number.float({ min: 0, max: 0.6, fractionDigits: 2 })
-        const remainingQuantity = parseFloat((initialQuantity * (1 - consumedPercentage)).toFixed(2))
+        const remainingQuantity = parseFloat(
+          (initialQuantity * (1 - consumedPercentage)).toFixed(2)
+        )
 
         const purchaseDate = faker.date.past({ years: 0.25 }) // Last 3 months
-        const expirationDate = ingredient.isPerishable && ingredient.shelfLifeDays
-          ? new Date(purchaseDate.getTime() + ingredient.shelfLifeDays * 24 * 60 * 60 * 1000)
-          : null
+        const expirationDate =
+          ingredient.isPerishable && ingredient.shelfLifeDays
+            ? new Date(purchaseDate.getTime() + ingredient.shelfLifeDays * 24 * 60 * 60 * 1000)
+            : null
 
         // Generate realistic unit cost based on ingredient type
         const unitCost = faker.number.float({ min: 1, max: 50, fractionDigits: 2 })

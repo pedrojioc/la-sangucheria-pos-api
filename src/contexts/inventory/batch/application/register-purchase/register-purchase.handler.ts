@@ -17,8 +17,7 @@ export class RegisterPurchaseHandler implements ICommandHandler<RegisterPurchase
       command.purchaseDate,
       command.expirationDate,
       command.supplier,
-      command.referenceCode,
-      command.performedBy
+      command.referenceCode
     )
   }
 }

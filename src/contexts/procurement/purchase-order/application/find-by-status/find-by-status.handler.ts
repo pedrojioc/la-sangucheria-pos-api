@@ -1,7 +1,7 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs'
 import { FindPurchaseOrdersByStatusQuery } from './find-by-status.query'
 import { FindPurchaseOrdersByStatus } from './find-by-status'
-import { PurchaseOrderListResponse } from '../dto/purchase-order-list.response'
+import { PurchaseOrderListItemResponse } from '../dto/purchase-order-list-item.response'
 
 @QueryHandler(FindPurchaseOrdersByStatusQuery)
 export class FindPurchaseOrdersByStatusHandler
@@ -9,8 +9,8 @@ export class FindPurchaseOrdersByStatusHandler
 {
   constructor(private readonly useCase: FindPurchaseOrdersByStatus) {}
 
-  async execute(query: FindPurchaseOrdersByStatusQuery): Promise<PurchaseOrderListResponse> {
-    const purchaseOrders = await this.useCase.run(query.status)
-    return PurchaseOrderListResponse.fromDomain(purchaseOrders)
+  async execute(query: FindPurchaseOrdersByStatusQuery): Promise<PurchaseOrderListItemResponse[]> {
+    const items = await this.useCase.run(query.status)
+    return items.map(item => PurchaseOrderListItemResponse.fromReadModel(item))
   }
 }

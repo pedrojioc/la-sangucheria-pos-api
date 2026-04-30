@@ -19,7 +19,7 @@ import { ConvertQuantity } from './application/convert-quantity/convert-quantity
 import { ConvertQuantityHandler } from './application/convert-quantity/convert-quantity.handler'
 
 // Factory helper
-import { createUseCaseProvider } from '@/core/utils/createUseCaseProvider'
+import { createProvider } from '@/core/utils/create-provider'
 
 const queryHandlers = [ConvertQuantityHandler]
 
@@ -48,7 +48,7 @@ const queryHandlers = [ConvertQuantityHandler]
     UnitConversionService,
 
     // Use Cases
-    createUseCaseProvider(ConvertQuantity, [UnitConversionRepository, UnitConversionService]),
+    createProvider(ConvertQuantity, [UnitConversionRepository, UnitConversionService]),
 
     // Handlers
     ...queryHandlers
@@ -56,7 +56,8 @@ const queryHandlers = [ConvertQuantityHandler]
   exports: [
     // Exportar para uso en otros módulos
     UnitConversionRepository,
-    UnitConversionService
+    UnitConversionService,
+    ConvertQuantity
   ]
 })
 export class UnitConversionsModule {}

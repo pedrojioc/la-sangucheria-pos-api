@@ -20,11 +20,15 @@ export class PurchaseOrderMother {
       supplierId: params.supplierId ?? UuidMother.random(),
       status: params.status ?? PurchaseOrderStatus.DRAFT,
       items: defaultItems,
+      itemCount: params.itemCount ?? defaultItems.length,
       requestedBy: params.requestedBy ?? UuidMother.random(),
       approvedBy: params.approvedBy ?? null,
       rejectedBy: params.rejectedBy ?? null,
       sentBy: params.sentBy ?? null,
+      receivedBy: params.receivedBy ?? null,
       closedBy: params.closedBy ?? null,
+      purchaseMethod: params.purchaseMethod ?? null,
+      purchaseMethodDetails: params.purchaseMethodDetails ?? null,
       totalAmount: totalAmount,
       currency: params.currency ?? 'PEN',
       requestedDate: params.requestedDate ?? new Date(),
@@ -63,13 +67,23 @@ export class PurchaseOrderMother {
     })
   }
 
-  static sent(): PurchaseOrder {
+  static partiallyReceived(): PurchaseOrder {
     return this.create({
-      status: PurchaseOrderStatus.SENT,
+      status: PurchaseOrderStatus.PARTIALLY_RECEIVED,
       approvedBy: UuidMother.random(),
       approvedDate: new Date(),
-      sentBy: UuidMother.random(),
-      sentDate: new Date()
+      receivedDate: new Date()
+    })
+  }
+
+  static closed(): PurchaseOrder {
+    return this.create({
+      status: PurchaseOrderStatus.CLOSED,
+      approvedBy: UuidMother.random(),
+      approvedDate: new Date(),
+      closedBy: UuidMother.random(),
+      closedDate: new Date(),
+      receivedDate: new Date()
     })
   }
 }

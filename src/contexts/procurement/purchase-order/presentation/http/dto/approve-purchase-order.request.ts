@@ -1,7 +1,2 @@
-import { IsUUID, IsNotEmpty } from 'class-validator'
-
-export class ApprovePurchaseOrderRequest {
-  @IsUUID()
-  @IsNotEmpty()
-  approvedBy: string
-}
+// Empty DTO - approvedBy is taken from authenticated user
+export class ApprovePurchaseOrderRequest {}

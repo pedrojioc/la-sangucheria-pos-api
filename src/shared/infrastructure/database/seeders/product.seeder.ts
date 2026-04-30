@@ -42,7 +42,7 @@ export class ProductSeeder implements Seeder {
         name: 'Sanguch Clásico de Pollo',
         category: 'Sanguches',
         recipe: 'Sanguch Clásico de Pollo',
-        price: 15.00,
+        price: 15.0,
         preparationTime: 10,
         tags: ['pollo', 'clásico', 'popular']
       },
@@ -50,7 +50,7 @@ export class ProductSeeder implements Seeder {
         name: 'Sanguch de Carne Premium',
         category: 'Sanguches',
         recipe: 'Sanguch de Carne',
-        price: 18.00,
+        price: 18.0,
         preparationTime: 12,
         tags: ['carne', 'premium', 'queso']
       },
@@ -58,7 +58,7 @@ export class ProductSeeder implements Seeder {
         name: 'Sanguch Especial con Palta',
         category: 'Sanguches',
         recipe: 'Sanguch Especial con Palta',
-        price: 22.00,
+        price: 22.0,
         preparationTime: 15,
         tags: ['palta', 'tocino', 'especial', 'premium']
       },
@@ -68,7 +68,7 @@ export class ProductSeeder implements Seeder {
         name: 'Hamburguesa Clásica',
         category: 'Hamburguesas',
         recipe: 'Hamburguesa Clásica',
-        price: 16.00,
+        price: 16.0,
         preparationTime: 12,
         tags: ['hamburguesa', 'clásica', 'queso']
       },
@@ -78,7 +78,7 @@ export class ProductSeeder implements Seeder {
         name: 'Bowl de Pollo Saludable',
         category: 'Bowls',
         recipe: 'Bowl de Pollo',
-        price: 20.00,
+        price: 20.0,
         preparationTime: 15,
         tags: ['bowl', 'saludable', 'pollo', 'palta']
       },
@@ -88,7 +88,7 @@ export class ProductSeeder implements Seeder {
         name: 'Alitas BBQ (6 unidades)',
         category: 'Alitas',
         recipe: 'Alitas BBQ',
-        price: 18.00,
+        price: 18.0,
         preparationTime: 20,
         tags: ['alitas', 'bbq', 'picante']
       },
@@ -97,28 +97,28 @@ export class ProductSeeder implements Seeder {
       {
         name: 'Coca Cola 500ml',
         category: 'Bebidas',
-        price: 5.00,
+        price: 5.0,
         preparationTime: 1,
         tags: ['bebida', 'gaseosa', 'coca-cola']
       },
       {
         name: 'Inca Kola 500ml',
         category: 'Bebidas',
-        price: 5.00,
+        price: 5.0,
         preparationTime: 1,
         tags: ['bebida', 'gaseosa', 'inca-kola']
       },
       {
         name: 'Agua Mineral 500ml',
         category: 'Bebidas',
-        price: 3.00,
+        price: 3.0,
         preparationTime: 1,
         tags: ['bebida', 'agua', 'mineral']
       },
       {
         name: 'Jugo de Naranja Natural',
         category: 'Bebidas',
-        price: 7.00,
+        price: 7.0,
         preparationTime: 5,
         tags: ['bebida', 'jugo', 'natural', 'naranja']
       },
@@ -127,14 +127,14 @@ export class ProductSeeder implements Seeder {
       {
         name: 'Pisco Sour',
         category: 'Cocteles',
-        price: 15.00,
+        price: 15.0,
         preparationTime: 5,
         tags: ['coctel', 'pisco', 'peruano']
       },
       {
         name: 'Chilcano',
         category: 'Cocteles',
-        price: 12.00,
+        price: 12.0,
         preparationTime: 3,
         tags: ['coctel', 'pisco', 'refrescante']
       },
@@ -143,14 +143,14 @@ export class ProductSeeder implements Seeder {
       {
         name: 'Papas Fritas',
         category: 'Acompañamientos',
-        price: 8.00,
+        price: 8.0,
         preparationTime: 8,
         tags: ['acompañamiento', 'papas', 'fritas']
       },
       {
         name: 'Yucas Fritas',
         category: 'Acompañamientos',
-        price: 8.00,
+        price: 8.0,
         preparationTime: 10,
         tags: ['acompañamiento', 'yuca', 'fritas']
       }

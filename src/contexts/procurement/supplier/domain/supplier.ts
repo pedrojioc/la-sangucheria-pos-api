@@ -93,7 +93,9 @@ export class Supplier extends AggregateRoot {
       primitives.contactName !== null ? new SupplierContactName(primitives.contactName) : null,
       primitives.email !== null ? new SupplierEmail(primitives.email) : null,
       primitives.phone !== null ? new SupplierPhone(primitives.phone) : null,
-      primitives.whatsappNumber !== null ? new SupplierWhatsappNumber(primitives.whatsappNumber) : null,
+      primitives.whatsappNumber !== null
+        ? new SupplierWhatsappNumber(primitives.whatsappNumber)
+        : null,
       primitives.address !== null ? new SupplierAddress(primitives.address) : null,
       primitives.taxId !== null ? new SupplierTaxId(primitives.taxId) : null,
       primitives.paymentTerms !== null ? new SupplierPaymentTerms(primitives.paymentTerms) : null,
@@ -120,7 +122,8 @@ export class Supplier extends AggregateRoot {
     this.contactName = contactName !== null ? new SupplierContactName(contactName) : null
     this.email = email !== null ? new SupplierEmail(email) : null
     this.phone = phone !== null ? new SupplierPhone(phone) : null
-    this.whatsappNumber = whatsappNumber !== null ? new SupplierWhatsappNumber(whatsappNumber) : null
+    this.whatsappNumber =
+      whatsappNumber !== null ? new SupplierWhatsappNumber(whatsappNumber) : null
     this.address = address !== null ? new SupplierAddress(address) : null
     this.taxId = taxId !== null ? new SupplierTaxId(taxId) : null
     this.paymentTerms = paymentTerms !== null ? new SupplierPaymentTerms(paymentTerms) : null

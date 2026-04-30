@@ -30,7 +30,7 @@ import { FindIngredientCategory } from '../ingredient-category/application/find/
 import { IngredientController } from './presentation/http/controllers/ingredient.controller'
 
 // Utils
-import { createUseCaseProvider } from '@/core/utils/createUseCaseProvider'
+import { createProvider } from '@/core/utils/create-provider'
 import { IngredientCategoryModule } from '../ingredient-category/ingredient-category.module'
 import { IngredientQueryService } from './application/services/ingredient-query.service'
 import { TypeormIngredientQueryService } from './infrastructure/query-services/typeorm-ingredient-query.service'
@@ -58,14 +58,10 @@ const QueryHandlers = [
     },
 
     // USE CASES
-    createUseCaseProvider(CreateIngredient, [
-      IngredientRepository,
-      FindIngredientCategory,
-      EventBus
-    ]),
-    createUseCaseProvider(FindIngredient, [IngredientRepository]),
-    createUseCaseProvider(FindAllIngredients, [IngredientRepository]),
-    createUseCaseProvider(SearchIngredientsByCriteria, [IngredientRepository]),
+    createProvider(CreateIngredient, [IngredientRepository, FindIngredientCategory, EventBus]),
+    createProvider(FindIngredient, [IngredientRepository]),
+    createProvider(FindAllIngredients, [IngredientRepository]),
+    createProvider(SearchIngredientsByCriteria, [IngredientRepository]),
 
     // COMMAND HANDLERS
     ...CommandHandlers,
@@ -73,6 +69,6 @@ const QueryHandlers = [
     // QUERY HANDLERS
     ...QueryHandlers
   ],
-  exports: [IngredientRepository, CreateIngredient, FindIngredient]
+  exports: [IngredientRepository]
 })
 export class IngredientModule {}

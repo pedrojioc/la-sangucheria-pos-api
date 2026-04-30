@@ -22,6 +22,7 @@
 - [src/shared/domain/value-objects/quantity.ts:3](src/shared/domain/value-objects/quantity.ts#L3)
 
 **Solución esperada:**
+
 ```typescript
 // ❌ Incorrecto
 export class ProductName extends ValueObject {
@@ -36,26 +37,28 @@ export class ProductName extends ValueObject<string> {
 
 ---
 
-### **2. Módulos - Falta import `createUseCaseProvider`**
+### **2. Módulos - Falta import `createProvider`**
 
-**Descripción:** Módulos que intentan usar `createUseCaseProvider` pero el import no existe en la ruta correcta.
+**Descripción:** Módulos que intentan usar `createProvider` pero el import no existe en la ruta correcta.
 
 - [src/modules/ingredient-transformations/ingredient-transformations.module.ts:29](src/modules/ingredient-transformations/ingredient-transformations.module.ts#L29)
 - [src/modules/inventory/inventory.module.ts:45](src/modules/inventory/inventory.module.ts#L45)
 - [src/modules/unit-conversions/unit-conversions.module.ts:22](src/modules/unit-conversions/unit-conversions.module.ts#L22)
 
 **Error:**
+
 ```
 error TS2307: Cannot find module '@/core/utils/create-use-case-provider'
 ```
 
 **Ruta correcta:**
+
 ```typescript
 // ❌ Incorrecto
-import { createUseCaseProvider } from '@/core/utils/create-use-case-provider'
+import { createProvider } from '@/core/utils/create-use-case-provider'
 
 // ✅ Correcto
-import { createUseCaseProvider } from '@/core/utils/createUseCaseProvider'
+import { createProvider } from '@/core/utils/createProvider'
 ```
 
 ---
@@ -78,12 +81,14 @@ import { createUseCaseProvider } from '@/core/utils/createUseCaseProvider'
 - [src/modules/products/application/update/update-product.handler.ts:19](src/modules/products/application/update/update-product.handler.ts#L19)
 
 **Error típico:**
+
 ```
 error TS2339: Property 'create' does not exist on type 'CreateProduct'.
 error TS2339: Property 'execute' does not exist on type 'FindProduct'.
 ```
 
 **Solución esperada:**
+
 ```typescript
 // ❌ Incorrecto
 async execute(command: CreateProductCommand): Promise<void> {
@@ -109,11 +114,13 @@ async execute(command: CreateProductCommand): Promise<void> {
 - [src/modules/unit-conversions/infrastructure/seed-common-conversions.ts:143](src/modules/unit-conversions/infrastructure/seed-common-conversions.ts#L143) - Llama `UnitConversion.run()`
 
 **Error típico:**
+
 ```
 error TS2339: Property 'run' does not exist on type 'typeof InventoryBatch'.
 ```
 
 **Solución esperada:**
+
 ```typescript
 // ❌ Incorrecto
 const batch = InventoryBatch.run(...)
@@ -133,11 +140,13 @@ const batch = InventoryBatch.fromPrimitives(...)
 - [src/modules/products/domain/recipe/recipe.ts:25](src/modules/products/domain/recipe/recipe.ts#L25)
 
 **Error:**
+
 ```
 error TS1213: Identifier expected. 'yield' is a reserved word in strict mode.
 ```
 
 **Solución esperada:**
+
 ```typescript
 // ❌ Incorrecto
 export class Recipe {
@@ -163,6 +172,7 @@ export class Recipe {
 - [src/shared/domain/value-objects/index.ts:10](src/shared/domain/value-objects/index.ts#L10) - `CreatedAt` no es un módulo
 
 **Errores:**
+
 ```
 error TS2305: Module '"./email"' has no exported member 'EmailValueObject'.
 error TS2305: Module '"./phone"' has no exported member 'PhoneValueObject'.
@@ -170,6 +180,7 @@ error TS2306: File '.../created-at.ts' is not a module.
 ```
 
 **Solución esperada:**
+
 - Verificar los nombres correctos de las clases exportadas
 - O crear las clases faltantes
 - O remover los exports incorrectos
@@ -183,11 +194,13 @@ error TS2306: File '.../created-at.ts' is not a module.
 #### Archivos con errores:
 
 **Event Store:**
+
 - [src/shared/infrastructure/event-sourcing/event-store.service.ts](src/shared/infrastructure/event-sourcing/event-store.service.ts)
 - [src/shared/infrastructure/event-sourcing/persistence/event-store.entity.ts](src/shared/infrastructure/event-sourcing/persistence/event-store.entity.ts)
 - [src/shared/infrastructure/event-sourcing/subscribers/persist-domain-events.subscriber.ts](src/shared/infrastructure/event-sourcing/subscribers/persist-domain-events.subscriber.ts)
 
 **Module Events:**
+
 - [src/modules/ingredient-categories/domain/events/ingredient-category-created.event.ts](src/modules/ingredient-categories/domain/events/ingredient-category-created.event.ts)
 - [src/modules/ingredients/domain/events/ingredient-created.event.ts](src/modules/ingredients/domain/events/ingredient-created.event.ts)
 - [src/modules/inventory/domain/events/low-stock-detected.event.ts](src/modules/inventory/domain/events/low-stock-detected.event.ts)
@@ -204,6 +217,7 @@ error TS2306: File '.../created-at.ts' is not a module.
 - [src/modules/units/domain/events/unit-updated.event.ts](src/modules/units/domain/events/unit-updated.event.ts)
 
 **Errores típicos:**
+
 ```
 error TS2339: Property 'payload' does not exist on type 'DomainEvent'
 error TS2339: Property 'version' does not exist on type 'DomainEvent'
@@ -240,9 +254,9 @@ error TS2345: Argument of type '...' is not assignable to parameter of type 'Dom
 
 #### Tests de Inventory:
 
-- [tests/modules/inventory/__mothers__/InventoryBatchMother.ts](tests/modules/inventory/__mothers__/InventoryBatchMother.ts) - Propiedades faltantes
-- [tests/modules/inventory/__mothers__/InventoryLevelMother.ts](tests/modules/inventory/__mothers__/InventoryLevelMother.ts)
-- [tests/modules/inventory/__mothers__/InventoryMovementMother.ts](tests/modules/inventory/__mothers__/InventoryMovementMother.ts)
+- [tests/modules/inventory/**mothers**/InventoryBatchMother.ts](tests/modules/inventory/__mothers__/InventoryBatchMother.ts) - Propiedades faltantes
+- [tests/modules/inventory/**mothers**/InventoryLevelMother.ts](tests/modules/inventory/__mothers__/InventoryLevelMother.ts)
+- [tests/modules/inventory/**mothers**/InventoryMovementMother.ts](tests/modules/inventory/__mothers__/InventoryMovementMother.ts)
 - [tests/modules/inventory/domain/InventoryBatch.spec.ts](tests/modules/inventory/domain/InventoryBatch.spec.ts)
 - [tests/modules/inventory/infrastructure/TypeOrmInventoryBatchRepository.spec.ts](tests/modules/inventory/infrastructure/TypeOrmInventoryBatchRepository.spec.ts)
 
@@ -250,16 +264,16 @@ error TS2345: Argument of type '...' is not assignable to parameter of type 'Dom
 
 ## 🔢 Estadísticas
 
-| Categoría | Archivos Afectados | Prioridad |
-|-----------|-------------------|-----------|
-| Value Objects (genéricos) | 8 | 🔴 Alta |
-| Módulos (imports) | 3 | 🔴 Alta |
-| Use Cases (métodos) | 10+ | 🔴 Alta |
-| Domain Entities (métodos) | 5 | 🟡 Media |
-| Reserved Word | 1 | 🔴 Alta |
-| Shared Exports | 3 | 🔴 Alta |
-| Domain Events | 15+ | 🟠 Alta-Media |
-| Tests | 20+ | 🟢 Baja |
+| Categoría                 | Archivos Afectados | Prioridad     |
+| ------------------------- | ------------------ | ------------- |
+| Value Objects (genéricos) | 8                  | 🔴 Alta       |
+| Módulos (imports)         | 3                  | 🔴 Alta       |
+| Use Cases (métodos)       | 10+                | 🔴 Alta       |
+| Domain Entities (métodos) | 5                  | 🟡 Media      |
+| Reserved Word             | 1                  | 🔴 Alta       |
+| Shared Exports            | 3                  | 🔴 Alta       |
+| Domain Events             | 15+                | 🟠 Alta-Media |
+| Tests                     | 20+                | 🟢 Baja       |
 
 **Total de errores de compilación:** ~100+
 **Archivos únicos con errores:** ~40
@@ -269,17 +283,20 @@ error TS2345: Argument of type '...' is not assignable to parameter of type 'Dom
 ## 🎯 Plan de Corrección Sugerido
 
 ### Fase 1: Fundaciones (Alta Prioridad)
+
 1. ✅ Corregir exports en `shared/domain/value-objects/index.ts`
 2. ✅ Arreglar tipos genéricos en Value Objects
-3. ✅ Corregir import de `createUseCaseProvider` en módulos
+3. ✅ Corregir import de `createProvider` en módulos
 4. ✅ Renombrar propiedad `yield` en Recipe
 
 ### Fase 2: Use Cases y Domain (Alta-Media Prioridad)
+
 5. ✅ Cambiar llamadas de `execute()`/`create()` a `run()` en handlers
 6. ✅ Corregir métodos estáticos en entidades de dominio (`run()` → `create()`)
 7. ✅ Refactorizar Domain Events según DOMAIN-EVENTS-REFACTOR-PLAN.md
 
 ### Fase 3: Tests (Baja Prioridad)
+
 8. ✅ Actualizar tests de use cases (usar `run()`)
 9. ✅ Actualizar tests de domain events
 10. ✅ Actualizar Object Mothers

@@ -1,29 +1,54 @@
-import { PurchaseOrder, PurchaseOrderPrimitives } from '../../domain/purchase-order'
+import { PurchaseOrderDetailReadModel } from './purchase-order-detail-read-model'
 import { PurchaseOrderStatus } from '../../domain/purchase-order-status'
 
 export interface PurchaseOrderItemResponse {
   id: string
   ingredientId: string
+  ingredientName: string
   quantityRequested: number
   quantityRequestedUnitId: string
+  quantityRequestedUnitName: string
+  quantityRequestedUnitSymbol: string
   unitCost: number
   totalCost: number
   quantityReceived: number | null
   quantityReceivedUnitId: string | null
+  quantityReceivedUnitName: string | null
+  quantityReceivedUnitSymbol: string | null
   notes: string | null
+  isCancelled: boolean
+  cancellationReason: string | null
 }
 
+/**
+ * PurchaseOrderResponse - Response DTO for Detail View
+ *
+ * Este DTO se usa para mostrar el detalle completo de una orden.
+ * Incluye datos de supplier e items con información enriquecida.
+ *
+ * Se construye desde PurchaseOrderDetailReadModel (del QueryService),
+ * NO desde el agregado de dominio.
+ */
 export class PurchaseOrderResponse {
   constructor(
     public readonly id: string,
     public readonly orderNumber: string,
     public readonly supplierId: string,
+    public readonly supplier: {
+      id: string
+      name: string
+      contactName: string | null
+      email: string | null
+      phone: string | null
+    },
     public readonly status: PurchaseOrderStatus,
     public readonly items: PurchaseOrderItemResponse[],
+    public readonly itemCount: number,
     public readonly requestedBy: string,
     public readonly approvedBy: string | null,
     public readonly rejectedBy: string | null,
     public readonly sentBy: string | null,
+    public readonly receivedBy: string | null,
     public readonly closedBy: string | null,
     public readonly totalAmount: number,
     public readonly currency: string,
@@ -36,73 +61,51 @@ export class PurchaseOrderResponse {
     public readonly notes: string | null
   ) {}
 
-  static fromDomain(purchaseOrder: PurchaseOrder): PurchaseOrderResponse {
-    const primitives = purchaseOrder.toPrimitives()
-
+  /**
+   * Creates a response DTO from a Read Model (from QueryService)
+   * This is the preferred method as it has all enriched data
+   */
+  static fromReadModel(readModel: PurchaseOrderDetailReadModel): PurchaseOrderResponse {
     return new PurchaseOrderResponse(
-      primitives.id,
-      primitives.orderNumber,
-      primitives.supplierId,
-      primitives.status,
-      primitives.items.map(item => ({
+      readModel.id,
+      readModel.orderNumber,
+      readModel.supplier.id,
+      readModel.supplier,
+      readModel.status,
+      readModel.items.map(item => ({
         id: item.id,
         ingredientId: item.ingredientId,
+        ingredientName: item.ingredientName,
         quantityRequested: item.quantityRequested,
         quantityRequestedUnitId: item.quantityRequestedUnitId,
+        quantityRequestedUnitName: item.quantityRequestedUnitName,
+        quantityRequestedUnitSymbol: item.quantityRequestedUnitSymbol,
         unitCost: item.unitCost,
         totalCost: item.totalCost,
         quantityReceived: item.quantityReceived,
         quantityReceivedUnitId: item.quantityReceivedUnitId,
-        notes: item.notes
+        quantityReceivedUnitName: item.quantityReceivedUnitName,
+        quantityReceivedUnitSymbol: item.quantityReceivedUnitSymbol,
+        notes: item.notes,
+        isCancelled: item.isCancelled,
+        cancellationReason: item.cancellationReason
       })),
-      primitives.requestedBy,
-      primitives.approvedBy,
-      primitives.rejectedBy,
-      primitives.sentBy,
-      primitives.closedBy,
-      primitives.totalAmount,
-      primitives.currency,
-      primitives.requestedDate,
-      primitives.expectedDeliveryDate,
-      primitives.approvedDate,
-      primitives.sentDate,
-      primitives.receivedDate,
-      primitives.closedDate,
-      primitives.notes
-    )
-  }
-
-  static fromPrimitives(primitives: PurchaseOrderPrimitives): PurchaseOrderResponse {
-    return new PurchaseOrderResponse(
-      primitives.id,
-      primitives.orderNumber,
-      primitives.supplierId,
-      primitives.status,
-      primitives.items.map(item => ({
-        id: item.id,
-        ingredientId: item.ingredientId,
-        quantityRequested: item.quantityRequested,
-        quantityRequestedUnitId: item.quantityRequestedUnitId,
-        unitCost: item.unitCost,
-        totalCost: item.totalCost,
-        quantityReceived: item.quantityReceived,
-        quantityReceivedUnitId: item.quantityReceivedUnitId,
-        notes: item.notes
-      })),
-      primitives.requestedBy,
-      primitives.approvedBy,
-      primitives.rejectedBy,
-      primitives.sentBy,
-      primitives.closedBy,
-      primitives.totalAmount,
-      primitives.currency,
-      primitives.requestedDate,
-      primitives.expectedDeliveryDate,
-      primitives.approvedDate,
-      primitives.sentDate,
-      primitives.receivedDate,
-      primitives.closedDate,
-      primitives.notes
+      readModel.itemCount,
+      readModel.requestedBy,
+      readModel.approvedBy,
+      readModel.rejectedBy,
+      readModel.sentBy,
+      readModel.receivedBy,
+      readModel.closedBy,
+      readModel.totalAmount,
+      readModel.currency,
+      readModel.requestedDate,
+      readModel.expectedDeliveryDate,
+      readModel.approvedDate,
+      readModel.sentDate,
+      readModel.receivedDate,
+      readModel.closedDate,
+      readModel.notes
     )
   }
 }

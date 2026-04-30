@@ -36,7 +36,7 @@ import { GenerateProductSku } from '@/contexts/menu/product/application/generate
 import { ProductController } from '@/contexts/menu/product/presentation/http/controllers/product.controller'
 
 // Utils
-import { createUseCaseProvider } from '@/core/utils/createUseCaseProvider'
+import { createProvider } from '@/core/utils/create-provider'
 import { LocalFileStorage } from '@/shared/infrastructure/storage/local/local-file-storage.service'
 import { FileStorageRepository } from '@/shared/domain/file-storage'
 import { FindProductCategory } from '@/contexts/menu/product-category/application/find/find-product-category'
@@ -47,7 +47,11 @@ const CommandHandlers = [
   DeleteProductCommandHandler
 ]
 
-const QueryHandlers = [FindProductHandler, SearchProductsByCriteriaHandler, GenerateProductSkuHandler]
+const QueryHandlers = [
+  FindProductHandler,
+  SearchProductsByCriteriaHandler,
+  GenerateProductSkuHandler
+]
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductEntity]), ProductCategoryModule],
@@ -64,22 +68,22 @@ const QueryHandlers = [FindProductHandler, SearchProductsByCriteriaHandler, Gene
     },
 
     // USE CASES
-    createUseCaseProvider(CreateProduct, [
+    createProvider(CreateProduct, [
       ProductRepository,
       FindProductCategory,
       FileStorageRepository,
       EventBus
     ]),
-    createUseCaseProvider(UpdateProduct, [
+    createProvider(UpdateProduct, [
       ProductRepository,
       FindProductCategory,
       FileStorageRepository,
       EventBus
     ]),
-    createUseCaseProvider(DeleteProduct, [ProductRepository, FileStorageRepository, EventBus]),
-    createUseCaseProvider(FindProduct, [ProductRepository]),
-    createUseCaseProvider(SearchProductsByCriteria, [ProductRepository]),
-    createUseCaseProvider(GenerateProductSku, [ProductRepository]),
+    createProvider(DeleteProduct, [ProductRepository, FileStorageRepository, EventBus]),
+    createProvider(FindProduct, [ProductRepository]),
+    createProvider(SearchProductsByCriteria, [ProductRepository]),
+    createProvider(GenerateProductSku, [ProductRepository]),
 
     // COMMAND HANDLERS
     ...CommandHandlers,

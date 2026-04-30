@@ -2,7 +2,8 @@ import { AggregateRoot } from '@/shared/domain/aggregate-root'
 import { Quantity } from '@/shared/domain/value-objects/quantity'
 import { InventoryLevelId } from './inventory-level-id'
 import { IngredientId } from '@/contexts/inventory/ingredient/domain/ingredient-id'
-import { InventoryMovement } from './inventory-movement'
+import { OutOfStockEvent } from './events/out-of-stock.event'
+import { LowStockDetectedEvent } from './events/low-stock-detected.event'
 
 export interface InventoryLevelPrimitives {
   id: string
@@ -32,8 +33,6 @@ export interface InventoryLevelPrimitives {
  * - Emite eventos cuando se cruzan umbrales (low stock, out of stock)
  */
 export class InventoryLevel extends AggregateRoot {
-  private movements: InventoryMovement[]
-
   private constructor(
     public readonly id: InventoryLevelId,
     public readonly ingredientId: IngredientId,
@@ -87,10 +86,6 @@ export class InventoryLevel extends AggregateRoot {
   }
 
   private checkAndEmitStockEvents(): void {
-    // Import events dynamically to avoid circular dependencies
-    const { OutOfStockEvent } = require('./events/out-of-stock.event')
-    const { LowStockDetectedEvent } = require('./events/low-stock-detected.event')
-
     // Check out of stock
     if (this.isOutOfStock()) {
       this.record(

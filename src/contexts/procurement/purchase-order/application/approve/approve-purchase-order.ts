@@ -25,9 +25,7 @@ export class ApprovePurchaseOrder {
   ) {}
 
   async run(purchaseOrderId: string, approvedBy: string): Promise<void> {
-    const purchaseOrder = await this.repository.findById(
-      new PurchaseOrderId(purchaseOrderId)
-    )
+    const purchaseOrder = await this.repository.findById(new PurchaseOrderId(purchaseOrderId))
 
     if (!purchaseOrder) {
       throw new Error(`Purchase order ${purchaseOrderId} not found`)

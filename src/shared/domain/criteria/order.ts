@@ -8,10 +8,7 @@ export class Order {
   ) {}
 
   static fromPrimitives(plain: { orderBy: string; orderType: string }): Order {
-    return new Order(
-      new OrderBy(plain.orderBy),
-      plain.orderType.toUpperCase() as OrderType
-    )
+    return new Order(new OrderBy(plain.orderBy), plain.orderType.toUpperCase() as OrderType)
   }
 
   static none(): Order {

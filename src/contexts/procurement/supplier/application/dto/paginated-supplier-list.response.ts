@@ -15,9 +15,7 @@ export class PaginatedSupplierListResponse {
     }
   ) {}
 
-  static fromDomain(
-    result: PaginatedResult<Supplier>
-  ): PaginatedSupplierListResponse {
+  static fromDomain(result: PaginatedResult<Supplier>): PaginatedSupplierListResponse {
     return new PaginatedSupplierListResponse(
       result.data.map(SupplierResponse.fromDomain),
       result.meta

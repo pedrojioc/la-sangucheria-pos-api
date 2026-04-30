@@ -9,11 +9,7 @@ export class Filter {
     public readonly value: FilterValue
   ) {}
 
-  static fromPrimitives(plain: {
-    field: string
-    operator: string
-    value: any
-  }): Filter {
+  static fromPrimitives(plain: { field: string; operator: string; value: any }): Filter {
     return new Filter(
       new FilterField(plain.field),
       plain.operator as FilterOperator,
@@ -22,18 +18,10 @@ export class Filter {
   }
 
   static equal(field: string, value: any): Filter {
-    return new Filter(
-      new FilterField(field),
-      FilterOperator.EQUAL,
-      new FilterValue(value)
-    )
+    return new Filter(new FilterField(field), FilterOperator.EQUAL, new FilterValue(value))
   }
 
   static contains(field: string, value: string): Filter {
-    return new Filter(
-      new FilterField(field),
-      FilterOperator.CONTAINS,
-      new FilterValue(value)
-    )
+    return new Filter(new FilterField(field), FilterOperator.CONTAINS, new FilterValue(value))
   }
 }

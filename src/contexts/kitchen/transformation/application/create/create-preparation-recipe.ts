@@ -1,12 +1,10 @@
 import { PreparationRecipeRepository } from '../../domain/repositories/preparation-recipe.repository'
 import { PreparationRecipe } from '../../domain/preparation-recipe'
 import { EventBus } from '@/shared/domain/events'
-import { FindIngredient } from '@/contexts/inventory/ingredient/application/find/find-ingredient'
 
 export class CreatePreparationRecipe {
   constructor(
     private readonly repository: PreparationRecipeRepository,
-    private readonly findIngredient: FindIngredient,
     private readonly eventBus: EventBus
   ) {}
 
@@ -23,9 +21,6 @@ export class CreatePreparationRecipe {
     }>,
     description: string | null
   ): Promise<void> {
-    await this.findIngredient.run(baseIngredientId)
-    await this.findIngredient.run(outputIngredientId)
-
     const recipe = PreparationRecipe.create(
       id,
       name,

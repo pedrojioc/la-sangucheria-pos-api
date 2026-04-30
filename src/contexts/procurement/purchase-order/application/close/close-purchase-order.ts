@@ -26,9 +26,7 @@ export class ClosePurchaseOrder {
   ) {}
 
   async run(purchaseOrderId: string, closedBy: string): Promise<void> {
-    const purchaseOrder = await this.repository.findById(
-      new PurchaseOrderId(purchaseOrderId)
-    )
+    const purchaseOrder = await this.repository.findById(new PurchaseOrderId(purchaseOrderId))
 
     if (!purchaseOrder) {
       throw new Error(`Purchase order ${purchaseOrderId} not found`)

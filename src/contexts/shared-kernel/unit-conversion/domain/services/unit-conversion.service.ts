@@ -28,11 +28,7 @@ export class UnitConversionService {
    * Convierte una Quantity a otra unidad
    * Requiere que exista una regla de conversión directa
    */
-  convert(
-    quantity: Quantity,
-    targetUnitId: string,
-    conversionRules: UnitConversion[]
-  ): Quantity {
+  convert(quantity: Quantity, targetUnitId: string, conversionRules: UnitConversion[]): Quantity {
     // Si ya está en la unidad correcta, retornar tal cual
     if (quantity.unitId === targetUnitId) {
       return quantity
@@ -44,9 +40,7 @@ export class UnitConversionService {
     )
 
     if (!rule) {
-      throw new Error(
-        `No conversion rule found from ${quantity.unitId} to ${targetUnitId}`
-      )
+      throw new Error(`No conversion rule found from ${quantity.unitId} to ${targetUnitId}`)
     }
 
     // Aplicar conversión
@@ -58,16 +52,10 @@ export class UnitConversionService {
   /**
    * Verifica si es posible convertir entre dos unidades
    */
-  canConvert(
-    fromUnitId: string,
-    toUnitId: string,
-    conversionRules: UnitConversion[]
-  ): boolean {
+  canConvert(fromUnitId: string, toUnitId: string, conversionRules: UnitConversion[]): boolean {
     if (fromUnitId === toUnitId) return true
 
-    return conversionRules.some(
-      r => r.fromUnitId === fromUnitId && r.toUnitId === toUnitId
-    )
+    return conversionRules.some(r => r.fromUnitId === fromUnitId && r.toUnitId === toUnitId)
   }
 
   /**
@@ -89,14 +77,10 @@ export class UnitConversionService {
       }
     }
 
-    const rule = conversionRules.find(
-      r => r.fromUnitId === fromUnitId && r.toUnitId === toUnitId
-    )
+    const rule = conversionRules.find(r => r.fromUnitId === fromUnitId && r.toUnitId === toUnitId)
 
     if (!rule) {
-      throw new Error(
-        `No conversion rule found from ${fromUnitId} to ${toUnitId}`
-      )
+      throw new Error(`No conversion rule found from ${fromUnitId} to ${toUnitId}`)
     }
 
     return {

@@ -24,14 +24,8 @@ export class RejectPurchaseOrder {
     private readonly eventBus: EventBus
   ) {}
 
-  async run(
-    purchaseOrderId: string,
-    rejectedBy: string,
-    reason: string | null
-  ): Promise<void> {
-    const purchaseOrder = await this.repository.findById(
-      new PurchaseOrderId(purchaseOrderId)
-    )
+  async run(purchaseOrderId: string, rejectedBy: string, reason: string | null): Promise<void> {
+    const purchaseOrder = await this.repository.findById(new PurchaseOrderId(purchaseOrderId))
 
     if (!purchaseOrder) {
       throw new Error(`Purchase order ${purchaseOrderId} not found`)

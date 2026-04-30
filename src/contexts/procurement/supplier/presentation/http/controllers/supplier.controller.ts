@@ -8,9 +8,11 @@ import { UpdateSupplierCommand } from '../../../application/update/update-suppli
 import { FindSupplierQuery } from '../../../application/find/find-supplier.query'
 import { FindAllSuppliersQuery } from '../../../application/find-all/find-all-supplier.query'
 import { SearchSuppliersByCriteriaQuery } from '../../../application/search-by-criteria/search-suppliers-by-criteria.query'
+import { GetSupplierStatisticsQuery } from '../../../application/get-statistics/get-supplier-statistics.query'
 import { SupplierResponse } from '../../../application/dto/supplier.response'
 import { SupplierListResponse } from '../../../application/dto/supplier-list.response'
 import { PaginatedSupplierListResponse } from '../../../application/dto/paginated-supplier-list.response'
+import { SupplierStatisticsResponse } from '../../../application/dto/supplier-statistics.response'
 
 @Controller('suppliers')
 export class SupplierController {
@@ -57,6 +59,12 @@ export class SupplierController {
     )
 
     await this.commandBus.execute(command)
+  }
+
+  @Get('statistics')
+  async getStatistics(): Promise<SupplierStatisticsResponse> {
+    const query = new GetSupplierStatisticsQuery()
+    return this.queryBus.execute(query)
   }
 
   @Get(':id')

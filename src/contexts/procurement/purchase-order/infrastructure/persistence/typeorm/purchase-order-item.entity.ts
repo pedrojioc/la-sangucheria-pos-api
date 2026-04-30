@@ -52,6 +52,12 @@ export class PurchaseOrderItemEntity {
   @Column({ type: 'text', nullable: true })
   notes: string | null
 
+  @Column({ type: 'boolean', name: 'is_cancelled', default: false })
+  isCancelled: boolean
+
+  @Column({ type: 'text', name: 'cancellation_reason', nullable: true })
+  cancellationReason: string | null
+
   // Relación con PurchaseOrder
   @ManyToOne(() => PurchaseOrderEntity, order => order.items)
   @JoinColumn({ name: 'purchase_order_id' })

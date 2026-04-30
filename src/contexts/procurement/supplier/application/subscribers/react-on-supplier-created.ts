@@ -3,9 +3,7 @@ import { DomainEventClass, DomainEventSubscriber } from '@/shared/domain/events'
 import { SupplierCreatedEvent } from '../../domain/events/supplier-created.event'
 
 @Injectable()
-export class ReactOnSupplierCreated
-  implements DomainEventSubscriber<SupplierCreatedEvent>
-{
+export class ReactOnSupplierCreated implements DomainEventSubscriber<SupplierCreatedEvent> {
   subscribedTo(): DomainEventClass[] {
     return [SupplierCreatedEvent]
   }

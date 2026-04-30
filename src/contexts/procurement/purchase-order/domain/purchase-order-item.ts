@@ -3,10 +3,13 @@ import { Quantity } from '@/shared/domain/value-objects/quantity'
 import { Money } from '@/shared/domain/value-objects/money'
 import { Uuid } from '@/shared/domain/value-objects/uuid'
 import { Entity } from '@/shared/domain/entity'
+import { IngredientName } from '@/contexts/inventory/ingredient/domain/ingredient-name'
+import { PurchaseOrderItemCannotBeCancelled } from './exceptions/purchase-order-item-cannot-be-cancelled.exception'
 
 export interface PurchaseOrderItemPrimitives {
   id: string
   ingredientId: string
+  ingredientName: string
   quantityRequested: number
   quantityRequestedUnitId: string
   quantityReceived: number | null
@@ -15,6 +18,8 @@ export interface PurchaseOrderItemPrimitives {
   currency: string
   totalCost: number
   notes: string | null
+  isCancelled: boolean
+  cancellationReason: string | null
 }
 
 /**
@@ -32,10 +37,13 @@ export class PurchaseOrderItem extends Entity {
   private constructor(
     public readonly id: Uuid,
     public readonly ingredientId: IngredientId,
+    public readonly ingredientName: IngredientName,
     private quantityRequested: Quantity,
     private quantityReceived: Quantity | null,
     private unitCost: Money,
-    private notes: string | null
+    private notes: string | null,
+    private isCancelled: boolean,
+    private cancellationReason: string | null
   ) {
     super()
   }
@@ -46,6 +54,7 @@ export class PurchaseOrderItem extends Entity {
   static create(
     id: string,
     ingredientId: string,
+    ingredientName: string,
     quantityRequested: number,
     unitId: string,
     unitCost: number,
@@ -55,17 +64,26 @@ export class PurchaseOrderItem extends Entity {
     return new PurchaseOrderItem(
       new Uuid(id),
       new IngredientId(ingredientId),
+      new IngredientName(ingredientName),
       new Quantity(quantityRequested, unitId),
       null, // No recibido aún
       new Money(unitCost, currency),
-      notes
+      notes,
+      false, // No cancelado
+      null // Sin razón de cancelación
     )
   }
 
   /**
    * Registra la recepción de este item (total o parcial)
+   * Permite actualizar el costo unitario si el precio real difiere del estimado
    */
-  registerReception(quantityReceived: number, unitId: string): void {
+  registerReception(
+    quantityReceived: number,
+    unitId: string,
+    unitCost?: number,
+    notes?: string | null
+  ): void {
     if (this.quantityReceived) {
       // Ya existe recepción previa, sumar
       const additionalQuantity = new Quantity(quantityReceived, unitId)
@@ -74,6 +92,40 @@ export class PurchaseOrderItem extends Entity {
       // Primera recepción
       this.quantityReceived = new Quantity(quantityReceived, unitId)
     }
+
+    // Actualizar costo unitario si se proporciona (precio real vs estimado)
+    if (unitCost !== undefined) {
+      this.unitCost = new Money(unitCost, this.unitCost.currency)
+    }
+
+    // Actualizar notas si se proporcionan
+    if (notes !== undefined) {
+      this.notes = notes
+    }
+  }
+
+  /**
+   * Actualiza los datos del item (solo en órdenes DRAFT)
+   * Permite modificar cantidad solicitada, costo unitario y notas
+   */
+  update(
+    quantityRequested?: number,
+    unitId?: string,
+    unitCost?: number,
+    currency?: string,
+    notes?: string | null
+  ): void {
+    if (quantityRequested !== undefined && unitId !== undefined) {
+      this.quantityRequested = new Quantity(quantityRequested, unitId)
+    }
+
+    if (unitCost !== undefined && currency !== undefined) {
+      ;(this as any).unitCost = new Money(unitCost, currency)
+    }
+
+    if (notes !== undefined) {
+      this.notes = notes
+    }
   }
 
   /**
@@ -81,6 +133,32 @@ export class PurchaseOrderItem extends Entity {
    */
   updateNotes(notes: string | null): void {
     this.notes = notes
+  }
+
+  /**
+   * Cancela el item (proveedor no pudo conseguirlo)
+   */
+  cancel(reason: string | null): void {
+    if (this.hasBeenReceived()) {
+      throw new PurchaseOrderItemCannotBeCancelled(this.id.value)
+    }
+    this.isCancelled = true
+    this.cancellationReason = reason
+  }
+
+  /**
+   * Verifica si el item ha sido procesado (recibido o cancelado)
+   * Un item procesado ya no requiere acción pendiente
+   */
+  hasBeenProcessed(): boolean {
+    return this.hasBeenReceived() || this.isCancelled
+  }
+
+  /**
+   * Verifica si el item ha recibido alguna cantidad (parcial o total)
+   */
+  hasBeenReceived(): boolean {
+    return this.quantityReceived !== null && this.quantityReceived.value > 0
   }
 
   /**
@@ -154,6 +232,7 @@ export class PurchaseOrderItem extends Entity {
     return {
       id: this.id.value,
       ingredientId: this.ingredientId.value,
+      ingredientName: this.ingredientName.value,
       quantityRequested: this.quantityRequested.value,
       quantityRequestedUnitId: this.quantityRequested.unitId,
       quantityReceived: this.quantityReceived?.value ?? null,
@@ -161,7 +240,9 @@ export class PurchaseOrderItem extends Entity {
       unitCost: this.unitCost.amount,
       currency: this.unitCost.currency,
       totalCost: this.totalCost.amount,
-      notes: this.notes
+      notes: this.notes,
+      isCancelled: this.isCancelled,
+      cancellationReason: this.cancellationReason
     }
   }
 
@@ -169,10 +250,13 @@ export class PurchaseOrderItem extends Entity {
     const item = new PurchaseOrderItem(
       new Uuid(primitives.id),
       new IngredientId(primitives.ingredientId),
+      new IngredientName(primitives.ingredientName),
       new Quantity(primitives.quantityRequested, primitives.quantityRequestedUnitId),
       null,
       new Money(primitives.unitCost, primitives.currency),
-      primitives.notes
+      primitives.notes,
+      primitives.isCancelled,
+      primitives.cancellationReason
     )
 
     // Restaurar cantidad recibida si existe

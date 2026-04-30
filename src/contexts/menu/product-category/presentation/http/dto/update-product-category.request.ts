@@ -1,12 +1,4 @@
-import {
-  IsString,
-  IsBoolean,
-  IsInt,
-  IsOptional,
-  IsNotEmpty,
-  MaxLength,
-  Min
-} from 'class-validator'
+import { IsString, IsBoolean, IsInt, IsOptional, IsNotEmpty, MaxLength, Min } from 'class-validator'
 
 export class UpdateProductCategoryRequest {
   @IsString()

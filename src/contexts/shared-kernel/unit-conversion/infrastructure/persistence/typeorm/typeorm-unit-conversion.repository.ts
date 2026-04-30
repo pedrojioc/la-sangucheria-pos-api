@@ -28,12 +28,26 @@ export class TypeOrmUnitConversionRepository extends UnitConversionRepository {
   }
 
   async findByUnits(fromUnitId: string, toUnitId: string): Promise<UnitConversion | null> {
-    const entity = await this.repository.findOne({
+    // Buscar conversión directa: from → to
+    const direct = await this.repository.findOne({
       where: { fromUnitId, toUnitId }
     })
 
-    if (!entity) return null
-    return UnitConversion.fromPrimitives(entity)
+    if (direct) return UnitConversion.fromPrimitives(direct)
+
+    // Buscar conversión inversa: to → from, e invertir el factor
+    const inverse = await this.repository.findOne({
+      where: { fromUnitId: toUnitId, toUnitId: fromUnitId }
+    })
+
+    if (!inverse) return null
+
+    return UnitConversion.fromPrimitives({
+      ...inverse,
+      fromUnitId,
+      toUnitId,
+      factor: 1 / inverse.factor
+    })
   }
 
   async findByFromUnit(fromUnitId: string): Promise<UnitConversion[]> {

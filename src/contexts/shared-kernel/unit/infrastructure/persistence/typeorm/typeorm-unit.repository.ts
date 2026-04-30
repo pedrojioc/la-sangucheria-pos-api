@@ -38,7 +38,7 @@ export class TypeOrmUnitRepository implements UnitRepository {
   async findAll(): Promise<Unit[]> {
     const entities = await this.repository.find({ order: { name: 'ASC' } })
 
-    return entities.map((entity) =>
+    return entities.map(entity =>
       Unit.fromPrimitives({
         id: entity.id,
         name: entity.name,

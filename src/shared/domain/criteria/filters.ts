@@ -3,9 +3,7 @@ import { Filter } from './filter'
 export class Filters {
   constructor(public readonly items: Filter[]) {}
 
-  static fromPrimitives(
-    filters: Array<{ field: string; operator: string; value: any }>
-  ): Filters {
+  static fromPrimitives(filters: Array<{ field: string; operator: string; value: any }>): Filters {
     return new Filters(filters.map(filter => Filter.fromPrimitives(filter)))
   }
 

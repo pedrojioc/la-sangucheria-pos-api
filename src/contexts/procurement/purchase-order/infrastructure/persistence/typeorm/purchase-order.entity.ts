@@ -1,5 +1,7 @@
-import { Entity, PrimaryColumn, Column, OneToMany } from 'typeorm'
+import { Entity, PrimaryColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm'
 import { PurchaseOrderItemEntity } from './purchase-order-item.entity'
+import { SupplierEntity } from '@/contexts/procurement/supplier/infrastructure/persistence/typeorm/supplier.entity'
+import { PurchaseMethod } from '@/contexts/procurement/purchase-order/domain/purchase-method'
 
 /**
  * PurchaseOrderEntity - TypeORM Entity
@@ -26,9 +28,7 @@ export class PurchaseOrderEntity {
       'DRAFT',
       'PENDING_APPROVAL',
       'APPROVED',
-      'SENT',
       'PARTIALLY_RECEIVED',
-      'RECEIVED',
       'CLOSED',
       'REJECTED',
       'CANCELLED'
@@ -50,6 +50,20 @@ export class PurchaseOrderEntity {
 
   @Column({ type: 'uuid', name: 'closed_by', nullable: true })
   closedBy: string | null
+
+  @Column({ type: 'uuid', name: 'received_by', nullable: true })
+  receivedBy: string | null
+
+  @Column({
+    type: 'enum',
+    enum: PurchaseMethod,
+    name: 'purchase_method',
+    nullable: true
+  })
+  purchaseMethod: PurchaseMethod | null
+
+  @Column({ type: 'varchar', length: 500, name: 'purchase_method_details', nullable: true })
+  purchaseMethodDetails: string | null
 
   @Column({ type: 'decimal', precision: 10, scale: 2, name: 'total_amount' })
   totalAmount: number
@@ -78,10 +92,18 @@ export class PurchaseOrderEntity {
   @Column({ type: 'text', nullable: true })
   notes: string | null
 
+  @Column({ type: 'int', name: 'item_count', default: 0 })
+  itemCount: number
+
+  // Relación con supplier (ManyToOne)
+  @ManyToOne(() => SupplierEntity, { nullable: false })
+  @JoinColumn({ name: 'supplier_id' })
+  supplier: SupplierEntity
+
   // Relación con items (OneToMany)
+  // NO usar cascade aquí - los items se gestionan manualmente en el repository
   @OneToMany(() => PurchaseOrderItemEntity, item => item.purchaseOrder, {
-    cascade: true,
-    eager: true
+    cascade: false
   })
   items: PurchaseOrderItemEntity[]
 }

@@ -3,7 +3,9 @@ import { CreatePreparationRecipeCommand } from './create-preparation-recipe.comm
 import { CreatePreparationRecipe } from './create-preparation-recipe'
 
 @CommandHandler(CreatePreparationRecipeCommand)
-export class CreatePreparationRecipeHandler implements ICommandHandler<CreatePreparationRecipeCommand> {
+export class CreatePreparationRecipeHandler
+  implements ICommandHandler<CreatePreparationRecipeCommand>
+{
   constructor(private readonly useCase: CreatePreparationRecipe) {}
 
   async execute(command: CreatePreparationRecipeCommand): Promise<void> {

@@ -34,7 +34,7 @@ import { UnitsController } from '@/contexts/shared-kernel/unit/presentation/http
 import { ReactOnUnitCreated } from '@/contexts/shared-kernel/unit/application/subscribers/react-on-unit-created'
 
 // Utils
-import { createUseCaseProvider } from '@/core/utils/createUseCaseProvider'
+import { createProvider } from '@/core/utils/create-provider'
 
 const CommandHandlers = [
   CreateUnitCommandHandler,
@@ -57,11 +57,11 @@ const Subscribers = [ReactOnUnitCreated]
     },
 
     // USE CASES
-    createUseCaseProvider(CreateUnit, [UnitRepository, EventBus]),
-    createUseCaseProvider(UpdateUnit, [UnitRepository, EventBus]),
-    createUseCaseProvider(DeleteUnit, [UnitRepository, EventBus]),
-    createUseCaseProvider(FindUnit, [UnitRepository]),
-    createUseCaseProvider(FindAllUnits, [UnitRepository]),
+    createProvider(CreateUnit, [UnitRepository, EventBus]),
+    createProvider(UpdateUnit, [UnitRepository, EventBus]),
+    createProvider(DeleteUnit, [UnitRepository, EventBus]),
+    createProvider(FindUnit, [UnitRepository]),
+    createProvider(FindAllUnits, [UnitRepository]),
 
     // COMMAND HANDLERS
     ...CommandHandlers,

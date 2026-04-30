@@ -1,7 +1,12 @@
-import { IsUUID, IsNotEmpty } from 'class-validator'
+import { IsNotEmpty, IsEnum, IsOptional, IsString } from 'class-validator'
+import { PurchaseMethod } from '../../../domain/purchase-method'
 
 export class SendPurchaseOrderRequest {
-  @IsUUID()
+  @IsEnum(PurchaseMethod)
   @IsNotEmpty()
-  sentBy: string
+  purchaseMethod: PurchaseMethod
+
+  @IsString()
+  @IsOptional()
+  purchaseMethodDetails?: string | null
 }

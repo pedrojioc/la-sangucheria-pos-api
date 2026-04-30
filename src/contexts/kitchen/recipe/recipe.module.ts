@@ -32,7 +32,7 @@ import { SearchAllRecipes } from '@/contexts/kitchen/recipe/application/search-a
 import { RecipeController } from '@/contexts/kitchen/recipe/presentation/http/controllers/recipe.controller'
 
 // Utils
-import { createUseCaseProvider } from '@/core/utils/createUseCaseProvider'
+import { createProvider } from '@/core/utils/create-provider'
 
 const CommandHandlers = [CreateRecipeHandler, UpdateRecipeHandler, DeleteRecipeHandler]
 
@@ -49,11 +49,11 @@ const QueryHandlers = [FindRecipeHandler, SearchAllRecipesHandler]
     },
 
     // USE CASES
-    createUseCaseProvider(CreateRecipe, [RecipeRepository, EventBus]),
-    createUseCaseProvider(UpdateRecipe, [RecipeRepository, EventBus]),
-    createUseCaseProvider(DeleteRecipe, [RecipeRepository, EventBus]),
-    createUseCaseProvider(FindRecipe, [RecipeRepository]),
-    createUseCaseProvider(SearchAllRecipes, [RecipeRepository]),
+    createProvider(CreateRecipe, [RecipeRepository, EventBus]),
+    createProvider(UpdateRecipe, [RecipeRepository, EventBus]),
+    createProvider(DeleteRecipe, [RecipeRepository, EventBus]),
+    createProvider(FindRecipe, [RecipeRepository]),
+    createProvider(SearchAllRecipes, [RecipeRepository]),
 
     // COMMAND HANDLERS
     ...CommandHandlers,
