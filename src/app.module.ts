@@ -31,6 +31,11 @@ import { AuthenticationModule } from '@contexts/iam/authentication/authenticatio
 import { PositionModule } from '@contexts/hr/position/position.module'
 import { EmployeeModule } from '@contexts/hr/employee/employee.module'
 
+// CRM Modules
+import { CustomerModule } from '@contexts/crm/customer/customer.module'
+import { AddressModule } from '@contexts/crm/address/address.module'
+import { LoyaltyModule } from '@contexts/crm/loyalty/loyalty.module'
+
 @Module({
   imports: [
     // =====================================
@@ -61,6 +66,13 @@ import { EmployeeModule } from '@contexts/hr/employee/employee.module'
     // =====================================
     PositionModule,
     EmployeeModule,
+
+    // =====================================
+    // CRM (Customer Relationship)
+    // =====================================
+    CustomerModule,
+    AddressModule,
+    LoyaltyModule,
 
     // =====================================
     // FEATURE MODULES

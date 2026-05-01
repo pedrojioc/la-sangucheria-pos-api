@@ -1,0 +1,13 @@
+import { GeoPointPrimitives } from '../../domain/address-geo-point'
+
+export class UpdateAddressCommand {
+  constructor(
+    public readonly id: string,
+    public readonly label: string,
+    public readonly street: string,
+    public readonly neighborhood: string | null,
+    public readonly city: string,
+    public readonly reference: string | null,
+    public readonly coordinates: GeoPointPrimitives | null
+  ) {}
+}
