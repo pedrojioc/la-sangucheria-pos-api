@@ -6,6 +6,9 @@ import { PreparationRecipe } from '@contexts/kitchen/transformation/domain/prepa
 import { PreparationRecipeId } from '@contexts/kitchen/transformation/domain/preparation-recipe-id'
 import { IngredientId } from '@contexts/inventory/ingredient/domain/ingredient-id'
 import { PreparationRecipeEntity } from './preparation-recipe.entity'
+import { Criteria } from '@/shared/domain/criteria/criteria'
+import { PaginatedResult } from '@/shared/domain/criteria/paginated-result'
+import { TypeOrmCriteriaConverter } from '@/shared/infrastructure/persistence/typeorm/typeorm-criteria-converter'
 
 @Injectable()
 export class TypeOrmPreparationRecipeRepository extends PreparationRecipeRepository {
@@ -55,5 +58,23 @@ export class TypeOrmPreparationRecipeRepository extends PreparationRecipeReposit
     })
 
     return entities.map(entity => PreparationRecipe.fromPrimitives(entity))
+  }
+
+  async matching(criteria: Criteria): Promise<PaginatedResult<PreparationRecipe>> {
+    const converter = new TypeOrmCriteriaConverter<PreparationRecipeEntity>()
+    let qb = this.repository.createQueryBuilder('recipe')
+
+    qb = converter.convert(qb, criteria, 'recipe')
+
+    const [items, total] = await qb.getManyAndCount()
+
+    const recipes = items.map(entity => PreparationRecipe.fromPrimitives(entity))
+
+    return PaginatedResult.create(
+      recipes,
+      total,
+      criteria.pagination.page,
+      criteria.pagination.pageSize
+    )
   }
 }

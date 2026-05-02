@@ -1,9 +1,9 @@
 import { PaginationMeta } from '@/shared/domain/criteria/paginated-result'
-import { IngredientResponse } from './ingredient.response'
+import { IngredientListItemResponse } from '../../presentation/http/dto/ingredient-list-item.response'
 
 export class PaginatedIngredientListResponse {
   constructor(
-    public readonly data: IngredientResponse[],
+    public readonly data: IngredientListItemResponse[],
     public readonly meta: PaginationMeta
   ) {}
 }

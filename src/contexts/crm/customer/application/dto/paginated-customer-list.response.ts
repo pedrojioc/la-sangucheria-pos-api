@@ -1,10 +1,9 @@
-import { CustomerResponse } from './customer.response'
+import { PaginationMeta } from '@/shared/domain/criteria/paginated-result'
+import { CustomerListItemResponse } from '../../presentation/http/dto/customer-list-item.response'
 
 export class PaginatedCustomerListResponse {
   constructor(
-    public readonly items: CustomerResponse[],
-    public readonly total: number,
-    public readonly page: number,
-    public readonly pageSize: number
+    public readonly data: CustomerListItemResponse[],
+    public readonly meta: PaginationMeta
   ) {}
 }

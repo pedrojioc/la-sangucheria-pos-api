@@ -1,53 +1,41 @@
-import { IngredientWithDetailsDto } from '@/contexts/inventory/ingredient/application/dto/ingredient-with-details.dto'
+import { IngredientListItem } from '@/contexts/inventory/ingredient/application/dto/ingredient-list-item'
 
 export class IngredientListItemResponse {
-  id: string
-  name: string
-  description: string | null
+  constructor(
+    public readonly id: string,
+    public readonly name: string,
+    public readonly description: string | null,
+    public readonly category: {
+      id: string
+      name: string
+      color: string | null
+    },
+    public readonly unit: {
+      id: string
+      name: string
+      symbol: string
+    },
+    public readonly minimumStock: number | null,
+    public readonly maximumStock: number | null,
+    public readonly isPerishable: boolean,
+    public readonly shelfLifeDays: number | null,
+    public readonly storageLocation: string | null,
+    public readonly isActive: boolean
+  ) {}
 
-  // Datos de categoría (desnormalizados)
-  category: {
-    id: string
-    name: string
-    color: string | null
-  }
-
-  // Datos de unidad (desnormalizados)
-  unit: {
-    id: string
-    name: string
-    symbol: string
-  }
-
-  // Datos del ingrediente
-  minimumStock: number | null
-  maximumStock: number | null
-  isPerishable: boolean
-  shelfLifeDays: number | null
-  storageLocation: string | null
-  isActive: boolean
-
-  static fromDto(row: IngredientWithDetailsDto): IngredientListItemResponse {
-    return {
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      category: {
-        id: row.category.id,
-        name: row.category.name,
-        color: row.category.color
-      },
-      unit: {
-        id: row.unit.id,
-        name: row.unit.name,
-        symbol: row.unit.symbol
-      },
-      minimumStock: row.minimumStock ? Number(row.minimumStock) : null,
-      maximumStock: row.maximumStock ? Number(row.maximumStock) : null,
-      isPerishable: row.isPerishable,
-      shelfLifeDays: row.shelfLifeDays,
-      storageLocation: row.storageLocation,
-      isActive: row.isActive
-    }
+  static fromReadModel(item: IngredientListItem): IngredientListItemResponse {
+    return new IngredientListItemResponse(
+      item.id,
+      item.name,
+      item.description,
+      item.category,
+      item.unit,
+      item.minimumStock !== null ? Number(item.minimumStock) : null,
+      item.maximumStock !== null ? Number(item.maximumStock) : null,
+      item.isPerishable,
+      item.shelfLifeDays,
+      item.storageLocation,
+      item.isActive
+    )
   }
 }

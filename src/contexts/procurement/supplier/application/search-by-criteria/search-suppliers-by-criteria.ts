@@ -1,12 +1,12 @@
 import { Criteria } from '@/shared/domain/criteria/criteria'
 import { PaginatedResult } from '@/shared/domain/criteria/paginated-result'
-import { Supplier } from '../../domain/supplier'
-import { SupplierRepository } from '../../domain/repositories/supplier.repository'
+import { SupplierQueryService } from '../services/supplier-query.service'
+import { SupplierListItem } from '../dto/supplier-list-item'
 
 export class SearchSuppliersByCriteria {
-  constructor(private readonly repository: SupplierRepository) {}
+  constructor(private readonly queryService: SupplierQueryService) {}
 
-  async run(criteria: Criteria): Promise<PaginatedResult<Supplier>> {
-    return this.repository.matching(criteria)
+  async run(criteria: Criteria): Promise<PaginatedResult<SupplierListItem>> {
+    return this.queryService.search(criteria)
   }
 }

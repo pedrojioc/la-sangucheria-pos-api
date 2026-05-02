@@ -5,7 +5,7 @@ import { IngredientEntity } from '@/contexts/inventory/ingredient/infrastructure
 import { PaginatedResult } from '@/shared/domain/criteria/paginated-result'
 import { IngredientQueryService } from '@/contexts/inventory/ingredient/application/services/ingredient-query.service'
 import { TypeOrmCriteriaConverter } from '@/shared/infrastructure/persistence/typeorm/typeorm-criteria-converter'
-import { IngredientWithDetailsDto } from '@/contexts/inventory/ingredient/application/dto/ingredient-with-details.dto'
+import { IngredientListItem } from '@/contexts/inventory/ingredient/application/dto/ingredient-list-item'
 
 export class TypeormIngredientQueryService implements IngredientQueryService {
   constructor(
@@ -13,20 +13,19 @@ export class TypeormIngredientQueryService implements IngredientQueryService {
     private readonly ingredientRepository: Repository<IngredientEntity>
   ) {}
 
-  async searchWithDetails(criteria: Criteria): Promise<PaginatedResult<IngredientWithDetailsDto>> {
+  async search(criteria: Criteria): Promise<PaginatedResult<IngredientListItem>> {
     const converter = new TypeOrmCriteriaConverter<IngredientEntity>()
 
     let queryBuilder = this.ingredientRepository.createQueryBuilder('ingredient')
     queryBuilder.leftJoinAndSelect('ingredient.category', 'category')
     queryBuilder.leftJoinAndSelect('ingredient.unit', 'unit')
-    // queryBuilder.leftJoinAndSelect('ingredient.preferredSupplier', 'supplier')
 
     queryBuilder = converter.convert(queryBuilder, criteria, 'ingredient')
 
     const [items, total] = await queryBuilder.getManyAndCount()
     const ingredients = items.map(
       row =>
-        new IngredientWithDetailsDto(
+        new IngredientListItem(
           row.id,
           row.name,
           row.description,

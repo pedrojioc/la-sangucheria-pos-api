@@ -5,15 +5,15 @@ import { CreateIngredientDto } from '../dto/create-ingredient.dto'
 import { SearchIngredientsRequest } from '../dto/search-ingredients.request'
 import { CreateIngredientCommand } from '@contexts/inventory/ingredient/application/create/create-ingredient.command'
 import { FindIngredientQuery } from '@contexts/inventory/ingredient/application/find/find-ingredient.query'
+import { SearchIngredientsByCriteriaQuery } from '@contexts/inventory/ingredient/application/search-by-criteria/search-ingredients-by-criteria.query'
 import { IngredientResponse } from '@contexts/inventory/ingredient/application/dto/ingredient.response'
-import { IngredientQueryService } from '@contexts/inventory/ingredient/application/services/ingredient-query.service'
+import { PaginatedIngredientListResponse } from '@contexts/inventory/ingredient/application/dto/paginated-ingredient-list.response'
 
 @Controller('ingredients')
 export class IngredientController {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus,
-    private readonly ingredientQueryService: IngredientQueryService
+    private readonly queryBus: QueryBus
   ) {}
 
   @Post()
@@ -37,14 +37,12 @@ export class IngredientController {
   }
 
   @Get()
-  async search(@Query() dto: SearchIngredientsRequest) {
-    const criteria = dto.toCriteria()
-    return this.ingredientQueryService.searchWithDetails(criteria)
+  async search(@Query() dto: SearchIngredientsRequest): Promise<PaginatedIngredientListResponse> {
+    return this.queryBus.execute(new SearchIngredientsByCriteriaQuery(dto.toCriteria()))
   }
 
   @Get(':id')
   async findById(@Param('id') id: string): Promise<IngredientResponse> {
-    const query = new FindIngredientQuery(id)
-    return this.queryBus.execute(query)
+    return this.queryBus.execute(new FindIngredientQuery(id))
   }
 }

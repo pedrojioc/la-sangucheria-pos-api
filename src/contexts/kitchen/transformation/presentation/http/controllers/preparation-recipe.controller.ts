@@ -1,11 +1,17 @@
-import { Controller, Post, Body } from '@nestjs/common'
-import { CommandBus } from '@nestjs/cqrs'
+import { Controller, Post, Get, Body, Query } from '@nestjs/common'
+import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import { CreatePreparationRecipeRequest } from '../dto/create-preparation-recipe.request'
+import { SearchPreparationRecipesRequest } from '../dto/search-preparation-recipes.request'
 import { CreatePreparationRecipeCommand } from '@contexts/kitchen/transformation/application/create/create-preparation-recipe.command'
+import { SearchPreparationRecipesByCriteriaQuery } from '@contexts/kitchen/transformation/application/search-by-criteria/search-preparation-recipes-by-criteria.query'
+import { PaginatedPreparationRecipeListResponse } from '@contexts/kitchen/transformation/application/dto/paginated-preparation-recipe-list.response'
 
 @Controller('preparation-recipes')
 export class PreparationRecipeController {
-  constructor(private readonly commandBus: CommandBus) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus
+  ) {}
 
   @Post()
   async create(@Body() dto: CreatePreparationRecipeRequest): Promise<void> {
@@ -24,5 +30,12 @@ export class PreparationRecipeController {
     )
 
     await this.commandBus.execute(command)
+  }
+
+  @Get()
+  async search(
+    @Query() dto: SearchPreparationRecipesRequest
+  ): Promise<PaginatedPreparationRecipeListResponse> {
+    return this.queryBus.execute(new SearchPreparationRecipesByCriteriaQuery(dto.toCriteria()))
   }
 }

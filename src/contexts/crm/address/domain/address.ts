@@ -88,8 +88,7 @@ export class Address extends AggregateRoot {
     this.neighborhood = neighborhood !== null ? new AddressNeighborhood(neighborhood) : null
     this.city = new AddressCity(city)
     this.reference = reference !== null ? new AddressReference(reference) : null
-    this.coordinates =
-      coordinates !== null ? AddressGeoPoint.fromPrimitives(coordinates) : null
+    this.coordinates = coordinates !== null ? AddressGeoPoint.fromPrimitives(coordinates) : null
     this.record(new AddressUpdatedEvent({ addressId: this.id.value, customerId: this.customerId }))
   }
 

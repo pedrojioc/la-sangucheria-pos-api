@@ -5,6 +5,8 @@ import { CqrsModule } from '@nestjs/cqrs'
 import { CustomerEntity } from './infrastructure/persistence/typeorm/customer.entity'
 import { CustomerRepository } from './domain/repositories/customer.repository'
 import { TypeOrmCustomerRepository } from './infrastructure/persistence/typeorm/typeorm-customer.repository'
+import { CustomerQueryService } from './application/services/customer-query.service'
+import { TypeOrmCustomerQueryService } from './infrastructure/query-services/typeorm-customer-query.service'
 
 import { EventBus } from '@/shared/domain/events'
 
@@ -21,7 +23,6 @@ import { SearchCustomersByPhoneHandler } from './application/search-by-phone/sea
 import { SearchCustomersByCriteriaHandler } from './application/search-by-criteria/search-customers-by-criteria.handler'
 
 import { CustomerController } from './presentation/http/controllers/customer.controller'
-
 import { createProvider } from '@/core/utils/create-provider'
 
 const CommandHandlers = [CreateCustomerHandler, UpdateCustomerHandler]
@@ -32,12 +33,13 @@ const QueryHandlers = [FindCustomerHandler, SearchCustomersByPhoneHandler, Searc
   controllers: [CustomerController],
   providers: [
     { provide: CustomerRepository, useClass: TypeOrmCustomerRepository },
+    { provide: CustomerQueryService, useClass: TypeOrmCustomerQueryService },
 
     createProvider(CreateCustomer, [CustomerRepository, EventBus]),
     createProvider(UpdateCustomer, [CustomerRepository, EventBus]),
     createProvider(FindCustomer, [CustomerRepository]),
     createProvider(SearchCustomersByPhone, [CustomerRepository]),
-    createProvider(SearchCustomersByCriteria, [CustomerRepository]),
+    createProvider(SearchCustomersByCriteria, [CustomerQueryService]),
 
     ...CommandHandlers,
     ...QueryHandlers

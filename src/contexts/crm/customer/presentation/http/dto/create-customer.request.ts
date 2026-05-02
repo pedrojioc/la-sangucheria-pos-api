@@ -1,4 +1,12 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator'
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength
+} from 'class-validator'
 import { DOCUMENT_TYPES, DocumentTypeValue } from '../../../domain/customer-document-type'
 import { TAX_REGIMES, TaxRegimeValue } from '../../../domain/customer-tax-regime'
 
