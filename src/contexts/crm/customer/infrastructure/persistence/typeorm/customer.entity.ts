@@ -31,6 +31,9 @@ export class CustomerEntity {
   @Column({ name: 'default_address_id', type: 'uuid', nullable: true })
   defaultAddressId: string | null
 
+  @Column({ name: 'lifetime_value', type: 'decimal', precision: 12, scale: 2, default: 0 })
+  lifetimeValue: number
+
   @Column({ type: 'text', nullable: true })
   notes: string | null
 

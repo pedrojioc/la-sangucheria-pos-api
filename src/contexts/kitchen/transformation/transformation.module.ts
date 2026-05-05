@@ -17,13 +17,14 @@ import { CreatePreparationRecipeHandler } from './application/create/create-prep
 import { SearchPreparationRecipesByCriteriaHandler } from './application/search-by-criteria/search-preparation-recipes-by-criteria.handler'
 
 import { PreparationRecipeController } from './presentation/http/controllers/preparation-recipe.controller'
+import { IngredientTransformationController } from './presentation/http/controllers/ingredient-transformation.controller'
 
 const CommandHandlers = [CreatePreparationRecipeHandler]
 const QueryHandlers = [SearchPreparationRecipesByCriteriaHandler]
 
 @Module({
   imports: [CqrsModule, TypeOrmModule.forFeature([PreparationRecipeEntity])],
-  controllers: [PreparationRecipeController],
+  controllers: [PreparationRecipeController, IngredientTransformationController],
   providers: [
     { provide: PreparationRecipeRepository, useClass: TypeOrmPreparationRecipeRepository },
     { provide: PreparationRecipeQueryService, useClass: TypeOrmPreparationRecipeQueryService },

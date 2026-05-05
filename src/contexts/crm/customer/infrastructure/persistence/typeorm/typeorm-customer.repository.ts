@@ -20,6 +20,7 @@ function toDomain(entity: CustomerEntity): Customer {
     documentNumber: entity.documentNumber,
     taxRegime: entity.taxRegime,
     defaultAddressId: entity.defaultAddressId,
+    lifetimeValue: Number(entity.lifetimeValue),
     notes: entity.notes,
     status: entity.status
   })
@@ -35,6 +36,7 @@ function toEntity(primitives: CustomerPrimitives): Partial<CustomerEntity> {
     documentNumber: primitives.documentNumber,
     taxRegime: primitives.taxRegime,
     defaultAddressId: primitives.defaultAddressId,
+    lifetimeValue: primitives.lifetimeValue,
     notes: primitives.notes,
     status: primitives.status
   }

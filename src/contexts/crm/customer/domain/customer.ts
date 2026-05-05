@@ -21,6 +21,7 @@ export interface CustomerPrimitives {
   documentNumber: string
   taxRegime: TaxRegimeValue
   defaultAddressId: string | null
+  lifetimeValue: number
   notes: string | null
   status: CustomerStatusValue
 }
@@ -35,6 +36,7 @@ export class Customer extends AggregateRoot {
     private readonly documentNumber: CustomerDocumentNumber,
     private taxRegime: TaxRegimeValue,
     private defaultAddressId: string | null,
+    private lifetimeValue: number,
     private notes: CustomerNotes | null,
     private status: CustomerStatusValue
   ) {
@@ -60,6 +62,7 @@ export class Customer extends AggregateRoot {
       documentNumber,
       taxRegime,
       defaultAddressId: null,
+      lifetimeValue: 0,
       notes,
       status: 'active'
     })
@@ -81,6 +84,7 @@ export class Customer extends AggregateRoot {
       new CustomerDocumentNumber(primitives.documentNumber),
       primitives.taxRegime,
       primitives.defaultAddressId,
+      primitives.lifetimeValue,
       primitives.notes !== null ? new CustomerNotes(primitives.notes) : null,
       primitives.status
     )
@@ -114,6 +118,10 @@ export class Customer extends AggregateRoot {
     return this.status === 'active'
   }
 
+  addToLifetimeValue(amount: number): void {
+    this.lifetimeValue += amount
+  }
+
   toPrimitives(): CustomerPrimitives {
     return {
       id: this.id.value,
@@ -124,6 +132,7 @@ export class Customer extends AggregateRoot {
       documentNumber: this.documentNumber.value,
       taxRegime: this.taxRegime,
       defaultAddressId: this.defaultAddressId,
+      lifetimeValue: this.lifetimeValue,
       notes: this.notes?.value ?? null,
       status: this.status
     }

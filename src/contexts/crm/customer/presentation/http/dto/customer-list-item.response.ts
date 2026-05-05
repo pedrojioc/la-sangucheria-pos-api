@@ -1,4 +1,4 @@
-import { CustomerListItem } from '../../../application/dto/customer-list-item'
+import { CustomerListItem, DefaultAddressData } from '../../../application/dto/customer-list-item'
 
 export class CustomerListItemResponse {
   constructor(
@@ -10,6 +10,9 @@ export class CustomerListItemResponse {
     public readonly documentNumber: string,
     public readonly taxRegime: string,
     public readonly defaultAddressId: string | null,
+    public readonly defaultAddress: DefaultAddressData | null,
+    public readonly lifetimeValue: number,
+    public readonly loyaltyPoints: number,
     public readonly notes: string | null,
     public readonly status: string
   ) {}
@@ -24,6 +27,9 @@ export class CustomerListItemResponse {
       item.documentNumber,
       item.taxRegime,
       item.defaultAddressId,
+      item.defaultAddress,
+      item.lifetimeValue,
+      item.loyaltyPoints,
       item.notes,
       item.status
     )
