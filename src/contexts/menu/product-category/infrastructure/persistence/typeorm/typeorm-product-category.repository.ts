@@ -34,8 +34,10 @@ export class TypeOrmProductCategoryRepository implements ProductCategoryReposito
       name: entity.name,
       description: entity.description,
       icon: entity.icon,
+      color: entity.color,
       isActive: entity.isActive,
-      displayOrder: entity.displayOrder
+      displayOrder: entity.displayOrder,
+      defaultStationId: entity.defaultStationId
     })
   }
 
@@ -47,8 +49,10 @@ export class TypeOrmProductCategoryRepository implements ProductCategoryReposito
         name: entity.name,
         description: entity.description,
         icon: entity.icon,
+        color: entity.color,
         isActive: entity.isActive,
-        displayOrder: entity.displayOrder
+        displayOrder: entity.displayOrder,
+        defaultStationId: entity.defaultStationId
       })
     })
   }

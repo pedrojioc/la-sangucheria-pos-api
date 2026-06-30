@@ -11,6 +11,8 @@ import {
   OneToMany
 } from 'typeorm'
 import { IngredientTransformationEntity } from './ingredient-transformation.entity'
+import { PreparationRecipeIngredientEntity } from './preparation-recipe-ingredient.entity'
+import { decimalTransformer } from '@shared/infrastructure/persistence/typeorm/decimal-transformer'
 
 @Entity('preparation_recipes')
 export class PreparationRecipeEntity {
@@ -31,15 +33,24 @@ export class PreparationRecipeEntity {
   @Index()
   outputIngredientId: string
 
-  @Column({ type: 'decimal', precision: 5, scale: 2, name: 'yield_percentage' })
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    name: 'yield_percentage',
+    transformer: decimalTransformer
+  })
   yieldPercentage: number
 
-  @Column({ type: 'jsonb', name: 'additional_ingredients' })
-  additionalIngredients: Array<{
-    ingredientId: string
-    quantityPerUnit: number
-    unitId: string
-  }>
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    name: 'yield_tolerance_percentage',
+    default: 5,
+    transformer: decimalTransformer
+  })
+  yieldTolerancePercentage: number
 
   @Column({ type: 'boolean', name: 'is_active', default: true })
   @Index()
@@ -61,4 +72,10 @@ export class PreparationRecipeEntity {
 
   @OneToMany(() => IngredientTransformationEntity, transformation => transformation.recipe)
   transformations: IngredientTransformationEntity[]
+
+  @OneToMany(() => PreparationRecipeIngredientEntity, ingredient => ingredient.recipe, {
+    cascade: true,
+    eager: false
+  })
+  additionalIngredients: PreparationRecipeIngredientEntity[]
 }

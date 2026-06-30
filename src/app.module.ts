@@ -21,6 +21,8 @@ import { PurchaseOrderModule } from '@contexts/procurement/purchase-order/purcha
 import { SupplierModule } from '@contexts/procurement/supplier/supplier.module'
 import { TransformationModule } from './contexts/kitchen/transformation/transformation.module'
 import { RecipeModule } from '@contexts/kitchen/recipe/recipe.module'
+import { ProductOptionModule } from '@contexts/menu/product-option/product-option.module'
+import { ProductRecipeModule } from '@contexts/menu/product-recipe/product-recipe.module'
 
 // IAM Modules
 import { RoleModule } from '@contexts/iam/role/role.module'
@@ -35,6 +37,19 @@ import { EmployeeModule } from '@contexts/hr/employee/employee.module'
 import { CustomerModule } from '@contexts/crm/customer/customer.module'
 import { AddressModule } from '@contexts/crm/address/address.module'
 import { LoyaltyModule } from '@contexts/crm/loyalty/loyalty.module'
+
+// Restaurant Modules
+import { TableModule } from '@contexts/restaurant/table/table.module'
+import { ZoneModule } from '@contexts/restaurant/zone/zone.module'
+import { FloorElementModule } from '@contexts/restaurant/floor-element/floor-element.module'
+
+// Kitchen Operations Modules
+import { StationModule } from '@contexts/kitchen-operations/station/station.module'
+import { KitchenBoardModule } from '@contexts/kitchen-operations/kitchen-board/kitchen-board.module'
+import { KitchenPrinterModule } from '@contexts/kitchen-operations/kitchen-printer/kitchen-printer.module'
+
+// Orders Modules
+import { OrderModule } from '@contexts/orders/order/order.module'
 
 @Module({
   imports: [
@@ -73,6 +88,21 @@ import { LoyaltyModule } from '@contexts/crm/loyalty/loyalty.module'
     CustomerModule,
     AddressModule,
     LoyaltyModule,
+    TableModule,
+    ZoneModule,
+    FloorElementModule,
+
+    // =====================================
+    // KITCHEN OPERATIONS
+    // =====================================
+    StationModule,
+    KitchenBoardModule,
+    KitchenPrinterModule,
+
+    // =====================================
+    // ORDERS
+    // =====================================
+    OrderModule,
 
     // =====================================
     // FEATURE MODULES
@@ -84,6 +114,8 @@ import { LoyaltyModule } from '@contexts/crm/loyalty/loyalty.module'
     StockLevelModule,
     ProductCategoryModule,
     ProductModule,
+    ProductOptionModule,
+    ProductRecipeModule,
     PurchaseOrderModule,
     SupplierModule,
     TransformationModule,

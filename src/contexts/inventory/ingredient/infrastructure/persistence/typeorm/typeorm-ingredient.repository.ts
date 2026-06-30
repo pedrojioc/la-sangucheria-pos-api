@@ -68,6 +68,28 @@ export class TypeOrmIngredientRepository implements IngredientRepository {
     })
   }
 
+  async hasTransactions(id: IngredientId): Promise<boolean> {
+    const batchCount = await this.repository.manager
+      .createQueryBuilder()
+      .select('1')
+      .from('inventory_batches', 'b')
+      .where('b.ingredient_id = :id', { id: id.value })
+      .limit(1)
+      .getCount()
+
+    if (batchCount > 0) return true
+
+    const levelCount = await this.repository.manager
+      .createQueryBuilder()
+      .select('1')
+      .from('inventory_levels', 'l')
+      .where('l.ingredient_id = :id', { id: id.value })
+      .limit(1)
+      .getCount()
+
+    return levelCount > 0
+  }
+
   async matching(criteria: Criteria): Promise<PaginatedResult<Ingredient>> {
     const converter = new TypeOrmCriteriaConverter<IngredientEntity>()
     let qb = this.repository.createQueryBuilder('ingredient')

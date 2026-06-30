@@ -30,7 +30,16 @@ export class CreateCustomer {
       throw new CustomerDocumentAlreadyExists(documentType, documentNumber)
     }
 
-    const customer = Customer.create(id, name, phone, email, documentType, documentNumber, taxRegime, notes)
+    const customer = Customer.create(
+      id,
+      name,
+      phone,
+      email,
+      documentType,
+      documentNumber,
+      taxRegime,
+      notes
+    )
     await this.repository.save(customer)
     await this.eventBus.publish(customer.pullDomainEvents())
   }

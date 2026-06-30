@@ -30,7 +30,14 @@ describe('UpdateCustomer', () => {
     const customer = CustomerMother.create({ phone: '+573001111111' })
     repository.search.mockResolvedValue(customer)
 
-    await useCase.run(customer.id.value, 'Nuevo Nombre', '+573001111111', 'nuevo@mail.com', 'COMMON', 'nota')
+    await useCase.run(
+      customer.id.value,
+      'Nuevo Nombre',
+      '+573001111111',
+      'nuevo@mail.com',
+      'COMMON',
+      'nota'
+    )
 
     expect(repository.save).toHaveBeenCalledTimes(1)
     const saved = repository.save.mock.calls[0][0]
@@ -45,7 +52,14 @@ describe('UpdateCustomer', () => {
     const customer = CustomerMother.withDocument('CC', '123456789')
     repository.search.mockResolvedValue(customer)
 
-    await useCase.run(customer.id.value, 'Test', customer.toPrimitives().phone, null, 'SIMPLIFIED', null)
+    await useCase.run(
+      customer.id.value,
+      'Test',
+      customer.toPrimitives().phone,
+      null,
+      'SIMPLIFIED',
+      null
+    )
 
     const saved = repository.save.mock.calls[0][0]
     const p = saved.toPrimitives()
@@ -57,7 +71,14 @@ describe('UpdateCustomer', () => {
     const customer = CustomerMother.random()
     repository.search.mockResolvedValue(customer)
 
-    await useCase.run(customer.id.value, 'Test', customer.toPrimitives().phone, null, 'SIMPLIFIED', null)
+    await useCase.run(
+      customer.id.value,
+      'Test',
+      customer.toPrimitives().phone,
+      null,
+      'SIMPLIFIED',
+      null
+    )
 
     const events = eventBus.publish.mock.calls[0][0]
     expect(events[0]).toBeInstanceOf(CustomerUpdatedEvent)

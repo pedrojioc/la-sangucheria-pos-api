@@ -81,6 +81,7 @@ export class Quantity {
   }
 
   private ensureIsValidValue(value: number): void {
+    console.log('Validating quantity value:', value)
     if (value < 0) {
       throw new Error('Quantity value cannot be negative')
     }

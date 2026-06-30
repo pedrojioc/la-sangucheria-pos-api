@@ -14,8 +14,10 @@ export class UpdateProductCategoryCommandHandler
       command.name,
       command.description,
       command.icon,
+      command.color,
       command.isActive,
-      command.displayOrder
+      command.displayOrder,
+      command.defaultStationId
     )
   }
 }

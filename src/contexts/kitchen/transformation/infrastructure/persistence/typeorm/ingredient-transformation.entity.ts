@@ -10,6 +10,7 @@ import {
 import { PreparationRecipeEntity } from './preparation-recipe.entity'
 import { IngredientEntity } from '@/contexts/inventory/ingredient/infrastructure/persistence/typeorm/ingredient.entity'
 import { UnitEntity } from '@/contexts/shared-kernel/unit/infrastructure/persistence/typeorm/unit.entity'
+import { decimalTransformer } from '@shared/infrastructure/persistence/typeorm/decimal-transformer'
 
 @Entity('ingredient_transformations')
 @Index(['outputIngredientId', 'performedAt'])
@@ -30,34 +31,76 @@ export class IngredientTransformationEntity {
   @Index()
   outputIngredientId: string
 
-  @Column({ type: 'decimal', precision: 12, scale: 3, name: 'input_quantity' })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 3,
+    name: 'input_quantity',
+    transformer: decimalTransformer
+  })
   inputQuantity: number
 
   @Column({ type: 'uuid', name: 'input_unit_id' })
   inputUnitId: string
 
-  @Column({ type: 'decimal', precision: 12, scale: 3, name: 'output_quantity' })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 3,
+    name: 'output_quantity',
+    transformer: decimalTransformer
+  })
   outputQuantity: number
 
   @Column({ type: 'uuid', name: 'output_unit_id' })
   outputUnitId: string
 
-  @Column({ type: 'decimal', precision: 12, scale: 3, name: 'waste_quantity' })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 3,
+    name: 'waste_quantity',
+    transformer: decimalTransformer
+  })
   wasteQuantity: number
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'base_cost' })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    name: 'base_cost',
+    transformer: decimalTransformer
+  })
   baseCost: number
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'additional_cost' })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    name: 'additional_cost',
+    transformer: decimalTransformer
+  })
   additionalCost: number
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'total_cost' })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    name: 'total_cost',
+    transformer: decimalTransformer
+  })
   totalCost: number
 
   @Column({ type: 'varchar', length: 3 })
   currency: string
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'output_unit_cost' })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    name: 'output_unit_cost',
+    transformer: decimalTransformer
+  })
   outputUnitCost: number
 
   @Column({ type: 'varchar', length: 100, nullable: true, name: 'performed_by' })

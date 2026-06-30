@@ -30,6 +30,9 @@ import { UpdateInventoryLevel } from './application/update-inventory-level/updat
 import { SearchInventoryLevelsByCriteria } from './application/search-by-criteria/search-inventory-levels-by-criteria'
 import { GetInventoryLevelStatistics } from './application/get-statistics/get-inventory-level-statistics'
 import { RegisterManualAdjustment } from './application/register-manual-adjustment/register-manual-adjustment'
+import { DeductIngredient } from './application/deduct/deduct-ingredient'
+import { AddProducedStock } from './application/add-produced-stock/add-produced-stock'
+import { InitializeInventoryLevel } from './application/initialize-inventory-level/initialize-inventory-level'
 
 // Handlers
 import { SearchInventoryLevelsByCriteriaHandler } from './application/search-by-criteria/search-inventory-levels-by-criteria.handler'
@@ -37,8 +40,7 @@ import { GetInventoryLevelStatisticsHandler } from './application/get-statistics
 import { RegisterManualAdjustmentHandler } from './application/register-manual-adjustment/register-manual-adjustment.handler'
 
 // Subscribers
-import { CreateInventoryMovementOnInventoryBatchCreated } from './application/subscribers/create-inventory-movement-on-inventory-batch-created'
-import { UpdateInventoryLevelOnInventoryMovementCreated } from './application/subscribers/update-inventory-level-on-inventory-movement-created'
+import { CreateInventoryLevelOnIngredientCreated } from './application/subscribers/create-inventory-level-on-ingredient-created'
 
 // Controllers
 import { InventoryLevelController } from './presentation/http/controllers/inventory-level.controller'
@@ -82,12 +84,26 @@ import { createProvider } from '@/core/utils/create-provider'
     createProvider(CreatePurchaseMovement, [InventoryMovementRepository, EventBus]),
     createProvider(UpdateInventoryLevel, [InventoryLevelRepository, EventBus]),
     createProvider(GetIngredientFifoCost, [InventoryBatchRepository, FifoInventoryService]),
+    createProvider(DeductIngredient, [
+      InventoryBatchRepository,
+      InventoryMovementRepository,
+      InventoryLevelRepository,
+      FifoInventoryService,
+      EventBus
+    ]),
+    createProvider(AddProducedStock, [
+      InventoryBatchRepository,
+      InventoryMovementRepository,
+      InventoryLevelRepository,
+      EventBus
+    ]),
     createProvider(RegisterManualAdjustment, [
       InventoryMovementRepository,
       InventoryLevelRepository,
       GetIngredientFifoCost,
       EventBus
     ]),
+    createProvider(InitializeInventoryLevel, [InventoryLevelRepository]),
 
     // Use Cases - Queries
     createProvider(SearchInventoryLevelsByCriteria, [InventoryLevelQueryService]),
@@ -100,28 +116,27 @@ import { createProvider } from '@/core/utils/create-provider'
 
     // Event Subscribers
     {
-      provide: CreateInventoryMovementOnInventoryBatchCreated,
-      useFactory: (useCase: CreatePurchaseMovement) =>
-        new CreateInventoryMovementOnInventoryBatchCreated(useCase),
-      inject: [CreatePurchaseMovement]
-    },
-    {
-      provide: UpdateInventoryLevelOnInventoryMovementCreated,
-      useFactory: (useCase: UpdateInventoryLevel) =>
-        new UpdateInventoryLevelOnInventoryMovementCreated(useCase),
-      inject: [UpdateInventoryLevel]
+      provide: CreateInventoryLevelOnIngredientCreated,
+      useFactory: (useCase: InitializeInventoryLevel) =>
+        new CreateInventoryLevelOnIngredientCreated(useCase),
+      inject: [InitializeInventoryLevel]
     }
   ],
-  exports: [InventoryMovementRepository, InventoryLevelRepository]
+  exports: [
+    InventoryMovementRepository,
+    InventoryLevelRepository,
+    GetIngredientFifoCost,
+    DeductIngredient,
+    AddProducedStock
+  ]
 })
 export class StockLevelModule implements OnModuleInit {
   constructor(
     private readonly eventBus: EventBus,
-    private readonly createMovementSubscriber: CreateInventoryMovementOnInventoryBatchCreated,
-    private readonly updateLevelSubscriber: UpdateInventoryLevelOnInventoryMovementCreated
+    private readonly createLevelSubscriber: CreateInventoryLevelOnIngredientCreated
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.addSubscribers([this.createMovementSubscriber, this.updateLevelSubscriber])
+    this.eventBus.addSubscribers([this.createLevelSubscriber])
   }
 }

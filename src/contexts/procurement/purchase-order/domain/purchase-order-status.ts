@@ -3,15 +3,12 @@
  *
  * Estados del ciclo de vida de una orden de compra:
  *
- * DRAFT → PENDING_APPROVAL → APPROVED → PARTIALLY_RECEIVED → CLOSED
- *                                ↓
- *                            REJECTED
- *                                ↓
- *                            CANCELLED
+ * DRAFT → PENDING_APPROVAL → APPROVED → ORDERED → PARTIALLY_RECEIVED → CLOSED
+ *                                ↓           ↓
+ *                            REJECTED    CANCELLED
  *
- * Nota: Los estados SENT y RECEIVED fueron eliminados.
- * - SENT: Reemplazado por el campo "purchaseMethod" (la comunicación es opcional)
- * - RECEIVED: Redundante, al recibir todo se pasa directo a CLOSED
+ * - ORDERED: La orden fue comunicada al proveedor (via send()). Distingue
+ *   "aprobada sin comunicar" de "ya pedida y esperando entrega".
  */
 export enum PurchaseOrderStatus {
   /**
@@ -29,23 +26,31 @@ export enum PurchaseOrderStatus {
   PENDING_APPROVAL = 'PENDING_APPROVAL',
 
   /**
-   * APPROVED: Aprobada, lista para procesar
+   * APPROVED: Aprobada, pendiente de comunicar al proveedor
    * - Aprobada por el responsable
-   * - Puede comunicarse al proveedor o ir a comprar directamente
-   * - Opcional: Registrar método de compra (purchaseMethod)
+   * - Aún no se comunicó al proveedor
+   * - Usar send() para pasar a ORDERED
    */
   APPROVED = 'APPROVED',
 
   /**
+   * ORDERED: Comunicada al proveedor, esperando entrega
+   * - El pedido fue enviado/comunicado al proveedor
+   * - Registrado purchaseMethod (whatsapp, llamada, email, etc.)
+   * - Esperando que llegue la mercancía
+   */
+  ORDERED = 'ORDERED',
+
+  /**
    * PARTIALLY_RECEIVED: Recibida parcialmente
-   * - Al menos un item ha sido recibido
+   * - Al menos un item ha llegado físicamente al local
    * - Faltan items por recibir
    */
   PARTIALLY_RECEIVED = 'PARTIALLY_RECEIVED',
 
   /**
    * CLOSED: Cerrada/Completada
-   * - Todos los items recibidos
+   * - Todos los items recibidos o cancelados
    * - Proceso finalizado
    * - Estado final exitoso
    */
@@ -80,17 +85,16 @@ export class PurchaseOrderStatusTransitions {
       PurchaseOrderStatus.REJECTED,
       PurchaseOrderStatus.CANCELLED
     ],
-    [PurchaseOrderStatus.APPROVED]: [
+    [PurchaseOrderStatus.APPROVED]: [PurchaseOrderStatus.ORDERED, PurchaseOrderStatus.CANCELLED],
+    [PurchaseOrderStatus.ORDERED]: [
       PurchaseOrderStatus.PARTIALLY_RECEIVED,
-      PurchaseOrderStatus.CLOSED, // Puede ir directo a CLOSED si se recibe todo de una vez
+      PurchaseOrderStatus.CLOSED,
       PurchaseOrderStatus.CANCELLED
     ],
-    [PurchaseOrderStatus.PARTIALLY_RECEIVED]: [
-      PurchaseOrderStatus.CLOSED // Al recibir el resto, va directo a CLOSED
-    ],
-    [PurchaseOrderStatus.CLOSED]: [], // Estado final
-    [PurchaseOrderStatus.REJECTED]: [], // Estado final
-    [PurchaseOrderStatus.CANCELLED]: [] // Estado final
+    [PurchaseOrderStatus.PARTIALLY_RECEIVED]: [PurchaseOrderStatus.CLOSED],
+    [PurchaseOrderStatus.CLOSED]: [],
+    [PurchaseOrderStatus.REJECTED]: [],
+    [PurchaseOrderStatus.CANCELLED]: []
   }
 
   static canTransition(from: PurchaseOrderStatus, to: PurchaseOrderStatus): boolean {
@@ -111,11 +115,6 @@ export class PurchaseOrderStatusTransitions {
   }
 
   static canBeCancelled(status: PurchaseOrderStatus): boolean {
-    return ![
-      PurchaseOrderStatus.CLOSED,
-      PurchaseOrderStatus.REJECTED,
-      PurchaseOrderStatus.CANCELLED,
-      PurchaseOrderStatus.PARTIALLY_RECEIVED
-    ].includes(status)
+    return [PurchaseOrderStatus.APPROVED, PurchaseOrderStatus.ORDERED].includes(status)
   }
 }

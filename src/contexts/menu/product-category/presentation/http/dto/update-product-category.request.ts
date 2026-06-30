@@ -1,4 +1,13 @@
-import { IsString, IsBoolean, IsInt, IsOptional, IsNotEmpty, MaxLength, Min } from 'class-validator'
+import {
+  IsString,
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsNotEmpty,
+  IsUUID,
+  MaxLength,
+  Min
+} from 'class-validator'
 
 export class UpdateProductCategoryRequest {
   @IsString()
@@ -16,10 +25,20 @@ export class UpdateProductCategoryRequest {
   @MaxLength(50)
   icon: string | null
 
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  color: string | null
+
   @IsBoolean()
   isActive: boolean
 
+  @IsOptional()
   @IsInt()
   @Min(0)
-  displayOrder: number
+  displayOrder?: number
+
+  @IsOptional()
+  @IsUUID()
+  defaultStationId?: string | null
 }

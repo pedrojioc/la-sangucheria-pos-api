@@ -5,7 +5,13 @@ import { PositionNotExist } from '../../domain/exceptions/position-not-exist.exc
 export class UpdatePosition {
   constructor(private readonly repository: PositionRepository) {}
 
-  async run(id: string, name: string, description: string | null, color: string | null, icon: string | null): Promise<void> {
+  async run(
+    id: string,
+    name: string,
+    description: string | null,
+    color: string | null,
+    icon: string | null
+  ): Promise<void> {
     const position = await this.repository.search(new PositionId(id))
     if (!position) throw new PositionNotExist(id)
     position.update(name, description, color, icon)

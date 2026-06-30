@@ -1,5 +1,5 @@
 import { ProductCategoryEntity } from '@/contexts/menu/product-category/infrastructure/persistence/typeorm/product-category.entity'
-import { RecipeEntity } from '@/contexts/kitchen/recipe/infrastructure/persistence/typeorm/recipe.entity'
+import { IngredientEntity } from '@/contexts/inventory/ingredient/infrastructure/persistence/typeorm/ingredient.entity'
 import {
   Entity,
   PrimaryColumn,
@@ -25,8 +25,8 @@ export class ProductEntity {
   @Column({ type: 'uuid', name: 'category_id' })
   categoryId: string
 
-  @Column({ type: 'uuid', name: 'recipe_id', nullable: true })
-  recipeId: string | null
+  @Column({ type: 'uuid', name: 'ingredient_id', nullable: true })
+  ingredientId: string | null
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price: number
@@ -56,11 +56,10 @@ export class ProductEntity {
   @Column({
     type: 'varchar',
     length: 20,
-    nullable: true,
     name: 'inventory_strategy_type'
   })
   @Index()
-  inventoryStrategyType: 'RECIPE' | 'DIRECT' | null
+  inventoryStrategyType: 'RECIPE' | 'DIRECT' | 'NONE'
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
@@ -72,7 +71,7 @@ export class ProductEntity {
   @JoinColumn({ name: 'category_id' })
   category: ProductCategoryEntity
 
-  @ManyToOne(() => RecipeEntity)
-  @JoinColumn({ name: 'recipe_id' })
-  recipe: RecipeEntity
+  @ManyToOne(() => IngredientEntity)
+  @JoinColumn({ name: 'ingredient_id' })
+  ingredient: IngredientEntity
 }

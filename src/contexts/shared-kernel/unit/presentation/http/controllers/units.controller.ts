@@ -18,8 +18,10 @@ import { UpdateUnitCommand } from '@/contexts/shared-kernel/unit/application/upd
 import { DeleteUnitCommand } from '@/contexts/shared-kernel/unit/application/delete/delete-unit.command'
 import { FindUnitQuery } from '@/contexts/shared-kernel/unit/application/find/find-unit.query'
 import { FindAllUnitsQuery } from '@/contexts/shared-kernel/unit/application/find-all/find-all-units.query'
+import { FindUnitConversionsQuery } from '@/contexts/shared-kernel/unit/application/find-conversions/find-unit-conversions.query'
 import { UnitResponse } from '@/contexts/shared-kernel/unit/application/dto/unit.response'
 import { UnitListResponse } from '@/contexts/shared-kernel/unit/application/dto/unit-list.response'
+import { UnitConversionListItemResponse } from '../dto/unit-conversion-list-item.response'
 
 @Controller('units')
 export class UnitsController {
@@ -32,7 +34,6 @@ export class UnitsController {
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateUnitRequest): Promise<void> {
     const command = new CreateUnitCommand(dto.id, dto.name, dto.symbol, dto.type, dto.isActive)
-
     await this.commandBus.execute(command)
   }
 
@@ -40,7 +41,6 @@ export class UnitsController {
   @HttpCode(HttpStatus.OK)
   async update(@Param('id') id: string, @Body() dto: UpdateUnitRequest): Promise<void> {
     const command = new UpdateUnitCommand(id, dto.name, dto.symbol, dto.type, dto.isActive)
-
     await this.commandBus.execute(command)
   }
 
@@ -48,7 +48,6 @@ export class UnitsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('id') id: string): Promise<void> {
     const command = new DeleteUnitCommand(id)
-
     await this.commandBus.execute(command)
   }
 
@@ -62,5 +61,10 @@ export class UnitsController {
   async findAll(): Promise<UnitListResponse> {
     const query = new FindAllUnitsQuery()
     return this.queryBus.execute(query)
+  }
+
+  @Get(':id/conversions')
+  async findConversions(@Param('id') id: string): Promise<UnitConversionListItemResponse[]> {
+    return this.queryBus.execute(new FindUnitConversionsQuery(id))
   }
 }

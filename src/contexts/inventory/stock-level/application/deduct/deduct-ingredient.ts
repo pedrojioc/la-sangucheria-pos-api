@@ -4,6 +4,7 @@ import { InventoryMovementRepository } from '@contexts/inventory/stock-level/dom
 import { FifoInventoryService } from '@contexts/inventory/batch/domain/services/fifo-inventory.service'
 import { IngredientId } from '@contexts/inventory/ingredient/domain/ingredient-id'
 import { Quantity } from '@/shared/domain/value-objects/quantity'
+import { NoStockAvailableException } from '@contexts/inventory/stock-level/domain/exceptions/no-stock-available.exception'
 import { InventoryMovement } from '@contexts/inventory/stock-level/domain/inventory-movement'
 import { MovementType } from '@contexts/inventory/stock-level/domain/movement-type'
 import { Uuid } from '@/shared/domain/value-objects/uuid'
@@ -46,7 +47,7 @@ export class DeductIngredient {
     const availableBatches = await this.batchRepository.findAvailableByIngredient(ingredientIdVO)
 
     if (availableBatches.length === 0) {
-      throw new Error(`No available batches for ingredient ${ingredientId}`)
+      throw new NoStockAvailableException(ingredientId)
     }
 
     // 2. Deducir usando FIFO

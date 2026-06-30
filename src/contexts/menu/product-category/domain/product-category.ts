@@ -6,14 +6,17 @@ import { ProductCategoryDescription } from '@/contexts/menu/product-category/dom
 import { ProductCategoryIsActive } from '@/contexts/menu/product-category/domain/product-category-is-active'
 import { ProductCategoryDisplayOrder } from '@/contexts/menu/product-category/domain/product-category-display-order'
 import { ProductCategoryIcon } from '@/contexts/menu/product-category/domain/product-category-icon'
+import { ProductCategoryColor } from '@/contexts/menu/product-category/domain/product-category-color'
 
-interface ProductCategoryPrimitives {
+export interface ProductCategoryPrimitives {
   id: string
   name: string
   description: string | null
   icon: string | null
+  color: string | null
   isActive: boolean
   displayOrder: number
+  defaultStationId: string | null
 }
 
 export class ProductCategory extends AggregateRoot {
@@ -22,8 +25,10 @@ export class ProductCategory extends AggregateRoot {
     private name: ProductCategoryName,
     private description: ProductCategoryDescription | null,
     private icon: ProductCategoryIcon | null,
+    private color: ProductCategoryColor | null,
     private isActive: ProductCategoryIsActive,
-    private displayOrder: ProductCategoryDisplayOrder
+    private displayOrder: ProductCategoryDisplayOrder,
+    private defaultStationId: string | null
   ) {
     super()
   }
@@ -34,8 +39,10 @@ export class ProductCategory extends AggregateRoot {
       new ProductCategoryName(primitives.name),
       primitives.description ? new ProductCategoryDescription(primitives.description) : null,
       primitives.icon ? new ProductCategoryIcon(primitives.icon) : null,
+      primitives.color ? new ProductCategoryColor(primitives.color) : null,
       new ProductCategoryIsActive(primitives.isActive),
-      new ProductCategoryDisplayOrder(primitives.displayOrder)
+      new ProductCategoryDisplayOrder(primitives.displayOrder),
+      primitives.defaultStationId ?? null
     )
   }
 
@@ -44,16 +51,20 @@ export class ProductCategory extends AggregateRoot {
     name: string,
     description: string | null,
     icon: string | null,
+    color: string | null,
     isActive: boolean,
-    displayOrder: number
+    displayOrder: number,
+    defaultStationId: string | null = null
   ): ProductCategory {
     const category = ProductCategory.fromPrimitives({
       id,
       name,
       description,
       icon,
+      color,
       isActive,
-      displayOrder
+      displayOrder,
+      defaultStationId
     })
     // category.record()
     return category
@@ -63,14 +74,18 @@ export class ProductCategory extends AggregateRoot {
     name: string,
     description: string | null,
     icon: string | null,
+    color: string | null,
     isActive: boolean,
-    displayOrder: number
+    displayOrder: number,
+    defaultStationId: string | null = null
   ): void {
     this.name = new ProductCategoryName(name)
     this.description = description ? new ProductCategoryDescription(description) : null
     this.icon = icon ? new ProductCategoryIcon(icon) : null
+    this.color = color ? new ProductCategoryColor(color) : null
     this.isActive = new ProductCategoryIsActive(isActive)
     this.displayOrder = new ProductCategoryDisplayOrder(displayOrder)
+    this.defaultStationId = defaultStationId
   }
 
   changeName(newName: ProductCategoryName): ProductCategory {
@@ -83,19 +98,23 @@ export class ProductCategory extends AggregateRoot {
       newName,
       this.description,
       this.icon,
+      this.color,
       this.isActive,
-      this.displayOrder
+      this.displayOrder,
+      this.defaultStationId
     )
   }
 
-  toPrimitives() {
+  toPrimitives(): ProductCategoryPrimitives {
     return {
       id: this.id.value,
       name: this.name.value,
       description: this.description?.value ?? null,
       icon: this.icon?.value ?? null,
+      color: this.color?.value ?? null,
       isActive: this.isActive.value,
-      displayOrder: this.displayOrder.value
+      displayOrder: this.displayOrder.value,
+      defaultStationId: this.defaultStationId
     }
   }
 }

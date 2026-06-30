@@ -12,6 +12,11 @@ export abstract class UnitConversionRepository {
   abstract findByUnits(fromUnitId: string, toUnitId: string): Promise<UnitConversion | null>
 
   /**
+   * Busca todas las conversiones donde la unidad aparece como origen o destino
+   */
+  abstract findByUnit(unitId: string): Promise<UnitConversion[]>
+
+  /**
    * Busca todas las conversiones desde una unidad específica
    * Útil para saber a qué unidades se puede convertir
    */

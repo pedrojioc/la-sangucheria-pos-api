@@ -6,10 +6,11 @@ export class CreatePreparationRecipeCommand {
     public readonly outputIngredientId: string,
     public readonly yieldPercentage: number,
     public readonly additionalIngredients: Array<{
+      id: string
       ingredientId: string
       quantityPerUnit: number
-      unitId: string
     }>,
-    public readonly description: string | null
+    public readonly description: string | null,
+    public readonly yieldTolerancePercentage: number | null
   ) {}
 }

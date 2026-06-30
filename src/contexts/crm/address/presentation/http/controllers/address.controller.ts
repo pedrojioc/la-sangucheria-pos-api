@@ -32,10 +32,7 @@ export class AddressController {
   }
 
   @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateAddressRequest
-  ): Promise<void> {
+  async update(@Param('id') id: string, @Body() dto: UpdateAddressRequest): Promise<void> {
     await this.commandBus.execute(
       new UpdateAddressCommand(
         id,
@@ -51,10 +48,7 @@ export class AddressController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(
-    @Param('customerId') customerId: string,
-    @Param('id') id: string
-  ): Promise<void> {
+  async remove(@Param('customerId') customerId: string, @Param('id') id: string): Promise<void> {
     await this.commandBus.execute(new RemoveAddressCommand(id, customerId))
   }
 

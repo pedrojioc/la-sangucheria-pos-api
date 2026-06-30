@@ -49,7 +49,7 @@ export class InventoryBatchSeeder implements Seeder {
           remainingQuantity,
           unitId: ingredient.unitId,
           unitCost,
-          currency: 'PEN',
+          currency: 'COP',
           purchaseDate,
           expirationDate,
           supplierId: null,

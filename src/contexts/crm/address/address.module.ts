@@ -24,7 +24,12 @@ import { AddressController } from './presentation/http/controllers/address.contr
 
 import { createProvider } from '@/core/utils/create-provider'
 
-const CommandHandlers = [AddAddressHandler, UpdateAddressHandler, RemoveAddressHandler, SetDefaultAddressHandler]
+const CommandHandlers = [
+  AddAddressHandler,
+  UpdateAddressHandler,
+  RemoveAddressHandler,
+  SetDefaultAddressHandler
+]
 
 @Module({
   imports: [TypeOrmModule.forFeature([AddressEntity]), CqrsModule, CustomerModule],

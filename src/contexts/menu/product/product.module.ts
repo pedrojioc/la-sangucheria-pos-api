@@ -8,8 +8,9 @@ import { ProductEntity } from '@contexts/menu/product/infrastructure/persistence
 import { ProductRepository } from '@contexts/menu/product/domain/repositories/product.repository'
 import { TypeOrmProductRepository } from '@contexts/menu/product/infrastructure/persistence/typeorm/typeorm-product.repository'
 
-// Product Categories (dependency)
+// Dependencies
 import { ProductCategoryModule } from '@contexts/menu/product-category/product-category.module'
+import { IngredientModule } from '@contexts/inventory/ingredient/ingredient.module'
 
 // Events
 import { EventBus } from '@/shared/domain/events'
@@ -32,6 +33,12 @@ import { FindProduct } from '@/contexts/menu/product/application/find/find-produ
 import { SearchProductsByCriteria } from '@/contexts/menu/product/application/search-by-criteria/search-products-by-criteria'
 import { GenerateProductSku } from '@/contexts/menu/product/application/generate-sku/generate-product-sku'
 
+// Query Services
+import { ProductQueryService } from '@/contexts/menu/product/application/services/product-query.service'
+import { TypeOrmProductQueryService } from '@/contexts/menu/product/infrastructure/query-services/typeorm-product-query.service'
+import { ProductAvailabilityQueryService } from '@/contexts/menu/product/application/services/product-availability-query.service'
+import { TypeOrmProductAvailabilityQueryService } from '@/contexts/menu/product/infrastructure/query-services/typeorm-product-availability-query.service'
+
 // Controllers
 import { ProductController } from '@/contexts/menu/product/presentation/http/controllers/product.controller'
 
@@ -40,6 +47,7 @@ import { createProvider } from '@/core/utils/create-provider'
 import { LocalFileStorage } from '@/shared/infrastructure/storage/local/local-file-storage.service'
 import { FileStorageRepository } from '@/shared/domain/file-storage'
 import { FindProductCategory } from '@/contexts/menu/product-category/application/find/find-product-category'
+import { FindIngredient } from '@/contexts/inventory/ingredient/application/find/find-ingredient'
 
 const CommandHandlers = [
   CreateProductCommandHandler,
@@ -54,7 +62,7 @@ const QueryHandlers = [
 ]
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ProductEntity]), ProductCategoryModule],
+  imports: [TypeOrmModule.forFeature([ProductEntity]), ProductCategoryModule, IngredientModule],
   controllers: [ProductController],
   providers: [
     // REPOSITORIES
@@ -67,22 +75,34 @@ const QueryHandlers = [
       useExisting: LocalFileStorage
     },
 
+    // QUERY SERVICES
+    {
+      provide: ProductQueryService,
+      useClass: TypeOrmProductQueryService
+    },
+    {
+      provide: ProductAvailabilityQueryService,
+      useClass: TypeOrmProductAvailabilityQueryService
+    },
+
     // USE CASES
     createProvider(CreateProduct, [
       ProductRepository,
       FindProductCategory,
+      FindIngredient,
       FileStorageRepository,
       EventBus
     ]),
     createProvider(UpdateProduct, [
       ProductRepository,
       FindProductCategory,
+      FindIngredient,
       FileStorageRepository,
       EventBus
     ]),
     createProvider(DeleteProduct, [ProductRepository, FileStorageRepository, EventBus]),
     createProvider(FindProduct, [ProductRepository]),
-    createProvider(SearchProductsByCriteria, [ProductRepository]),
+    createProvider(SearchProductsByCriteria, [ProductQueryService]),
     createProvider(GenerateProductSku, [ProductRepository]),
 
     // COMMAND HANDLERS

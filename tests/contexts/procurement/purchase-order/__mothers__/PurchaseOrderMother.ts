@@ -1,4 +1,7 @@
-import { PurchaseOrder, PurchaseOrderPrimitives } from '@/contexts/procurement/purchase-order/domain/purchase-order'
+import {
+  PurchaseOrder,
+  PurchaseOrderPrimitives
+} from '@/contexts/procurement/purchase-order/domain/purchase-order'
 import { PurchaseOrderStatus } from '@/contexts/procurement/purchase-order/domain/purchase-order-status'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 import { PurchaseOrderNumberMother } from './PurchaseOrderNumberMother'
@@ -12,7 +15,8 @@ export class PurchaseOrderMother {
       PurchaseOrderItemMother.random().toPrimitives()
     ]
 
-    const totalAmount = params.totalAmount ?? defaultItems.reduce((sum, item) => sum + item.totalCost, 0)
+    const totalAmount =
+      params.totalAmount ?? defaultItems.reduce((sum, item) => sum + item.totalCost, 0)
 
     const primitives: PurchaseOrderPrimitives = {
       id: params.id ?? UuidMother.random(),
@@ -22,9 +26,11 @@ export class PurchaseOrderMother {
       items: defaultItems,
       itemCount: params.itemCount ?? defaultItems.length,
       requestedBy: params.requestedBy ?? UuidMother.random(),
+      submittedBy: params.submittedBy ?? null,
       approvedBy: params.approvedBy ?? null,
       rejectedBy: params.rejectedBy ?? null,
       sentBy: params.sentBy ?? null,
+      cancelledBy: params.cancelledBy ?? null,
       receivedBy: params.receivedBy ?? null,
       closedBy: params.closedBy ?? null,
       purchaseMethod: params.purchaseMethod ?? null,
@@ -33,9 +39,12 @@ export class PurchaseOrderMother {
       currency: params.currency ?? 'PEN',
       requestedDate: params.requestedDate ?? new Date(),
       expectedDeliveryDate: params.expectedDeliveryDate ?? null,
+      submittedDate: params.submittedDate ?? null,
       approvedDate: params.approvedDate ?? null,
       sentDate: params.sentDate ?? null,
       receivedDate: params.receivedDate ?? null,
+      rejectedDate: params.rejectedDate ?? null,
+      cancelledDate: params.cancelledDate ?? null,
       closedDate: params.closedDate ?? null,
       notes: params.notes ?? null
     }

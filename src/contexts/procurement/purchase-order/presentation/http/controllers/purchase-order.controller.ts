@@ -16,7 +16,7 @@ import { CurrentUser } from '@/contexts/iam/shared/decorators/current-user.decor
 import { CreatePurchaseOrderRequest } from '../dto/create-purchase-order.request'
 import { UpdatePurchaseOrderRequest } from '../dto/update-purchase-order.request'
 import { RejectPurchaseOrderRequest } from '../dto/reject-purchase-order.request'
-import { SendPurchaseOrderRequest } from '../dto/send-purchase-order.request'
+import { OrderPurchaseOrderRequest } from '../dto/order-purchase-order.request'
 import { ReceivePurchaseOrderRequest } from '../dto/receive-purchase-order.request'
 import { CancelPurchaseOrderItemsRequest } from '../dto/cancel-purchase-order-items.request'
 
@@ -26,7 +26,7 @@ import { UpdatePurchaseOrderCommand } from '../../../application/update/update-p
 import { SubmitForApprovalCommand } from '../../../application/submit-for-approval/submit-for-approval.command'
 import { ApprovePurchaseOrderCommand } from '../../../application/approve/approve-purchase-order.command'
 import { RejectPurchaseOrderCommand } from '../../../application/reject/reject-purchase-order.command'
-import { SendPurchaseOrderCommand } from '../../../application/send/send-purchase-order.command'
+import { OrderPurchaseOrderCommand } from '../../../application/order/order-purchase-order.command'
 import { RegisterItemReceptionCommand } from '../../../application/register-item-reception/register-item-reception.command'
 import { CancelPurchaseOrderItemsCommand } from '../../../application/cancel-items/cancel-purchase-order-items.command'
 import { ClosePurchaseOrderCommand } from '../../../application/close/close-purchase-order.command'
@@ -53,7 +53,7 @@ import { SearchPurchaseOrdersRequest } from '../dto/search-purchase-orders.reque
  * - PUT /purchase-orders/:id/submit - Submit for approval
  * - PUT /purchase-orders/:id/approve - Approve order
  * - PUT /purchase-orders/:id/reject - Reject order
- * - PUT /purchase-orders/:id/send - Mark as sent to supplier
+ * - PUT /purchase-orders/:id/order - Communicate order to supplier (APPROVED → ORDERED)
  * - PUT /purchase-orders/:id/receive - Register batch reception of items
  * - PUT /purchase-orders/:id/cancel-items - Cancel items not available from supplier
  * - PUT /purchase-orders/:id/close - Close order
@@ -145,8 +145,11 @@ export class PurchaseOrderController {
    */
   @Put(':id/submit')
   @HttpCode(HttpStatus.OK)
-  async submitForApproval(@Param('id') id: string): Promise<void> {
-    const command = new SubmitForApprovalCommand(id)
+  async submitForApproval(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string
+  ): Promise<void> {
+    const command = new SubmitForApprovalCommand(id, userId)
     await this.commandBus.execute(command)
   }
 
@@ -179,18 +182,19 @@ export class PurchaseOrderController {
   }
 
   /**
-   * PUT /purchase-orders/:id/send
-   * Registers purchase method for the order
-   * The sentBy field is automatically set from the authenticated user
+   * PUT /purchase-orders/:id/order
+   * Communicates the order to the supplier (APPROVED → ORDERED)
+   * Registers the purchase method (whatsapp, call, email, etc.)
+   * The orderedBy field is automatically set from the authenticated user
    */
-  @Put(':id/send')
+  @Put(':id/order')
   @HttpCode(HttpStatus.OK)
-  async send(
+  async order(
     @Param('id') id: string,
-    @Body() dto: SendPurchaseOrderRequest,
+    @Body() dto: OrderPurchaseOrderRequest,
     @CurrentUser('userId') userId: string
   ): Promise<void> {
-    const command = new SendPurchaseOrderCommand(
+    const command = new OrderPurchaseOrderCommand(
       id,
       userId,
       dto.purchaseMethod,
@@ -207,7 +211,7 @@ export class PurchaseOrderController {
    * unit IDs, and actual costs.
    *
    * State transitions:
-   * - APPROVED → PARTIALLY_RECEIVED (when receiving items)
+   * - ORDERED → PARTIALLY_RECEIVED (when receiving items)
    * - PARTIALLY_RECEIVED → CLOSED (only if closeOrder=true AND all items processed)
    *
    * The order does NOT close automatically. The user must explicitly request
@@ -225,6 +229,7 @@ export class PurchaseOrderController {
       purchaseOrderId,
       dto.items.map(item => ({
         purchaseOrderItemId: item.purchaseOrderItemId,
+        notReceived: item.notReceived ?? false,
         quantityReceived: item.quantityReceived,
         quantityReceivedUnitId: item.quantityReceivedUnitId,
         unitCost: item.unitCost,
@@ -245,7 +250,8 @@ export class PurchaseOrderController {
    * Cancelled items are marked as processed and won't affect inventory.
    *
    * State transitions:
-   * - APPROVED → PARTIALLY_RECEIVED (when cancelling items)
+   * - Order stays in ORDERED (no state change when cancelling items)
+   * - ORDERED → CLOSED (auto-close if all items cancelled with no physical reception)
    *
    * The order does NOT close automatically when cancelling items.
    * To close the order after cancelling, use the receive endpoint with closeOrder=true
@@ -259,7 +265,7 @@ export class PurchaseOrderController {
   ): Promise<void> {
     const command = new CancelPurchaseOrderItemsCommand(
       purchaseOrderId,
-      dto.itemIds,
+      dto.itemId,
       dto.reason ?? null
     )
     await this.commandBus.execute(command)

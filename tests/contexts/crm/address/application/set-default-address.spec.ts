@@ -55,7 +55,9 @@ describe('SetDefaultAddress', () => {
   it('should throw AddressNotExist when address not found', async () => {
     addressRepository.search.mockResolvedValue(null)
 
-    await expect(useCase.run(UuidMother.random(), UuidMother.random())).rejects.toThrow(AddressNotExist)
+    await expect(useCase.run(UuidMother.random(), UuidMother.random())).rejects.toThrow(
+      AddressNotExist
+    )
 
     expect(customerRepository.save).not.toHaveBeenCalled()
   })
@@ -64,7 +66,9 @@ describe('SetDefaultAddress', () => {
     addressRepository.search.mockResolvedValue(AddressMother.random())
     customerRepository.search.mockResolvedValue(null)
 
-    await expect(useCase.run(UuidMother.random(), UuidMother.random())).rejects.toThrow(CustomerNotExist)
+    await expect(useCase.run(UuidMother.random(), UuidMother.random())).rejects.toThrow(
+      CustomerNotExist
+    )
 
     expect(customerRepository.save).not.toHaveBeenCalled()
   })

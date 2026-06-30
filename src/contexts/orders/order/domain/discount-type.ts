@@ -1,0 +1,7 @@
+export enum DiscountType {
+  EMPLOYEE = 'EMPLOYEE',
+  LOYALTY = 'LOYALTY',
+  PROMO = 'PROMO',
+  MANAGER = 'MANAGER',
+  HAPPY_HOUR = 'HAPPY_HOUR'
+}

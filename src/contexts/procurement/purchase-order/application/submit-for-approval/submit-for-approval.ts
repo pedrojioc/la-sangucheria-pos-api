@@ -17,14 +17,14 @@ import { PurchaseOrderId } from '../../domain/purchase-order-id'
 export class SubmitForApproval {
   constructor(private readonly repository: PurchaseOrderRepository) {}
 
-  async run(purchaseOrderId: string): Promise<void> {
+  async run(purchaseOrderId: string, submittedBy: string): Promise<void> {
     const purchaseOrder = await this.repository.findById(new PurchaseOrderId(purchaseOrderId))
 
     if (!purchaseOrder) {
       throw new Error(`Purchase order ${purchaseOrderId} not found`)
     }
 
-    purchaseOrder.submitForApproval()
+    purchaseOrder.submitForApproval(submittedBy)
 
     await this.repository.save(purchaseOrder)
   }

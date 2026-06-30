@@ -40,7 +40,16 @@ describe('AddAddress', () => {
     customerRepository.search.mockResolvedValue(customer)
 
     const addressId = UuidMother.random()
-    await useCase.run(addressId, customer.id.value, 'Casa', 'Calle 10 #5-20', null, 'Bogotá', null, null)
+    await useCase.run(
+      addressId,
+      customer.id.value,
+      'Casa',
+      'Calle 10 #5-20',
+      null,
+      'Bogotá',
+      null,
+      null
+    )
 
     expect(addressRepository.save).toHaveBeenCalledTimes(1)
     const saved = addressRepository.save.mock.calls[0][0] as Address
@@ -66,7 +75,16 @@ describe('AddAddress', () => {
     customerRepository.search.mockResolvedValue(customer)
     addressRepository.countByCustomer.mockResolvedValue(1)
 
-    await useCase.run(UuidMother.random(), customer.id.value, 'Oficina', 'Cra 7', null, 'Bogotá', null, null)
+    await useCase.run(
+      UuidMother.random(),
+      customer.id.value,
+      'Oficina',
+      'Cra 7',
+      null,
+      'Bogotá',
+      null,
+      null
+    )
 
     expect(customerRepository.save).not.toHaveBeenCalled()
   })
@@ -75,7 +93,16 @@ describe('AddAddress', () => {
     customerRepository.search.mockResolvedValue(null)
 
     await expect(
-      useCase.run(UuidMother.random(), UuidMother.random(), 'Casa', 'Calle', null, 'Ciudad', null, null)
+      useCase.run(
+        UuidMother.random(),
+        UuidMother.random(),
+        'Casa',
+        'Calle',
+        null,
+        'Ciudad',
+        null,
+        null
+      )
     ).rejects.toThrow(CustomerNotExist)
 
     expect(addressRepository.save).not.toHaveBeenCalled()
@@ -85,7 +112,16 @@ describe('AddAddress', () => {
     const customer = CustomerMother.random()
     customerRepository.search.mockResolvedValue(customer)
 
-    await useCase.run(UuidMother.random(), customer.id.value, 'Casa', 'Calle', null, 'Ciudad', null, null)
+    await useCase.run(
+      UuidMother.random(),
+      customer.id.value,
+      'Casa',
+      'Calle',
+      null,
+      'Ciudad',
+      null,
+      null
+    )
 
     expect(eventBus.publish).toHaveBeenCalledTimes(1)
     const events = eventBus.publish.mock.calls[0][0]

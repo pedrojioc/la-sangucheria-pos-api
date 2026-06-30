@@ -9,11 +9,13 @@ import { TypeormIngredientQueryService } from './infrastructure/query-services/t
 import { EventBus } from '@/shared/domain/events'
 
 import { CreateIngredientCommandHandler } from './application/create/create-ingredient.handler'
+import { UpdateIngredientCommandHandler } from './application/update/update-ingredient.handler'
 import { FindIngredientHandler } from './application/find/find-ingredient.handler'
 import { FindAllIngredientHandler } from './application/find-all/find-all-ingredient.handler'
 import { SearchIngredientsByCriteriaHandler } from './application/search-by-criteria/search-ingredients-by-criteria.handler'
 
 import { CreateIngredient } from './application/create/create-ingredient'
+import { UpdateIngredient } from './application/update/update-ingredient'
 import { FindIngredient } from './application/find/find-ingredient'
 import { FindAllIngredients } from './application/find-all/find-all-ingredient'
 import { SearchIngredientsByCriteria } from './application/search-by-criteria/search-ingredients-by-criteria'
@@ -23,7 +25,7 @@ import { IngredientController } from './presentation/http/controllers/ingredient
 import { createProvider } from '@/core/utils/create-provider'
 import { IngredientCategoryModule } from '../ingredient-category/ingredient-category.module'
 
-const CommandHandlers = [CreateIngredientCommandHandler]
+const CommandHandlers = [CreateIngredientCommandHandler, UpdateIngredientCommandHandler]
 const QueryHandlers = [
   FindIngredientHandler,
   FindAllIngredientHandler,
@@ -38,6 +40,12 @@ const QueryHandlers = [
     { provide: IngredientQueryService, useClass: TypeormIngredientQueryService },
 
     createProvider(CreateIngredient, [IngredientRepository, FindIngredientCategory, EventBus]),
+    createProvider(UpdateIngredient, [
+      IngredientRepository,
+      FindIngredient,
+      FindIngredientCategory,
+      EventBus
+    ]),
     createProvider(FindIngredient, [IngredientRepository]),
     createProvider(FindAllIngredients, [IngredientRepository]),
     createProvider(SearchIngredientsByCriteria, [IngredientQueryService]),
@@ -45,6 +53,6 @@ const QueryHandlers = [
     ...CommandHandlers,
     ...QueryHandlers
   ],
-  exports: [IngredientRepository]
+  exports: [IngredientRepository, FindIngredient]
 })
 export class IngredientModule {}

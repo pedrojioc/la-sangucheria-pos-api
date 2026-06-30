@@ -29,7 +29,16 @@ describe('CreateCustomer', () => {
   it('should create a customer with full data', async () => {
     const id = UuidMother.random()
 
-    await useCase.run(id, 'Pedro Jiménez', '+573001234567', 'pedro@mail.com', 'CC', '123456789', 'SIMPLIFIED', 'VIP')
+    await useCase.run(
+      id,
+      'Pedro Jiménez',
+      '+573001234567',
+      'pedro@mail.com',
+      'CC',
+      '123456789',
+      'SIMPLIFIED',
+      'VIP'
+    )
 
     expect(repository.save).toHaveBeenCalledTimes(1)
     const saved = repository.save.mock.calls[0][0] as Customer
@@ -68,7 +77,16 @@ describe('CreateCustomer', () => {
     repository.existsByPhone.mockResolvedValue(true)
 
     await expect(
-      useCase.run(UuidMother.random(), 'Test', '+573001234567', null, 'CC', '999', 'SIMPLIFIED', null)
+      useCase.run(
+        UuidMother.random(),
+        'Test',
+        '+573001234567',
+        null,
+        'CC',
+        '999',
+        'SIMPLIFIED',
+        null
+      )
     ).rejects.toThrow(CustomerPhoneAlreadyExists)
 
     expect(repository.save).not.toHaveBeenCalled()
@@ -79,7 +97,16 @@ describe('CreateCustomer', () => {
     repository.existsByDocument.mockResolvedValue(true)
 
     await expect(
-      useCase.run(UuidMother.random(), 'Test', '+57300unique', null, 'CC', '123456789', 'SIMPLIFIED', null)
+      useCase.run(
+        UuidMother.random(),
+        'Test',
+        '+57300unique',
+        null,
+        'CC',
+        '123456789',
+        'SIMPLIFIED',
+        null
+      )
     ).rejects.toThrow(CustomerDocumentAlreadyExists)
 
     expect(repository.save).not.toHaveBeenCalled()

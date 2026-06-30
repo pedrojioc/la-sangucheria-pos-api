@@ -7,6 +7,6 @@ export class SubmitForApprovalHandler implements ICommandHandler<SubmitForApprov
   constructor(private readonly useCase: SubmitForApproval) {}
 
   async execute(command: SubmitForApprovalCommand): Promise<void> {
-    await this.useCase.run(command.purchaseOrderId)
+    await this.useCase.run(command.purchaseOrderId, command.submittedBy)
   }
 }

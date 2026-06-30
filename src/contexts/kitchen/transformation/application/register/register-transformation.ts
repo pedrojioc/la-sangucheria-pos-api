@@ -1,69 +1,33 @@
-import { PreparationRecipeRepository } from '@contexts/kitchen/transformation/domain/repositories/preparation-recipe.repository'
-import { IngredientTransformationRepository } from '@contexts/kitchen/transformation/domain/repositories/ingredient-transformation.repository'
-import { PreparationRecipeId } from '@contexts/kitchen/transformation/domain/preparation-recipe-id'
+import { TransformationUnitOfWork } from '@contexts/kitchen/transformation/domain/transformation-unit-of-work'
 import { IngredientTransformation } from '@contexts/kitchen/transformation/domain/ingredient-transformation'
-import { DeductIngredient } from '@contexts/inventory/stock-level/application/deduct/deduct-ingredient'
+import { InputUnitMismatchException } from '@contexts/kitchen/transformation/domain/exceptions/input-unit-mismatch.exception'
+import { OutputUnitMismatchException } from '@contexts/kitchen/transformation/domain/exceptions/output-unit-mismatch.exception'
+import { FindPreparationRecipe } from '@contexts/kitchen/transformation/application/find/find-preparation-recipe'
+import { FindIngredient } from '@contexts/inventory/ingredient/application/find/find-ingredient'
 import { GetIngredientFifoCost } from '@contexts/inventory/stock-level/application/get-ingredient-fifo-cost/get-ingredient-fifo-cost'
-import { Money } from '@/shared/domain/value-objects/money'
-import { Uuid } from '@/shared/domain/value-objects/uuid'
-import { InventoryBatch } from '@contexts/inventory/batch/domain/inventory-batch'
-import { InventoryBatchRepository } from '@contexts/inventory/batch/domain/repositories/inventory-batch.repository'
-import { InventoryMovementRepository } from '@contexts/inventory/stock-level/domain/repositories/inventory-movement.repository'
-import { InventoryLevelRepository } from '@contexts/inventory/stock-level/domain/repositories/inventory-level.repository'
+import { FifoInventoryService } from '@contexts/inventory/batch/domain/services/fifo-inventory.service'
 import { InventoryMovement } from '@contexts/inventory/stock-level/domain/inventory-movement'
-import { MovementType } from '@contexts/inventory/stock-level/domain/movement-type'
+import { InventoryBatch } from '@contexts/inventory/batch/domain/inventory-batch'
 import { InventoryLevel } from '@contexts/inventory/stock-level/domain/inventory-level'
+import { MovementType } from '@contexts/inventory/stock-level/domain/movement-type'
 import { IngredientId } from '@contexts/inventory/ingredient/domain/ingredient-id'
 import { Quantity } from '@/shared/domain/value-objects/quantity'
+import { Money } from '@/shared/domain/value-objects/money'
+import { Uuid } from '@/shared/domain/value-objects/uuid'
+import { NoStockAvailableException } from '@contexts/inventory/stock-level/domain/exceptions/no-stock-available.exception'
 import { EventBus } from '@/shared/domain/events/event-bus'
 import { IngredientTransformedEvent } from '@contexts/kitchen/transformation/domain/events/ingredient-transformed.event'
 import { AbnormalWasteDetectedEvent } from '@contexts/kitchen/transformation/domain/events/abnormal-waste-detected.event'
 
-/**
- * RegisterTransformation - Use Case
- *
- * Proceso completo de transformación de ingredientes:
- * 1. Obtener receta de preparación
- * 2. Deducir ingrediente base (FIFO)
- * 3. Deducir ingredientes adicionales (FIFO)
- * 4. Calcular costo total
- * 5. Crear batch del ingrediente transformado con costo ajustado
- * 6. Calcular varianza de rendimiento (esperado vs real)
- * 7. Emitir alerta si la varianza excede el threshold
- * 8. Registrar transformación
- * 9. Publicar eventos
- *
- * IMPORTANTE: Usuario ingresa cantidades REALES
- * - Input: Cantidad realmente usada (ej: 5kg morro crudo)
- * - Output: Cantidad realmente obtenida (ej: 2.3kg morro preparado)
- * - Sistema calcula merma: input - output = 2.7kg
- * - Sistema compara con rendimiento esperado de la receta
- * - Si la diferencia es significativa, genera alerta
- *
- * Ejemplo: Transformar 5kg morro crudo → morro preparado
- * - Usuario ingresa: 5kg input, 2.3kg output (real)
- * - Deduce 5kg morro crudo (FIFO)
- * - Deduce condimentos (cebollín, pimienta, etc.)
- * - Calcula costo total: $50.50
- * - Crea batch de 2.3kg morro preparado ($50.50 / 2.3kg = $21.96/kg)
- * - Merma real: 2.7kg (54%)
- * - Esperado: 2.5kg output (50% yield)
- * - Varianza: -8% → Si excede threshold, alerta
- */
 export class RegisterTransformation {
   constructor(
-    private readonly recipeRepository: PreparationRecipeRepository,
-    private readonly transformationRepository: IngredientTransformationRepository,
-    private readonly batchRepository: InventoryBatchRepository,
-    private readonly movementRepository: InventoryMovementRepository,
-    private readonly levelRepository: InventoryLevelRepository,
+    private readonly findRecipe: FindPreparationRecipe,
+    private readonly findIngredient: FindIngredient,
     private readonly getIngredientFifoCost: GetIngredientFifoCost,
-    private readonly deductIngredient: DeductIngredient,
+    private readonly fifoService: FifoInventoryService,
+    private readonly uow: TransformationUnitOfWork,
     private readonly eventBus: EventBus
   ) {}
-
-  // Threshold de varianza aceptable (%)
-  private readonly YIELD_VARIANCE_THRESHOLD = 15
 
   async run(
     transformationId: string,
@@ -76,184 +40,260 @@ export class RegisterTransformation {
     notes: string | null = null
   ): Promise<void> {
     // 1. Obtener receta
-    const recipe = await this.recipeRepository.search(new PreparationRecipeId(recipeId))
+    const recipe = await this.findRecipe.run(recipeId)
 
-    if (!recipe) {
-      throw new Error(`Preparation recipe ${recipeId} not found`)
+    const baseIngredientIdVO = recipe.getBaseIngredientId()
+    const outputIngredientIdVO = recipe.getOutputIngredientId()
+
+    // 2. Validar que las unidades coincidan con las del ingrediente
+    const baseIngredient = await this.findIngredient.run(baseIngredientIdVO.value)
+    const outputIngredient = await this.findIngredient.run(outputIngredientIdVO.value)
+
+    const baseUnitId = baseIngredient.toPrimitives().unitId
+    if (inputUnitId !== baseUnitId) {
+      throw new InputUnitMismatchException(baseIngredientIdVO.value, baseUnitId, inputUnitId)
     }
 
-    // 2. Escalar ingredientes según cantidad
-    const scaled = recipe.scaleIngredients(inputQuantity)
+    const outputUnitIdExpected = outputIngredient.toPrimitives().unitId
+    if (outputUnitId !== outputUnitIdExpected) {
+      throw new OutputUnitMismatchException(
+        outputIngredientIdVO.value,
+        outputUnitIdExpected,
+        outputUnitId
+      )
+    }
 
-    // 3. Calcular costos FIFO del ingrediente base
+    // 3. Escalar ingredientes según cantidad
+    const scaled = recipe.scaleIngredients(inputQuantity)
+    const recipePrimitives = recipe.toPrimitives()
+
+    // 4. Calcular costos FIFO (solo lectura, antes de abrir la transacción)
     const baseCost = await this.getIngredientFifoCost.run(
       scaled.baseIngredientId,
       scaled.baseQuantity,
       inputUnitId
     )
 
-    // 4. Deducir ingrediente base
-    await this.deductIngredient.run(
-      scaled.baseIngredientId,
-      scaled.baseQuantity,
-      inputUnitId,
-      `Transformación: ${recipe.toPrimitives().name}`,
-      transformationId,
-      performedBy
-    )
-
-    // 5. Calcular costos y deducir ingredientes adicionales
     let additionalsCost = new Money(0, baseCost.currency)
-
     for (const additional of scaled.additionalIngredients) {
-      // Calcular costo FIFO
       const cost = await this.getIngredientFifoCost.run(
         additional.ingredientId,
         additional.quantity,
         additional.unitId
       )
-
       additionalsCost = additionalsCost.add(cost)
+    }
 
-      // Deducir
-      await this.deductIngredient.run(
-        additional.ingredientId,
-        additional.quantity,
-        additional.unitId,
-        `Transformación: ${recipe.toPrimitives().name} (adicional)`,
+    const totalCost = baseCost.add(additionalsCost)
+    const outputUnitCost = totalCost.divide(outputQuantity)
+    const wasteQuantity = inputQuantity - outputQuantity
+
+    // 5. Ejecutar todas las escrituras en una sola transacción atómica
+    await this.uow.commit(async uow => {
+      // 5a. Deducir ingrediente base
+      await this.deductIngredient(
+        uow,
+        scaled.baseIngredientId,
+        scaled.baseQuantity,
+        inputUnitId,
+        `Transformación: ${recipePrimitives.name}`,
         transformationId,
         performedBy
       )
-    }
 
-    // 6. Calcular merma real (basada en cantidades ingresadas por usuario)
-    const wasteQuantity = inputQuantity - outputQuantity
-    const totalCost = baseCost.add(additionalsCost)
+      // 5b. Deducir ingredientes adicionales
+      for (const additional of scaled.additionalIngredients) {
+        await this.deductIngredient(
+          uow,
+          additional.ingredientId,
+          additional.quantity,
+          additional.unitId,
+          `Transformación: ${recipePrimitives.name} (adicional)`,
+          transformationId,
+          performedBy
+        )
+      }
 
-    // 7. Calcular varianza de rendimiento y detectar anomalías
-    const yieldVariance = recipe.calculateYieldVariance(inputQuantity, outputQuantity)
-    const expectedOutput = recipe.calculateExpectedOutput(inputQuantity)
-    const expectedWaste = recipe.calculateExpectedWaste(inputQuantity)
-    const recipePrimitives = recipe.toPrimitives()
+      // 5c. Agregar stock producido
+      await this.addProducedStock(
+        uow,
+        outputIngredientIdVO.value,
+        outputQuantity,
+        outputUnitId,
+        outputUnitCost.amount,
+        totalCost.currency,
+        transformationId,
+        `Transformación: ${recipePrimitives.name}`,
+        performedBy
+      )
 
-    // Lista de eventos a publicar
-    const events: any[] = []
-
-    // Si la varianza excede el threshold, crear evento de alerta
-    if (Math.abs(yieldVariance) > this.YIELD_VARIANCE_THRESHOLD) {
-      const abnormalWasteEvent = new AbnormalWasteDetectedEvent({
+      // 5d. Registrar transformación
+      const transformation = IngredientTransformation.create(
         transformationId,
         recipeId,
-        recipeName: recipePrimitives.name,
-        baseIngredientId: scaled.baseIngredientId,
-        outputIngredientId: recipe.getOutputIngredientId().value,
+        scaled.baseIngredientId,
+        outputIngredientIdVO.value,
         inputQuantity,
         inputUnitId,
-        expectedOutput,
-        actualOutput: outputQuantity,
+        outputQuantity,
         outputUnitId,
-        expectedWaste,
-        actualWaste: wasteQuantity,
-        yieldVariancePercentage: yieldVariance,
+        wasteQuantity,
+        baseCost.amount,
+        additionalsCost.amount,
+        totalCost.currency,
+        performedBy,
+        notes
+      )
+      await uow.transformationRepository.save(transformation)
+    })
+
+    // 6. Publicar eventos (fuera de la transacción — fire & forget)
+    const actualYieldPercentage = (outputQuantity / inputQuantity) * 100
+    const events: any[] = []
+
+    if (recipe.hasAbnormalWaste(actualYieldPercentage)) {
+      events.push(
+        new AbnormalWasteDetectedEvent({
+          transformationId,
+          recipeId,
+          recipeName: recipePrimitives.name,
+          baseIngredientId: scaled.baseIngredientId,
+          outputIngredientId: outputIngredientIdVO.value,
+          inputQuantity,
+          inputUnitId,
+          expectedOutput: recipe.calculateExpectedOutput(inputQuantity),
+          actualOutput: outputQuantity,
+          outputUnitId,
+          expectedWaste: recipe.calculateExpectedWaste(inputQuantity),
+          actualWaste: wasteQuantity,
+          yieldVariancePercentage: recipe.getYieldPercentage().value - actualYieldPercentage,
+          performedAt: new Date(),
+          performedBy
+        })
+      )
+    }
+
+    events.push(
+      new IngredientTransformedEvent({
+        transformationId,
+        recipeId,
+        baseIngredientId: scaled.baseIngredientId,
+        outputIngredientId: outputIngredientIdVO.value,
+        inputQuantity,
+        inputUnitId,
+        outputQuantity,
+        outputUnitId,
+        wasteQuantity,
+        totalCost: totalCost.amount,
+        outputUnitCost: outputUnitCost.amount,
+        currency: totalCost.currency,
         performedAt: new Date(),
         performedBy
       })
-      events.push(abnormalWasteEvent)
-    }
-
-    // 8. Crear batch del ingrediente transformado
-    const outputBatchId = Uuid.random().value
-    const outputIngredientId = recipe.getOutputIngredientId().value
-
-    // Costo por unidad del output (incluye desperdicio)
-    const outputUnitCost = totalCost.divide(outputQuantity)
-
-    const outputBatch = InventoryBatch.create(
-      outputBatchId,
-      outputIngredientId,
-      outputQuantity,
-      outputUnitId,
-      outputUnitCost.amount,
-      totalCost.currency,
-      new Date(), // purchaseDate = ahora (fecha de transformación)
-      null, // expirationDate
-      null, // supplier
-      `Transformación ${transformationId}` // referenceCode
     )
 
-    await this.batchRepository.save(outputBatch)
-
-    // 9. Registrar movimiento de entrada del output
-    const movementId = Uuid.random().value
-    const movement = InventoryMovement.create(
-      movementId,
-      outputIngredientId,
-      MovementType.PURCHASE, // Entrada por transformación
-      outputQuantity,
-      outputUnitId,
-      outputUnitCost.amount,
-      totalCost.currency,
-      outputBatchId,
-      `Transformación: ${recipePrimitives.name}`,
-      transformationId,
-      performedBy
-    )
-
-    await this.movementRepository.save(movement)
-
-    // 10. Actualizar nivel de inventario del output
-    const outputIngredientIdVO = new IngredientId(outputIngredientId)
-    let outputLevel = await this.levelRepository.findByIngredient(outputIngredientIdVO)
-
-    if (!outputLevel) {
-      const levelId = Uuid.random().value
-      outputLevel = InventoryLevel.create(levelId, outputIngredientId, outputQuantity, outputUnitId)
-    } else {
-      outputLevel.increase(new Quantity(outputQuantity, outputUnitId))
-    }
-
-    await this.levelRepository.save(outputLevel)
-
-    // 11. Registrar transformación con cantidades REALES
-    const transformation = IngredientTransformation.create(
-      transformationId,
-      recipeId,
-      scaled.baseIngredientId,
-      outputIngredientId,
-      inputQuantity,
-      inputUnitId,
-      outputQuantity, // ← Cantidad REAL ingresada por usuario
-      outputUnitId,
-      wasteQuantity, // ← Calculada: inputQuantity - outputQuantity
-      baseCost.amount,
-      additionalsCost.amount,
-      totalCost.currency,
-      performedBy,
-      notes
-    )
-
-    await this.transformationRepository.save(transformation)
-
-    // 12. Agregar evento principal de transformación
-    const transformedEvent = new IngredientTransformedEvent({
-      transformationId,
-      recipeId,
-      baseIngredientId: scaled.baseIngredientId,
-      outputIngredientId,
-      inputQuantity,
-      inputUnitId,
-      outputQuantity, // ← Cantidad REAL
-      outputUnitId,
-      wasteQuantity, // ← Merma REAL
-      totalCost: totalCost.amount,
-      outputUnitCost: outputUnitCost.amount,
-      currency: totalCost.currency,
-      performedAt: new Date(),
-      performedBy
-    })
-    events.push(transformedEvent)
-
-    // 13. Publicar todos los eventos (transformación + alerta si aplica)
     await this.eventBus.publish(events)
+  }
+
+  private async deductIngredient(
+    uow: TransformationUnitOfWork,
+    ingredientId: string,
+    quantity: number,
+    unitId: string,
+    reason: string,
+    referenceId: string,
+    performedBy: string | null
+  ): Promise<void> {
+    const ingredientIdVO = new IngredientId(ingredientId)
+    const quantityVO = new Quantity(quantity, unitId)
+
+    const availableBatches = await uow.batchRepository.findAvailableByIngredient(ingredientIdVO)
+    if (availableBatches.length === 0) {
+      throw new NoStockAvailableException(ingredientId)
+    }
+
+    const deductionResult = this.fifoService.deduct(availableBatches, quantityVO)
+
+    for (const batch of availableBatches) {
+      await uow.batchRepository.save(batch)
+    }
+
+    for (const batchDeduction of deductionResult.batches) {
+      const movement = InventoryMovement.create(
+        Uuid.random().value,
+        ingredientId,
+        MovementType.SALE,
+        batchDeduction.quantityDeducted,
+        unitId,
+        batchDeduction.unitCost,
+        deductionResult.currency,
+        batchDeduction.batchId,
+        reason,
+        referenceId,
+        performedBy
+      )
+      await uow.movementRepository.save(movement)
+    }
+
+    const level = await uow.levelRepository.findByIngredient(ingredientIdVO)
+    if (!level) {
+      throw new Error(`Inventory level not found for ingredient ${ingredientId}`)
+    }
+    level.decrease(quantityVO)
+    await uow.levelRepository.save(level)
+  }
+
+  private async addProducedStock(
+    uow: TransformationUnitOfWork,
+    ingredientId: string,
+    quantity: number,
+    unitId: string,
+    unitCost: number,
+    currency: string,
+    referenceId: string,
+    reason: string,
+    performedBy: string | null
+  ): Promise<void> {
+    const batchId = Uuid.random().value
+
+    const batch = InventoryBatch.create(
+      batchId,
+      ingredientId,
+      quantity,
+      unitId,
+      unitCost,
+      currency,
+      new Date(),
+      null,
+      null,
+      referenceId
+    )
+    await uow.batchRepository.save(batch)
+
+    const movement = InventoryMovement.create(
+      Uuid.random().value,
+      ingredientId,
+      MovementType.PURCHASE,
+      quantity,
+      unitId,
+      unitCost,
+      currency,
+      batchId,
+      reason,
+      referenceId,
+      performedBy
+    )
+    await uow.movementRepository.save(movement)
+
+    const ingredientIdVO = new IngredientId(ingredientId)
+    let level = await uow.levelRepository.findByIngredient(ingredientIdVO)
+
+    if (!level) {
+      level = InventoryLevel.create(Uuid.random().value, ingredientId, quantity, unitId)
+    } else {
+      level.increase(new Quantity(quantity, unitId))
+    }
+
+    await uow.levelRepository.save(level)
   }
 }

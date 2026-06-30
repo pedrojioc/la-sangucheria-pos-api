@@ -10,9 +10,10 @@ import {
   ManyToOne,
   JoinColumn
 } from 'typeorm'
+import { decimalTransformer } from '@shared/infrastructure/persistence/typeorm/decimal-transformer'
 
 @Entity('inventory_batches')
-@Index(['ingredientId', 'purchaseDate']) // Para búsquedas FIFO
+@Index(['ingredientId', 'purchaseDate'])
 export class InventoryBatchEntity {
   @PrimaryColumn('uuid')
   id: string
@@ -21,16 +22,34 @@ export class InventoryBatchEntity {
   @Index()
   ingredientId: string
 
-  @Column({ type: 'decimal', precision: 12, scale: 3, name: 'initial_quantity' })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 3,
+    name: 'initial_quantity',
+    transformer: decimalTransformer
+  })
   initialQuantity: number
 
-  @Column({ type: 'decimal', precision: 12, scale: 3, name: 'remaining_quantity' })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 3,
+    name: 'remaining_quantity',
+    transformer: decimalTransformer
+  })
   remainingQuantity: number
 
   @Column({ type: 'uuid', name: 'unit_id' })
   unitId: string
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, name: 'unit_cost' })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    name: 'unit_cost',
+    transformer: decimalTransformer
+  })
   unitCost: number
 
   @Column({ type: 'varchar', length: 3 })

@@ -41,7 +41,12 @@ export class Position extends AggregateRoot {
     )
   }
 
-  update(name: string, description: string | null, color: string | null, icon: string | null): void {
+  update(
+    name: string,
+    description: string | null,
+    color: string | null,
+    icon: string | null
+  ): void {
     this.name = new PositionName(name)
     this.description = description
     this.color = color

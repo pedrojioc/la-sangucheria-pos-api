@@ -1,4 +1,8 @@
-import { DomainEvent, DomainEventMetadata, DomainEventFromPrimitivesParams } from '@/shared/domain/events'
+import {
+  DomainEvent,
+  DomainEventMetadata,
+  DomainEventFromPrimitivesParams
+} from '@/shared/domain/events'
 import { DocumentTypeValue } from '../customer-document-type'
 
 export interface CustomerCreatedEventPayload {

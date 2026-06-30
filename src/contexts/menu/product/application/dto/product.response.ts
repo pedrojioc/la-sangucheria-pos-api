@@ -1,4 +1,6 @@
 import { Product } from '../../domain/product'
+import { ProductAvailability } from '../services/product-availability-query.service'
+import { InventoryStrategyType } from '../../domain/inventory-strategy-type'
 
 export class ProductResponse {
   constructor(
@@ -6,7 +8,8 @@ export class ProductResponse {
     public readonly name: string,
     public readonly description: string | null,
     public readonly categoryId: string,
-    public readonly recipeId: string | null,
+    public readonly ingredientId: string | null,
+    public readonly inventoryStrategyType: InventoryStrategyType,
     public readonly price: number,
     public readonly imageUrl: string | null,
     public readonly preparationTime: number | null,
@@ -14,11 +17,12 @@ export class ProductResponse {
     public readonly displayOrder: number,
     public readonly sku: string,
     public readonly tags: string[],
+    public readonly availability: ProductAvailability,
     public readonly createdAt: Date,
     public readonly updatedAt: Date
   ) {}
 
-  static fromDomain(product: Product): ProductResponse {
+  static fromDomain(product: Product, availability: ProductAvailability): ProductResponse {
     const primitives = product.toPrimitives()
 
     return new ProductResponse(
@@ -26,7 +30,8 @@ export class ProductResponse {
       primitives.name,
       primitives.description,
       primitives.categoryId,
-      primitives.recipeId,
+      primitives.ingredientId,
+      primitives.inventoryStrategyType,
       primitives.price,
       primitives.imageUrl,
       primitives.preparationTime,
@@ -34,6 +39,7 @@ export class ProductResponse {
       primitives.displayOrder,
       primitives.sku,
       primitives.tags,
+      availability,
       primitives.createdAt,
       primitives.updatedAt
     )

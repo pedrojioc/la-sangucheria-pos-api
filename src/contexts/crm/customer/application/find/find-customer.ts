@@ -11,6 +11,17 @@ export class FindCustomer {
     if (!customer) throw new CustomerNotExist(id)
 
     const p = customer.toPrimitives()
-    return new CustomerResponse(p.id, p.name, p.phone, p.email, p.documentType, p.documentNumber, p.taxRegime, p.defaultAddressId, p.notes, p.status)
+    return new CustomerResponse(
+      p.id,
+      p.name,
+      p.phone,
+      p.email,
+      p.documentType,
+      p.documentNumber,
+      p.taxRegime,
+      p.defaultAddressId,
+      p.notes,
+      p.status
+    )
   }
 }

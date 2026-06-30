@@ -1,4 +1,4 @@
-import { Module, OnModuleInit } from '@nestjs/common'
+import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { CqrsModule } from '@nestjs/cqrs'
 
@@ -9,14 +9,15 @@ import { InventoryBatchEntity } from './infrastructure/persistence/typeorm/inven
 import { InventoryBatchRepository } from './domain/repositories/inventory-batch.repository'
 import { TypeOrmInventoryBatchRepository } from './infrastructure/persistence/typeorm/typeorm-inventory-batch.repository'
 
+// Unit of Work
+import { PurchaseUnitOfWork } from './domain/purchase-unit-of-work'
+import { TypeOrmPurchaseUnitOfWork } from './infrastructure/persistence/typeorm/typeorm-purchase-unit-of-work'
+
 // Use Cases
 import { RegisterPurchase } from './application/register-purchase/register-purchase'
 
 // Handlers
 import { RegisterPurchaseHandler } from './application/register-purchase/register-purchase.handler'
-
-// Subscribers
-import { CreateInventoryBatchOnPurchaseOrderReceived } from './application/subscribers/create-inventory-batch-on-purchase-order-received'
 
 // Dependencies from other modules
 import { IngredientRepository } from '@/contexts/inventory/ingredient/domain/repositories/ingredient.repository'
@@ -40,34 +41,23 @@ const CommandHandlers = [RegisterPurchaseHandler]
       useClass: TypeOrmInventoryBatchRepository
     },
 
+    // Unit of Work
+    {
+      provide: PurchaseUnitOfWork,
+      useClass: TypeOrmPurchaseUnitOfWork
+    },
+
     // Use Cases
     createProvider(RegisterPurchase, [
-      InventoryBatchRepository,
       IngredientRepository,
       UnitConversionRepository,
+      PurchaseUnitOfWork,
       EventBus
     ]),
 
     // Handlers
-    ...CommandHandlers,
-
-    // Event Subscribers
-    {
-      provide: CreateInventoryBatchOnPurchaseOrderReceived,
-      useFactory: (useCase: RegisterPurchase) =>
-        new CreateInventoryBatchOnPurchaseOrderReceived(useCase),
-      inject: [RegisterPurchase]
-    }
+    ...CommandHandlers
   ],
   exports: [InventoryBatchRepository, RegisterPurchase]
 })
-export class InventoryBatchModule implements OnModuleInit {
-  constructor(
-    private readonly eventBus: EventBus,
-    private readonly createBatchSubscriber: CreateInventoryBatchOnPurchaseOrderReceived
-  ) {}
-
-  onModuleInit(): void {
-    this.eventBus.addSubscribers([this.createBatchSubscriber])
-  }
-}
+export class InventoryBatchModule {}

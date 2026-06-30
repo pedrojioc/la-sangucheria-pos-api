@@ -8,9 +8,7 @@ export class PurchaseOrderNumberMother {
 
   static random(): string {
     const year = new Date().getFullYear()
-    const sequence = NumberMother.random({ min: 1, max: 9999 })
-      .toString()
-      .padStart(4, '0')
+    const sequence = NumberMother.random({ min: 1, max: 9999 }).toString().padStart(4, '0')
     return `PO-${year}-${sequence}`
   }
 }

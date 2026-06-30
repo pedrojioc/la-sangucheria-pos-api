@@ -88,7 +88,9 @@ describe('RemoveAddress', () => {
   it('should throw AddressNotExist when address not found', async () => {
     addressRepository.search.mockResolvedValue(null)
 
-    await expect(useCase.run(UuidMother.random(), UuidMother.random())).rejects.toThrow(AddressNotExist)
+    await expect(useCase.run(UuidMother.random(), UuidMother.random())).rejects.toThrow(
+      AddressNotExist
+    )
   })
 
   it('should publish AddressRemovedEvent', async () => {

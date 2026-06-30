@@ -7,19 +7,21 @@ import {
   HttpStatus,
   Param,
   Post,
-  Put
+  Put,
+  Query
 } from '@nestjs/common'
 import { CommandBus, QueryBus } from '@nestjs/cqrs'
 
 import { CreateProductCategoryRequest } from '../dto/create-product-category.request'
 import { UpdateProductCategoryRequest } from '../dto/update-product-category.request'
+import { SearchProductCategoriesRequest } from '../dto/search-product-categories.request'
 import { CreateProductCategoryCommand } from '@contexts/menu/product-category/application/create/create-product-category.command'
 import { UpdateProductCategoryCommand } from '@contexts/menu/product-category/application/update/update-product-category.command'
 import { DeleteProductCategoryCommand } from '@contexts/menu/product-category/application/delete/delete-product-category.command'
 import { FindProductCategoryQuery } from '@contexts/menu/product-category/application/find/find-product-category.query'
-import { FindAllProductCategoriesQuery } from '@contexts/menu/product-category/application/find-all/find-all-product-categories.query'
+import { SearchProductCategoriesByCriteriaQuery } from '@contexts/menu/product-category/application/search-by-criteria/search-product-categories-by-criteria.query'
 import { ProductCategoryResponse } from '@contexts/menu/product-category/application/dto/product-category.response'
-import { ProductCategoryListResponse } from '@contexts/menu/product-category/application/dto/product-category-list.response'
+import { PaginatedProductCategoryListResponse } from '@contexts/menu/product-category/application/dto/paginated-product-category-list.response'
 
 @Controller('product-categories')
 export class ProductCategoriesController {
@@ -36,8 +38,10 @@ export class ProductCategoriesController {
       dto.name,
       dto.description,
       dto.icon,
+      dto.color,
       dto.isActive,
-      dto.displayOrder
+      dto.displayOrder ?? 0,
+      dto.defaultStationId ?? null
     )
 
     await this.commandBus.execute(command)
@@ -51,8 +55,10 @@ export class ProductCategoriesController {
       dto.name,
       dto.description,
       dto.icon,
+      dto.color,
       dto.isActive,
-      dto.displayOrder
+      dto.displayOrder ?? 0,
+      dto.defaultStationId ?? null
     )
 
     await this.commandBus.execute(command)
@@ -73,8 +79,10 @@ export class ProductCategoriesController {
   }
 
   @Get()
-  async findAll(): Promise<ProductCategoryListResponse> {
-    const query = new FindAllProductCategoriesQuery()
+  async search(
+    @Query() request: SearchProductCategoriesRequest
+  ): Promise<PaginatedProductCategoryListResponse> {
+    const query = new SearchProductCategoriesByCriteriaQuery(request.toCriteria())
     return this.queryBus.execute(query)
   }
 }

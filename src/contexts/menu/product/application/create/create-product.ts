@@ -3,16 +3,19 @@ import { ProductRepository } from '../../domain/repositories/product.repository'
 import { Product } from '../../domain/product'
 import { ProductSku } from '../../domain/product-sku'
 import { ProductSkuAlreadyExists } from '../../domain/exceptions/product-sku-already-exists'
+import { InventoryStrategyType } from '../../domain/inventory-strategy-type'
 
 import { FileStorageRepository } from '@/shared/domain/file-storage/repositories/file-storage.repository'
 import { FileUploadPrimitives } from '@/shared/domain/file-storage/file-upload'
 import { ProductImageUpload } from '../../domain/product-image-upload'
 import { FindProductCategory } from '@/contexts/menu/product-category/application/find/find-product-category'
+import { FindIngredient } from '@/contexts/inventory/ingredient/application/find/find-ingredient'
 
 export class CreateProduct {
   constructor(
     private readonly productRepository: ProductRepository,
     private readonly findProductCategory: FindProductCategory,
+    private readonly findIngredient: FindIngredient,
     private readonly fileStorage: FileStorageRepository,
     private readonly eventBus: EventBus
   ) {}
@@ -23,17 +26,16 @@ export class CreateProduct {
     categoryId: string,
     price: number,
     sku: string,
+    inventoryStrategyType?: InventoryStrategyType | null,
     description?: string | null,
-    recipeId?: string | null,
+    ingredientId?: string | null,
     imageFile?: FileUploadPrimitives | null,
     preparationTime?: number | null,
     displayOrder?: number,
     tags?: string[]
   ): Promise<void> {
-    // 1. Verify category exists
-    const category = await this.findProductCategory.run(categoryId)
+    await this.findProductCategory.run(categoryId)
 
-    // 2. Verify SKU is unique
     const skuVO = new ProductSku(sku)
     const existingProduct = await this.productRepository.findBySku(skuVO)
 
@@ -41,7 +43,10 @@ export class CreateProduct {
       throw new ProductSkuAlreadyExists(sku)
     }
 
-    // 3. Upload image if provided
+    if (inventoryStrategyType === 'DIRECT' && ingredientId) {
+      await this.findIngredient.run(ingredientId)
+    }
+
     let imageUrl: string | null = null
     let imageStorageKey: string | null = null
 
@@ -58,15 +63,15 @@ export class CreateProduct {
       imageStorageKey = uploadedFile.storageKey
     }
 
-    // 4. Create product with image
     const product = Product.create(
       id,
       name,
       categoryId,
       price,
       sku,
+      inventoryStrategyType,
       description,
-      recipeId,
+      ingredientId,
       imageUrl,
       imageStorageKey,
       preparationTime,
@@ -74,23 +79,9 @@ export class CreateProduct {
       tags
     )
 
-    // 5. Save and publish events
     await this.productRepository.save(product)
 
     const events = product.pullDomainEvents()
     await this.eventBus.publish(events)
   }
 }
-
-/*
-{
-  allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
-  maxSizeInBytes: 10 * 1024 * 1024, // 10MB (Cloudflare Images limit)
-  requireSignedURLs: false, // Public images
-  metadata: {
-    productId: id,
-    productName: name,
-    uploadedBy: 'system'
-  }
-}
-*/

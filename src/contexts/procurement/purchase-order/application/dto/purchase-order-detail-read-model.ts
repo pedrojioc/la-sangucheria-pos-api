@@ -69,12 +69,14 @@ export interface PurchaseOrderDetailReadModel {
   itemCount: number
 
   // Workflow tracking
-  requestedBy: string
-  approvedBy: string | null
-  rejectedBy: string | null
-  sentBy: string | null
-  receivedBy: string | null
-  closedBy: string | null
+  requestedBy: { id: string; name: string }
+  submittedBy: { id: string; name: string } | null
+  approvedBy: { id: string; name: string } | null
+  rejectedBy: { id: string; name: string } | null
+  sentBy: { id: string; name: string } | null
+  cancelledBy: { id: string; name: string } | null
+  receivedBy: { id: string; name: string } | null
+  closedBy: { id: string; name: string } | null
 
   // Purchase method
   purchaseMethod: PurchaseMethod | null
@@ -87,9 +89,12 @@ export interface PurchaseOrderDetailReadModel {
   // Dates
   requestedDate: Date
   expectedDeliveryDate: Date | null
+  submittedDate: Date | null
   approvedDate: Date | null
   sentDate: Date | null
   receivedDate: Date | null
+  rejectedDate: Date | null
+  cancelledDate: Date | null
   closedDate: Date | null
 
   notes: string | null

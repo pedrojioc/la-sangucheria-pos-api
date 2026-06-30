@@ -3,6 +3,7 @@ import { FifoInventoryService } from '@contexts/inventory/batch/domain/services/
 import { IngredientId } from '@contexts/inventory/ingredient/domain/ingredient-id'
 import { Quantity } from '@shared/domain/value-objects/quantity'
 import { Money } from '@shared/domain/value-objects/money'
+import { NoStockAvailableException } from '@contexts/inventory/stock-level/domain/exceptions/no-stock-available.exception'
 
 /**
  * GetIngredientFifoCost - Query Use Case
@@ -23,7 +24,7 @@ export class GetIngredientFifoCost {
     const availableBatches = await this.batchRepository.findAvailableByIngredient(ingredientIdVO)
 
     if (availableBatches.length === 0) {
-      throw new Error(`No available batches for ingredient ${ingredientId}`)
+      throw new NoStockAvailableException(ingredientId)
     }
 
     return this.fifoService.calculateCost(availableBatches, quantityVO)

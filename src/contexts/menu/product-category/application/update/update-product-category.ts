@@ -14,8 +14,10 @@ export class UpdateProductCategory {
     name: string,
     description: string | null,
     icon: string | null,
+    color: string | null,
     isActive: boolean,
-    displayOrder: number
+    displayOrder: number,
+    defaultStationId: string | null = null
   ): Promise<void> {
     const categoryId = new ProductCategoryId(id)
     const category = await this.repository.search(categoryId)
@@ -24,7 +26,7 @@ export class UpdateProductCategory {
       throw new ProductCategoryNotExist(categoryId)
     }
 
-    category.update(name, description, icon, isActive, displayOrder)
+    category.update(name, description, icon, color, isActive, displayOrder, defaultStationId)
 
     await this.repository.save(category)
 

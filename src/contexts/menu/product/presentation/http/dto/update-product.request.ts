@@ -5,11 +5,13 @@ import {
   IsOptional,
   IsArray,
   IsInt,
+  IsIn,
   Min,
   MaxLength,
   IsBoolean
 } from 'class-validator'
 import { Type } from 'class-transformer'
+import { InventoryStrategyType } from '../../../domain/inventory-strategy-type'
 
 export class UpdateProductRequest {
   @IsString()
@@ -25,13 +27,17 @@ export class UpdateProductRequest {
   price: number
 
   @IsOptional()
+  @IsIn(['RECIPE', 'DIRECT', 'NONE'])
+  inventoryStrategyType?: InventoryStrategyType
+
+  @IsOptional()
   @IsString()
   @MaxLength(500)
   description?: string | null
 
   @IsOptional()
   @IsUUID()
-  recipeId?: string | null
+  ingredientId?: string | null
 
   @IsOptional()
   @Type(() => Boolean)

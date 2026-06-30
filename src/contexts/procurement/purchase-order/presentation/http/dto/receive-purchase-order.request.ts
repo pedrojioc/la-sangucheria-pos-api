@@ -8,7 +8,8 @@ import {
   IsPositive,
   IsString,
   IsUUID,
-  ValidateNested
+  ValidateNested,
+  ValidateIf
 } from 'class-validator'
 
 export class ReceivedItemDto {
@@ -16,14 +17,26 @@ export class ReceivedItemDto {
   @IsNotEmpty()
   purchaseOrderItemId: string
 
+  /**
+   * Si true, el item no llegó. El backend lo marca como cancelado.
+   * Cuando notReceived=true, quantityReceived/quantityReceivedUnitId/unitCost son ignorados.
+   */
+  @IsBoolean()
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  notReceived?: boolean
+
+  @ValidateIf(o => !o.notReceived)
   @IsNumber()
   @IsPositive()
   quantityReceived: number
 
+  @ValidateIf(o => !o.notReceived)
   @IsUUID()
   @IsNotEmpty()
   quantityReceivedUnitId: string
 
+  @ValidateIf(o => !o.notReceived)
   @IsNumber()
   @IsPositive()
   unitCost: number

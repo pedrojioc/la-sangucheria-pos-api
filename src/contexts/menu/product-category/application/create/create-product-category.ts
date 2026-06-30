@@ -13,16 +13,20 @@ export class CreateProductCategory {
     name: string,
     description: string | null,
     icon: string | null,
+    color: string | null,
     isActive: boolean,
-    displayOrder: number
+    displayOrder: number,
+    defaultStationId: string | null = null
   ): Promise<void> {
     const productCategory = ProductCategory.create(
       id,
       name,
       description,
       icon,
+      color,
       isActive,
-      displayOrder
+      displayOrder,
+      defaultStationId
     )
 
     await this.productCategoryRepository.save(productCategory)

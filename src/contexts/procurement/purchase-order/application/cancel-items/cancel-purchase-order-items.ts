@@ -9,15 +9,14 @@ import { PurchaseOrderId } from '../../domain/purchase-order-id'
  * cannot fulfill them.
  *
  * Business Rules:
- * - Order must be in APPROVED or PARTIALLY_RECEIVED status
+ * - Order must be in ORDERED or PARTIALLY_RECEIVED status
  * - Items must exist in the order
  * - Items cannot be already received
- * - Auto-transitions order status if all items become processed
  *
  * State Transitions:
- * APPROVED → PARTIALLY_RECEIVED (if some items still pending)
- * APPROVED → CLOSED (if all items now processed)
- * PARTIALLY_RECEIVED → CLOSED (if all items now processed)
+ * ORDERED → CLOSED (auto-close if all items cancelled with no physical reception)
+ * PARTIALLY_RECEIVED → CLOSED (auto-close if all remaining items cancelled)
+ * Otherwise: order stays in its current state
  */
 export class CancelPurchaseOrderItems {
   constructor(
@@ -25,14 +24,14 @@ export class CancelPurchaseOrderItems {
     private readonly eventBus: EventBus
   ) {}
 
-  async run(purchaseOrderId: string, itemIds: string[], reason: string | null): Promise<void> {
+  async run(purchaseOrderId: string, itemId: string, reason: string | null): Promise<void> {
     const purchaseOrder = await this.repository.findById(new PurchaseOrderId(purchaseOrderId))
 
     if (!purchaseOrder) {
       throw new Error(`Purchase order ${purchaseOrderId} not found`)
     }
 
-    purchaseOrder.cancelItems(itemIds, reason)
+    purchaseOrder.cancelItem(itemId, reason)
 
     await this.repository.save(purchaseOrder)
 

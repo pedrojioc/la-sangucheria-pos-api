@@ -1,21 +1,16 @@
 import { FileUploadPrimitives } from '@/shared/domain/file-storage/file-upload'
+import { InventoryStrategyType } from '../../domain/inventory-strategy-type'
 
-/**
- * Command for updating a product.
- *
- * Note: This command receives Express.Multer.File (infrastructure type) instead of FileUpload (domain VO).
- * The Handler will transform it to FileUpload before calling the use case.
- * This maintains proper layer separation in Onion Architecture.
- */
 export class UpdateProductCommand {
   constructor(
     public readonly id: string,
     public readonly name: string,
     public readonly categoryId: string,
     public readonly price: number,
+    public readonly inventoryStrategyType?: InventoryStrategyType | null,
     public readonly description?: string | null,
-    public readonly recipeId?: string | null,
-    public readonly imageFile?: FileUploadPrimitives | null, // Infrastructure type
+    public readonly ingredientId?: string | null,
+    public readonly imageFile?: FileUploadPrimitives | null,
     public readonly removeImage?: boolean,
     public readonly preparationTime?: number | null,
     public readonly displayOrder?: number,

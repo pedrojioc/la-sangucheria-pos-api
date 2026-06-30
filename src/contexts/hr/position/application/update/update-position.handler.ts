@@ -7,6 +7,12 @@ export class UpdatePositionHandler implements ICommandHandler<UpdatePositionComm
   constructor(private readonly updatePosition: UpdatePosition) {}
 
   async execute(command: UpdatePositionCommand): Promise<void> {
-    await this.updatePosition.run(command.id, command.name, command.description, command.color, command.icon)
+    await this.updatePosition.run(
+      command.id,
+      command.name,
+      command.description,
+      command.color,
+      command.icon
+    )
   }
 }

@@ -5,10 +5,12 @@ import {
   IsOptional,
   IsArray,
   IsInt,
+  IsIn,
   Min,
   MaxLength
 } from 'class-validator'
 import { Type } from 'class-transformer'
+import { InventoryStrategyType } from '../../../domain/inventory-strategy-type'
 
 export class CreateProductRequest {
   @IsUUID()
@@ -31,13 +33,17 @@ export class CreateProductRequest {
   sku: string
 
   @IsOptional()
+  @IsIn(['RECIPE', 'DIRECT', 'NONE'])
+  inventoryStrategyType?: InventoryStrategyType
+
+  @IsOptional()
   @IsString()
   @MaxLength(500)
   description?: string | null
 
   @IsOptional()
   @IsUUID()
-  recipeId?: string | null
+  ingredientId?: string | null
 
   @IsOptional()
   @Type(() => Number)

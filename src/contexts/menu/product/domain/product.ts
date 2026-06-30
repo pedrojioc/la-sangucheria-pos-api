@@ -3,7 +3,7 @@ import { ProductId } from './product-id'
 import { ProductName } from './product-name'
 import { ProductDescription } from './product-description'
 import { ProductCategoryId } from './product-category-id'
-import { RecipeId } from '../../../kitchen/recipe/domain/recipe-id'
+import { ProductIngredientId } from './product-ingredient-id'
 import { ProductPrice } from './product-price'
 import { ProductImageUrl } from './product-image-url'
 import { ProductImageStorageKey } from './product-image-storage-key'
@@ -12,6 +12,7 @@ import { ProductIsActive } from './product-is-active'
 import { ProductDisplayOrder } from './product-display-order'
 import { ProductSku } from './product-sku'
 import { ProductTags } from './product-tags'
+import { InventoryStrategyType } from './inventory-strategy-type'
 import { ProductCreatedEvent } from './events/product-created.event'
 import { ProductUpdatedEvent } from './events/product-updated.event'
 import {
@@ -19,13 +20,16 @@ import {
   ProductPriceChangedPayload
 } from './events/product-price-changed.event'
 import { DomainEventMetadata } from '@/shared/domain/events'
+import { DirectProductRequiresIngredient } from './exceptions/direct-product-requires-ingredient.exception'
+import { RecipeProductCannotHaveIngredient } from './exceptions/recipe-product-cannot-have-ingredient.exception'
 
 export interface ProductPrimitives {
   id: string
   name: string
   description: string | null
   categoryId: string
-  recipeId: string | null
+  ingredientId: string | null
+  inventoryStrategyType: InventoryStrategyType
   price: number
   imageUrl: string | null
   imageStorageKey: string | null
@@ -34,7 +38,6 @@ export interface ProductPrimitives {
   displayOrder: number
   sku: string
   tags: string[]
-  inventoryStrategyType: 'RECIPE' | 'DIRECT' | null
   createdAt: Date
   updatedAt: Date
 }
@@ -45,7 +48,8 @@ export class Product extends AggregateRoot {
     private name: ProductName,
     private description: ProductDescription | null,
     private categoryId: ProductCategoryId,
-    private recipeId: RecipeId | null,
+    private ingredientId: ProductIngredientId | null,
+    private inventoryStrategyType: InventoryStrategyType,
     private price: ProductPrice,
     private imageUrl: ProductImageUrl | null,
     private imageStorageKey: ProductImageStorageKey | null,
@@ -66,14 +70,14 @@ export class Product extends AggregateRoot {
     categoryId: string,
     price: number,
     sku: string,
+    inventoryStrategyType?: InventoryStrategyType | null,
     description?: string | null,
-    recipeId?: string | null,
+    ingredientId?: string | null,
     imageUrl?: string | null,
     imageStorageKey?: string | null,
     preparationTime?: number | null,
     displayOrder?: number,
-    tags?: string[],
-    inventoryStrategyType?: 'RECIPE' | 'DIRECT' | null
+    tags?: string[]
   ): Product {
     const product = Product.fromPrimitives({
       id,
@@ -82,17 +86,19 @@ export class Product extends AggregateRoot {
       price,
       sku,
       description: description ?? null,
-      recipeId: recipeId ?? null,
+      ingredientId: ingredientId ?? null,
+      inventoryStrategyType: inventoryStrategyType ?? 'NONE',
       imageUrl: imageUrl ?? null,
       imageStorageKey: imageStorageKey ?? null,
       preparationTime: preparationTime ?? null,
       isActive: true,
       displayOrder: displayOrder ?? 0,
       tags: tags ?? [],
-      inventoryStrategyType: inventoryStrategyType ?? null,
       createdAt: new Date(),
       updatedAt: new Date()
     })
+
+    product.ensureValidInventoryConfig()
 
     product.record(
       new ProductCreatedEvent({
@@ -102,7 +108,8 @@ export class Product extends AggregateRoot {
         price,
         sku,
         description: description ?? null,
-        recipeId: recipeId ?? null,
+        ingredientId: ingredientId ?? null,
+        inventoryStrategyType: inventoryStrategyType ?? 'NONE',
         image: imageUrl ?? null,
         preparationTime: preparationTime ?? null,
         isActive: true,
@@ -118,8 +125,9 @@ export class Product extends AggregateRoot {
     name: string,
     categoryId: string,
     price: number,
+    inventoryStrategyType: InventoryStrategyType,
     description?: string | null,
-    recipeId?: string | null,
+    ingredientId?: string | null,
     imageUrl?: string | null,
     imageStorageKey?: string | null,
     preparationTime?: number | null,
@@ -129,14 +137,17 @@ export class Product extends AggregateRoot {
     this.name = new ProductName(name)
     this.categoryId = new ProductCategoryId(categoryId)
     this.price = new ProductPrice(price)
+    this.inventoryStrategyType = inventoryStrategyType
     this.description = description ? new ProductDescription(description) : null
-    this.recipeId = recipeId ? new RecipeId(recipeId) : null
+    this.ingredientId = ingredientId ? new ProductIngredientId(ingredientId) : null
     this.imageUrl = imageUrl ? new ProductImageUrl(imageUrl) : null
     this.imageStorageKey = imageStorageKey ? new ProductImageStorageKey(imageStorageKey) : null
     this.preparationTime = preparationTime ? new PreparationTime(preparationTime) : null
     this.displayOrder = new ProductDisplayOrder(displayOrder ?? 0)
     this.tags = ProductTags.fromArray(tags ?? [])
     this.updatedAt = new Date()
+
+    this.ensureValidInventoryConfig()
 
     this.record(
       new ProductUpdatedEvent({
@@ -145,7 +156,8 @@ export class Product extends AggregateRoot {
         categoryId,
         price,
         description: description ?? null,
-        recipeId: recipeId ?? null,
+        ingredientId: ingredientId ?? null,
+        inventoryStrategyType,
         image: imageUrl ?? null,
         preparationTime: preparationTime ?? null,
         isActive: this.isActive.value,
@@ -166,34 +178,29 @@ export class Product extends AggregateRoot {
   ): void {
     const previousPrice = this.price.value
 
-    // Actualizar precio
     this.price = new ProductPrice(newPrice)
     this.updatedAt = new Date()
 
-    // Calcular porcentaje de cambio
     const priceChangePercentage = ((newPrice - previousPrice) / previousPrice) * 100
 
-    // Crear payload del evento
     const payload: ProductPriceChangedPayload = {
       productId: this.id.value,
       productName: this.name.value,
       previousPrice,
       newPrice,
       priceChangePercentage,
-      currency: 'PEN', // Por ahora hardcodeado, puede venir de configuración
+      currency: 'COP',
       changedAt: new Date(),
       changedBy: context?.userId,
       reason: context?.reason
     }
 
-    // Crear metadata del evento
     const metadata: DomainEventMetadata = {
       userId: context?.userId,
       userName: context?.userName,
       correlationId: context?.correlationId
     }
 
-    // Registrar evento
     this.record(new ProductPriceChangedEvent(payload, metadata))
   }
 
@@ -241,13 +248,31 @@ export class Product extends AggregateRoot {
     return this.imageUrl !== null && this.imageStorageKey !== null
   }
 
+  getIngredientId(): string | null {
+    return this.ingredientId?.value ?? null
+  }
+
+  getInventoryStrategyType(): InventoryStrategyType {
+    return this.inventoryStrategyType
+  }
+
+  private ensureValidInventoryConfig(): void {
+    if (this.inventoryStrategyType === 'DIRECT' && !this.ingredientId) {
+      throw new DirectProductRequiresIngredient()
+    }
+    if (this.inventoryStrategyType === 'RECIPE' && this.ingredientId) {
+      throw new RecipeProductCannotHaveIngredient()
+    }
+  }
+
   toPrimitives(): ProductPrimitives {
     return {
       id: this.id.value,
       name: this.name.value,
       description: this.description?.value ?? null,
       categoryId: this.categoryId.value,
-      recipeId: this.recipeId?.value ?? null,
+      ingredientId: this.ingredientId?.value ?? null,
+      inventoryStrategyType: this.inventoryStrategyType,
       price: this.price.value,
       imageUrl: this.imageUrl?.value ?? null,
       imageStorageKey: this.imageStorageKey?.value ?? null,
@@ -256,7 +281,6 @@ export class Product extends AggregateRoot {
       displayOrder: this.displayOrder.value,
       sku: this.sku.value,
       tags: this.tags.value,
-      inventoryStrategyType: this.recipeId ? 'RECIPE' : 'DIRECT',
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
     }
@@ -268,7 +292,8 @@ export class Product extends AggregateRoot {
       new ProductName(primitives.name),
       primitives.description ? new ProductDescription(primitives.description) : null,
       new ProductCategoryId(primitives.categoryId),
-      primitives.recipeId ? new RecipeId(primitives.recipeId) : null,
+      primitives.ingredientId ? new ProductIngredientId(primitives.ingredientId) : null,
+      primitives.inventoryStrategyType,
       new ProductPrice(primitives.price),
       primitives.imageUrl ? new ProductImageUrl(primitives.imageUrl) : null,
       primitives.imageStorageKey ? new ProductImageStorageKey(primitives.imageStorageKey) : null,

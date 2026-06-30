@@ -1,4 +1,8 @@
-import { DomainEvent, DomainEventMetadata, DomainEventFromPrimitivesParams } from '@/shared/domain/events'
+import {
+  DomainEvent,
+  DomainEventMetadata,
+  DomainEventFromPrimitivesParams
+} from '@/shared/domain/events'
 
 export interface LoyaltyAccountCreatedEventPayload {
   loyaltyAccountId: string

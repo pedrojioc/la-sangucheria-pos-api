@@ -3,6 +3,7 @@ import {
   DomainEventMetadata,
   DomainEventFromPrimitivesParams
 } from '@/shared/domain/events'
+import { InventoryStrategyType } from '../inventory-strategy-type'
 
 export interface ProductUpdatedEventPayload {
   productId: string
@@ -10,7 +11,8 @@ export interface ProductUpdatedEventPayload {
   categoryId: string
   price: number
   description: string | null
-  recipeId: string | null
+  ingredientId: string | null
+  inventoryStrategyType: InventoryStrategyType
   image: string | null
   preparationTime: number | null
   isActive: boolean

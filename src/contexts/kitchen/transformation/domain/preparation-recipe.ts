@@ -11,7 +11,9 @@ export interface PreparationRecipePrimitives {
   baseIngredientId: string
   outputIngredientId: string
   yieldPercentage: number
+  yieldTolerancePercentage: number
   additionalIngredients: Array<{
+    id: string
     ingredientId: string
     quantityPerUnit: number
     unitId: string
@@ -43,13 +45,16 @@ export interface PreparationRecipePrimitives {
  * - Se usa para generar alertas de rendimiento anormal
  */
 export class PreparationRecipe extends AggregateRoot {
+  private static readonly DEFAULT_YIELD_TOLERANCE = 5
+
   private constructor(
     public readonly id: PreparationRecipeId,
     private name: string,
     private description: string | null,
     private readonly baseIngredientId: IngredientId,
     private readonly outputIngredientId: IngredientId,
-    private readonly yieldPercentage: YieldPercentage,
+    private yieldPercentage: YieldPercentage,
+    private yieldTolerancePercentage: number,
     private additionalIngredients: PreparationRecipeIngredient[],
     private isActive: boolean,
     private readonly createdAt: Date,
@@ -65,11 +70,13 @@ export class PreparationRecipe extends AggregateRoot {
     outputIngredientId: string,
     yieldPercentage: number,
     additionalIngredients: Array<{
+      id: string
       ingredientId: string
       quantityPerUnit: number
       unitId: string
     }> = [],
-    description: string | null = null
+    description: string | null = null,
+    yieldTolerancePercentage: number = PreparationRecipe.DEFAULT_YIELD_TOLERANCE
   ): PreparationRecipe {
     const now = new Date()
 
@@ -80,6 +87,7 @@ export class PreparationRecipe extends AggregateRoot {
       new IngredientId(baseIngredientId),
       new IngredientId(outputIngredientId),
       new YieldPercentage(yieldPercentage),
+      yieldTolerancePercentage,
       additionalIngredients.map(item => PreparationRecipeIngredient.fromPrimitives(item)),
       true,
       now,
@@ -160,6 +168,36 @@ export class PreparationRecipe extends AggregateRoot {
     return this.yieldPercentage
   }
 
+  getYieldTolerancePercentage(): number {
+    return this.yieldTolerancePercentage
+  }
+
+  hasAbnormalWaste(actualYieldPercentage: number): boolean {
+    return actualYieldPercentage < this.yieldPercentage.value - this.yieldTolerancePercentage
+  }
+
+  update(
+    name: string,
+    description: string | null,
+    yieldPercentage: number,
+    yieldTolerancePercentage: number,
+    additionalIngredients: Array<{
+      id: string
+      ingredientId: string
+      quantityPerUnit: number
+      unitId: string
+    }>
+  ): void {
+    this.name = name
+    this.description = description
+    this.yieldPercentage = new YieldPercentage(yieldPercentage)
+    this.yieldTolerancePercentage = yieldTolerancePercentage
+    this.additionalIngredients = additionalIngredients.map(item =>
+      PreparationRecipeIngredient.fromPrimitives(item)
+    )
+    this.updatedAt = new Date()
+  }
+
   deactivate(): void {
     this.isActive = false
     this.updatedAt = new Date()
@@ -178,6 +216,7 @@ export class PreparationRecipe extends AggregateRoot {
       baseIngredientId: this.baseIngredientId.value,
       outputIngredientId: this.outputIngredientId.value,
       yieldPercentage: this.yieldPercentage.value,
+      yieldTolerancePercentage: this.yieldTolerancePercentage,
       additionalIngredients: this.additionalIngredients.map(item => item.toPrimitives()),
       isActive: this.isActive,
       createdAt: this.createdAt,
@@ -193,6 +232,7 @@ export class PreparationRecipe extends AggregateRoot {
       new IngredientId(primitives.baseIngredientId),
       new IngredientId(primitives.outputIngredientId),
       new YieldPercentage(primitives.yieldPercentage),
+      primitives.yieldTolerancePercentage,
       primitives.additionalIngredients.map(item =>
         PreparationRecipeIngredient.fromPrimitives(item)
       ),

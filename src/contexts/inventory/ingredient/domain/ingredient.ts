@@ -13,6 +13,7 @@ import { IngredientShelfLifeDays } from './ingredient-shelf-life-days'
 import { IngredientStorageLocation } from './ingredient-storage-location'
 import { IngredientIsActive } from './ingredient-is-active'
 import { IngredientCreatedEvent } from './events/ingredient-created.event'
+import { IngredientUpdatedEvent } from './events/ingredient-updated.event'
 
 export interface IngredientPrimitives {
   id: string
@@ -32,17 +33,17 @@ export interface IngredientPrimitives {
 export class Ingredient extends AggregateRoot {
   private constructor(
     public readonly id: IngredientId,
-    private readonly name: IngredientName,
-    private readonly description: IngredientDescription | null,
-    private readonly ingredientCategoryId: IngredientCategoryId,
+    private name: IngredientName,
+    private description: IngredientDescription | null,
+    private ingredientCategoryId: IngredientCategoryId,
     private readonly unitId: UnitId,
-    private readonly preferredSupplierId: IngredientPreferredSupplierId | null,
-    private readonly minimumStock: IngredientMinimumStock | null,
-    private readonly maximumStock: IngredientMaximumStock | null,
-    private readonly isPerishable: IngredientIsPerishable,
-    private readonly shelfLifeDays: IngredientShelfLifeDays | null,
-    private readonly storageLocation: IngredientStorageLocation | null,
-    private readonly isActive: IngredientIsActive
+    private preferredSupplierId: IngredientPreferredSupplierId | null,
+    private minimumStock: IngredientMinimumStock | null,
+    private maximumStock: IngredientMaximumStock | null,
+    private isPerishable: IngredientIsPerishable,
+    private shelfLifeDays: IngredientShelfLifeDays | null,
+    private storageLocation: IngredientStorageLocation | null,
+    private isActive: IngredientIsActive
   ) {
     super()
   }
@@ -80,11 +81,47 @@ export class Ingredient extends AggregateRoot {
       new IngredientCreatedEvent({
         ingredientId: id,
         name,
-        ingredientCategoryId
+        ingredientCategoryId,
+        unitId
       })
     )
 
     return ingredient
+  }
+
+  update(
+    name: string,
+    description: string | null,
+    ingredientCategoryId: string,
+    preferredSupplierId: string | null,
+    minimumStock: number | null,
+    maximumStock: number | null,
+    isPerishable: boolean,
+    shelfLifeDays: number | null,
+    storageLocation: string | null,
+    isActive: boolean
+  ): void {
+    this.name = new IngredientName(name)
+    this.description = description !== null ? new IngredientDescription(description) : null
+    this.ingredientCategoryId = new IngredientCategoryId(ingredientCategoryId)
+    this.preferredSupplierId =
+      preferredSupplierId !== null ? new IngredientPreferredSupplierId(preferredSupplierId) : null
+    this.minimumStock = minimumStock !== null ? new IngredientMinimumStock(minimumStock) : null
+    this.maximumStock = maximumStock !== null ? new IngredientMaximumStock(maximumStock) : null
+    this.isPerishable = new IngredientIsPerishable(isPerishable)
+    this.shelfLifeDays = shelfLifeDays !== null ? new IngredientShelfLifeDays(shelfLifeDays) : null
+    this.storageLocation =
+      storageLocation !== null ? new IngredientStorageLocation(storageLocation) : null
+    this.isActive = new IngredientIsActive(isActive)
+
+    this.record(
+      new IngredientUpdatedEvent({
+        ingredientId: this.id.value,
+        name,
+        ingredientCategoryId,
+        unitId: this.unitId.value
+      })
+    )
   }
 
   static fromPrimitives(primitives: IngredientPrimitives) {

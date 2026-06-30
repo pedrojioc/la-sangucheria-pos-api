@@ -14,7 +14,16 @@ export class CreateProductCategoryHandler implements ICommandHandler<CreateProdu
   }
 
   async execute(command: CreateProductCategoryCommand): Promise<void> {
-    const { id, name, description, icon, isActive, displayOrder } = command
-    await this.createProductCategory.run(id, name, description, icon, isActive, displayOrder)
+    const { id, name, description, icon, color, isActive, displayOrder, defaultStationId } = command
+    await this.createProductCategory.run(
+      id,
+      name,
+      description,
+      icon,
+      color,
+      isActive,
+      displayOrder,
+      defaultStationId
+    )
   }
 }

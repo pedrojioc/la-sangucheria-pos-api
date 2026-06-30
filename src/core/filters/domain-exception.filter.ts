@@ -66,6 +66,6 @@ export class DomainExceptionFilter implements ExceptionFilter {
     }
 
     // Default for other domain exceptions
-    return HttpStatus.BAD_REQUEST
+    return HttpStatus.UNPROCESSABLE_ENTITY
   }
 }

@@ -335,7 +335,7 @@ export class PurchaseOrderSeeder implements Seeder {
           quantityRequested: itemDef.quantityRequested,
           quantityRequestedUnitId: unit.id,
           unitCost: itemDef.unitCost,
-          currency: 'PEN',
+          currency: 'COP',
           totalCost: itemTotalCost,
           notes: null
         }
@@ -370,7 +370,7 @@ export class PurchaseOrderSeeder implements Seeder {
         sentBy,
         closedBy,
         totalAmount,
-        currency: 'PEN',
+        currency: 'COP',
         requestedDate,
         expectedDeliveryDate,
         approvedDate,

@@ -5,7 +5,9 @@ import { PaginatedCustomerListResponse } from '../dto/paginated-customer-list.re
 import { CustomerListItemResponse } from '../../presentation/http/dto/customer-list-item.response'
 
 @QueryHandler(SearchCustomersByCriteriaQuery)
-export class SearchCustomersByCriteriaHandler implements IQueryHandler<SearchCustomersByCriteriaQuery> {
+export class SearchCustomersByCriteriaHandler
+  implements IQueryHandler<SearchCustomersByCriteriaQuery>
+{
   constructor(private readonly searchCustomersByCriteria: SearchCustomersByCriteria) {}
 
   async execute(query: SearchCustomersByCriteriaQuery): Promise<PaginatedCustomerListResponse> {

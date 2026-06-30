@@ -6,8 +6,10 @@ export class ProductCategoryResponse {
     public readonly name: string,
     public readonly description: string | null,
     public readonly icon: string | null,
+    public readonly color: string | null,
     public readonly isActive: boolean,
-    public readonly displayOrder: number
+    public readonly displayOrder: number,
+    public readonly defaultStationId: string | null
   ) {}
 
   static fromDomain(category: ProductCategory) {
@@ -17,8 +19,10 @@ export class ProductCategoryResponse {
       primitives.name,
       primitives.description,
       primitives.icon,
+      primitives.color,
       primitives.isActive,
-      primitives.displayOrder
+      primitives.displayOrder,
+      primitives.defaultStationId
     )
   }
 }

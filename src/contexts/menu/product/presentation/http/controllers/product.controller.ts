@@ -24,10 +24,10 @@ import { SearchProductsRequest } from '../dto/search-products.request'
 import { CreateProductCommand } from '@contexts/menu/product/application/create/create-product.command'
 import { UpdateProductCommand } from '@contexts/menu/product/application/update/update-product.command'
 import { DeleteProductCommand } from '@contexts/menu/product/application/delete/delete-product.command'
-import { FindProductQuery } from '@contexts/menu/product/application/find/find-product.query'
 import { SearchProductsByCriteriaQuery } from '@contexts/menu/product/application/search-by-criteria/search-products-by-criteria.query'
-import { ProductResponse } from '@contexts/menu/product/application/dto/product.response'
 import { PaginatedProductListResponse } from '@contexts/menu/product/application/dto/paginated-product-list.response'
+import { FindProductWithOptionsQuery } from '@contexts/menu/product-option/application/find-product-with-options/find-product-with-options.query'
+import { ProductWithOptionsResponse } from '@contexts/menu/product-option/application/dto/product-with-options.response'
 import { FileAdapter } from '@/shared/presentation/dto/file-adapter'
 import { GenerateProductSkuQuery } from '@contexts/menu/product/application/generate-sku/generate-product-sku.query'
 import { GenerateProductSkuResponse } from '../dto/generate-product-sku.response'
@@ -55,15 +55,15 @@ export class ProductController {
     )
     file?: Express.Multer.File
   ): Promise<void> {
-    // Presentation layer passes raw Express file to Application layer
     const command = new CreateProductCommand(
       dto.id,
       dto.name,
       dto.categoryId,
       dto.price,
       dto.sku,
+      dto.inventoryStrategyType ?? null,
       dto.description,
-      dto.recipeId,
+      dto.ingredientId,
       file ? FileAdapter.fromExpressFile(file) : null,
       dto.preparationTime,
       dto.displayOrder,
@@ -88,8 +88,8 @@ export class ProductController {
   }
 
   @Get(':id')
-  async findById(@Param('id') id: string): Promise<ProductResponse> {
-    const query = new FindProductQuery(id)
+  async findById(@Param('id') id: string): Promise<ProductWithOptionsResponse> {
+    const query = new FindProductWithOptionsQuery(id)
     return this.queryBus.execute(query)
   }
 
@@ -110,14 +110,14 @@ export class ProductController {
     )
     file?: Express.Multer.File
   ): Promise<void> {
-    // Presentation layer passes raw Express file to Application layer
     const command = new UpdateProductCommand(
       id,
       dto.name,
       dto.categoryId,
       dto.price,
+      dto.inventoryStrategyType ?? null,
       dto.description,
-      dto.recipeId,
+      dto.ingredientId,
       file ? FileAdapter.fromExpressFile(file) : null,
       dto.removeImage,
       dto.preparationTime,

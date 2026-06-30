@@ -22,7 +22,7 @@ export class UpdateCustomer {
     const customer = await this.repository.search(new CustomerId(id))
     if (!customer) throw new CustomerNotExist(id)
 
-    if (customer.toPrimitives().phone !== phone && await this.repository.existsByPhone(phone)) {
+    if (customer.toPrimitives().phone !== phone && (await this.repository.existsByPhone(phone))) {
       throw new CustomerPhoneAlreadyExists(phone)
     }
 

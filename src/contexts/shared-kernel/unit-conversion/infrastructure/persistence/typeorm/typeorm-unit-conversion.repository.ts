@@ -50,6 +50,16 @@ export class TypeOrmUnitConversionRepository extends UnitConversionRepository {
     })
   }
 
+  async findByUnit(unitId: string): Promise<UnitConversion[]> {
+    const entities = await this.repository
+      .createQueryBuilder('uc')
+      .where('uc.fromUnitId = :unitId OR uc.toUnitId = :unitId', { unitId })
+      .orderBy('uc.fromUnitId', 'ASC')
+      .getMany()
+
+    return entities.map(entity => UnitConversion.fromPrimitives(entity))
+  }
+
   async findByFromUnit(fromUnitId: string): Promise<UnitConversion[]> {
     const entities = await this.repository.find({
       where: { fromUnitId },

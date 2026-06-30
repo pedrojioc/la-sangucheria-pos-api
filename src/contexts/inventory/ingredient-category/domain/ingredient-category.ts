@@ -7,6 +7,7 @@ import { IngredientCategoryColor } from './ingredient-category-color'
 import { IngredientCategorySortOrder } from './ingredient-category-sort-order'
 import { IngredientCategoryIsActive } from './ingredient-category-is-active'
 import { IngredientCategoryCreatedEvent } from './events/ingredient-category-created.event'
+import { IngredientCategoryUpdatedEvent } from './events/ingredient-category-updated.event'
 
 export interface IngredientCategoryPrimitives {
   id: string
@@ -58,6 +59,34 @@ export class IngredientCategory extends AggregateRoot {
     )
 
     return ingredientCategory
+  }
+
+  update(
+    name: string,
+    description: string | null,
+    icon: string | null,
+    color: string | null,
+    sortOrder: number | null,
+    isActive: boolean
+  ): IngredientCategory {
+    const updated = IngredientCategory.fromPrimitives({
+      id: this.id.value,
+      name,
+      description,
+      icon,
+      color,
+      sortOrder,
+      isActive
+    })
+
+    updated.record(
+      new IngredientCategoryUpdatedEvent({
+        id: this.id.value,
+        name
+      })
+    )
+
+    return updated
   }
 
   static fromPrimitives(primitives: IngredientCategoryPrimitives) {

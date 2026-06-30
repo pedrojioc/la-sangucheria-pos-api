@@ -14,15 +14,15 @@ import { Type } from 'class-transformer'
 class AdditionalIngredientDto {
   @IsUUID()
   @IsNotEmpty()
+  id: string
+
+  @IsUUID()
+  @IsNotEmpty()
   ingredientId: string
 
   @IsNumber()
   @Min(0)
   quantityPerUnit: number
-
-  @IsUUID()
-  @IsNotEmpty()
-  unitId: string
 }
 
 /**
@@ -63,4 +63,10 @@ export class CreatePreparationRecipeRequest {
   @IsString()
   @IsOptional()
   description?: string | null
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  yieldTolerancePercentage?: number | null
 }

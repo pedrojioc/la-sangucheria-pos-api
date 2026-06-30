@@ -13,6 +13,7 @@ import { PurchaseOrderApprovedEvent } from './events/purchase-order-approved.eve
 import { PurchaseOrderRejectedEvent } from './events/purchase-order-rejected.event'
 import { PurchaseOrderItemReceivedEvent } from './events/purchase-order-item-received.event'
 import { PurchaseOrderClosedEvent } from './events/purchase-order-closed.event'
+import { PurchaseOrderSentEvent } from './events/purchase-order-sent.event'
 import { PurchaseMethod } from './purchase-method'
 import { SupplierId } from '../../supplier/domain/supplier-id'
 import { IngredientId } from '@/contexts/inventory/ingredient/domain/ingredient-id'
@@ -24,6 +25,7 @@ import { IngredientId } from '@/contexts/inventory/ingredient/domain/ingredient-
  */
 export interface ReceivedItemInput {
   purchaseOrderItemId: string
+  notReceived?: boolean
   quantityReceived: number
   quantityReceivedUnitId: string
   unitCost: number
@@ -51,9 +53,11 @@ export interface PurchaseOrderPrimitives {
   items: PurchaseOrderItemPrimitives[]
   itemCount: number
   requestedBy: string
+  submittedBy: string | null
   approvedBy: string | null
   rejectedBy: string | null
   sentBy: string | null
+  cancelledBy: string | null
   closedBy: string | null
   receivedBy: string | null
   purchaseMethod: PurchaseMethod | null
@@ -62,9 +66,12 @@ export interface PurchaseOrderPrimitives {
   currency: string
   requestedDate: Date
   expectedDeliveryDate: Date | null
+  submittedDate: Date | null
   approvedDate: Date | null
   sentDate: Date | null
   receivedDate: Date | null
+  rejectedDate: Date | null
+  cancelledDate: Date | null
   closedDate: Date | null
   notes: string | null
 }
@@ -103,10 +110,12 @@ export class PurchaseOrder extends AggregateRoot {
     private status: PurchaseOrderStatus,
     private items: PurchaseOrderItem[],
     private itemCount: number,
-    private readonly requestedBy: string, // TODO: Usar UserId cuando exista
+    private readonly requestedBy: string,
+    private submittedBy: string | null,
     private approvedBy: string | null,
     private rejectedBy: string | null,
     private sentBy: string | null,
+    private cancelledBy: string | null,
     private closedBy: string | null,
     private receivedBy: string | null,
     private purchaseMethod: PurchaseMethod | null,
@@ -114,9 +123,12 @@ export class PurchaseOrder extends AggregateRoot {
     private readonly currency: string,
     private readonly requestedDate: Date,
     private expectedDeliveryDate: Date | null,
+    private submittedDate: Date | null,
     private approvedDate: Date | null,
     private sentDate: Date | null,
     private receivedDate: Date | null,
+    private rejectedDate: Date | null,
+    private cancelledDate: Date | null,
     private closedDate: Date | null,
     private notes: string | null,
     private totalAmount?: Money
@@ -150,9 +162,11 @@ export class PurchaseOrder extends AggregateRoot {
       items,
       items.length, // itemCount
       requestedBy,
+      null, // submittedBy
       null, // approvedBy
       null, // rejectedBy
       null, // sentBy
+      null, // cancelledBy
       null, // closedBy
       null, // receivedBy
       null, // purchaseMethod
@@ -160,9 +174,12 @@ export class PurchaseOrder extends AggregateRoot {
       currency,
       now, // requestedDate
       expectedDeliveryDate,
+      null, // submittedDate
       null, // approvedDate
       null, // sentDate
       null, // receivedDate
+      null, // rejectedDate
+      null, // cancelledDate
       null, // closedDate
       notes
     )
@@ -382,12 +399,11 @@ export class PurchaseOrder extends AggregateRoot {
 
   // ===== Transiciones de Estado =====
 
-  /**
-   * Env�a la orden para aprobaci�n
-   */
-  submitForApproval(): void {
+  submitForApproval(submittedBy: string): void {
     this.ensureHasItems()
     this.transitionTo(PurchaseOrderStatus.PENDING_APPROVAL)
+    this.submittedBy = submittedBy
+    this.submittedDate = new Date()
   }
 
   /**
@@ -411,11 +427,44 @@ export class PurchaseOrder extends AggregateRoot {
   }
 
   /**
+   * Comunica la orden al proveedor (APPROVED → ORDERED)
+   * Registra el método de comunicación y quién la envió.
+   */
+  send(sentBy: string, purchaseMethod: PurchaseMethod, purchaseMethodDetails: string | null): void {
+    this.transitionTo(PurchaseOrderStatus.ORDERED)
+    this.sentBy = sentBy
+    this.sentDate = new Date()
+    this.purchaseMethod = purchaseMethod
+    this.purchaseMethodDetails = purchaseMethodDetails
+
+    this.record(
+      new PurchaseOrderSentEvent({
+        purchaseOrderId: this.id.value,
+        orderNumber: this.orderNumber.value,
+        supplierId: this.supplierId.value,
+        sentBy,
+        sentDate: this.sentDate,
+        expectedDeliveryDate: this.expectedDeliveryDate,
+        items: this.items.map(item => {
+          const p = item.toPrimitives()
+          return {
+            ingredientId: p.ingredientId,
+            quantityRequested: p.quantityRequested,
+            unitId: p.quantityRequestedUnitId,
+            unitCost: p.unitCost
+          }
+        })
+      })
+    )
+  }
+
+  /**
    * Rechaza la orden
    */
   reject(rejectedBy: string, reason: string | null = null): void {
     this.transitionTo(PurchaseOrderStatus.REJECTED)
     this.rejectedBy = rejectedBy
+    this.rejectedDate = new Date()
     if (reason) {
       this.notes = this.notes ? `${this.notes}\nRejection: ${reason}` : reason
     }
@@ -517,6 +566,13 @@ export class PurchaseOrder extends AggregateRoot {
       throw new Error('At least one item must be provided for reception')
     }
 
+    if (
+      this.status !== PurchaseOrderStatus.ORDERED &&
+      this.status !== PurchaseOrderStatus.PARTIALLY_RECEIVED
+    ) {
+      throw new InvalidStatusTransition(this.status, PurchaseOrderStatus.PARTIALLY_RECEIVED)
+    }
+
     const now = new Date()
 
     // Procesar cada item recibido
@@ -608,49 +664,50 @@ export class PurchaseOrder extends AggregateRoot {
           itemsReceived: this.items.filter(i => i.hasBeenReceived()).length
         })
       )
-    } else if (this.status === PurchaseOrderStatus.APPROVED) {
-      // Primera recepción parcial
+    } else if (this.status === PurchaseOrderStatus.ORDERED) {
+      // Primera recepción parcial desde ORDERED
       this.transitionTo(PurchaseOrderStatus.PARTIALLY_RECEIVED)
     }
     // Si ya está en PARTIALLY_RECEIVED y no se cierra, se mantiene
   }
 
   /**
-   * Cancela items específicos de la orden (proveedor no pudo conseguirlos)
+   * Cancela un item específico de la orden (proveedor no pudo conseguirlo).
    *
-   * Los items cancelados se marcan como procesados y no afectan el inventario.
-   * La orden NO se cierra automáticamente al cancelar items. El usuario debe
-   * cerrar explícitamente la orden mediante el endpoint de recepción con
-   * closeOrder=true o el endpoint de cierre manual.
+   * La orden NO transiciona a PARTIALLY_RECEIVED al cancelar — eso requiere
+   * recepción física real. Si todos los items quedan procesados (cancelados)
+   * sin ninguna recepción física, la orden se cierra automáticamente.
    *
-   * @param itemIds - IDs de los items a cancelar
+   * @param itemId - ID del item a cancelar
    * @param reason - Razón de la cancelación (ej: "No disponible con proveedor")
    */
-  cancelItems(itemIds: string[], reason: string | null): void {
-    if (itemIds.length === 0) {
-      throw new Error('At least one item must be provided for cancellation')
+  cancelItem(itemId: string, reason: string | null): void {
+    const item = this.items.find(i => i.id.value === itemId)
+    if (!item) {
+      throw new Error(`Item ${itemId} not found in purchase order`)
     }
 
-    for (const itemId of itemIds) {
-      const item = this.items.find(i => i.id.value === itemId)
-      if (!item) {
-        throw new Error(`Item ${itemId} not found in purchase order`)
-      }
+    item.cancel(reason)
 
-      item.cancel(reason)
+    // Si todos los items están procesados y nunca hubo recepción física, cerrar automáticamente
+    if (this.areAllItemsProcessed() && !this.receivedDate) {
+      const now = new Date()
+      this.transitionTo(PurchaseOrderStatus.CLOSED)
+      this.closedDate = now
+
+      this.record(
+        new PurchaseOrderClosedEvent({
+          purchaseOrderId: this.id.value,
+          orderNumber: this.orderNumber.value,
+          closedBy: null,
+          closedDate: this.closedDate,
+          totalAmount: this.getTotalAmount().amount,
+          currency: this.currency,
+          itemsReceived: 0
+        })
+      )
     }
-
-    const now = new Date()
-
-    // Transición de estado si es necesario (sin cerrar automáticamente)
-    if (this.status === PurchaseOrderStatus.APPROVED) {
-      // Si hay items cancelados, pasa a parcial
-      this.transitionTo(PurchaseOrderStatus.PARTIALLY_RECEIVED)
-      if (!this.receivedDate) {
-        this.receivedDate = now
-      }
-    }
-    // Si ya está en PARTIALLY_RECEIVED, se mantiene hasta que el usuario cierre
+    // Si quedan items pendientes, la orden se mantiene en ORDERED o PARTIALLY_RECEIVED
   }
 
   /**
@@ -741,9 +798,11 @@ export class PurchaseOrder extends AggregateRoot {
       items: this.items.map(item => item.toPrimitives()),
       itemCount: this.itemCount,
       requestedBy: this.requestedBy,
+      submittedBy: this.submittedBy,
       approvedBy: this.approvedBy,
       rejectedBy: this.rejectedBy,
       sentBy: this.sentBy,
+      cancelledBy: this.cancelledBy,
       closedBy: this.closedBy,
       receivedBy: this.receivedBy,
       purchaseMethod: this.purchaseMethod,
@@ -752,9 +811,12 @@ export class PurchaseOrder extends AggregateRoot {
       currency: this.currency,
       requestedDate: this.requestedDate,
       expectedDeliveryDate: this.expectedDeliveryDate,
+      submittedDate: this.submittedDate,
       approvedDate: this.approvedDate,
       sentDate: this.sentDate,
       receivedDate: this.receivedDate,
+      rejectedDate: this.rejectedDate,
+      cancelledDate: this.cancelledDate,
       closedDate: this.closedDate,
       notes: this.notes
     }
@@ -769,9 +831,11 @@ export class PurchaseOrder extends AggregateRoot {
       primitives.items.map(item => PurchaseOrderItem.fromPrimitives(item)),
       primitives.itemCount,
       primitives.requestedBy,
+      primitives.submittedBy,
       primitives.approvedBy,
       primitives.rejectedBy,
       primitives.sentBy,
+      primitives.cancelledBy,
       primitives.closedBy,
       primitives.receivedBy,
       primitives.purchaseMethod,
@@ -779,9 +843,12 @@ export class PurchaseOrder extends AggregateRoot {
       primitives.currency,
       primitives.requestedDate,
       primitives.expectedDeliveryDate,
+      primitives.submittedDate,
       primitives.approvedDate,
       primitives.sentDate,
       primitives.receivedDate,
+      primitives.rejectedDate,
+      primitives.cancelledDate,
       primitives.closedDate,
       primitives.notes,
       new Money(primitives.totalAmount, primitives.currency)

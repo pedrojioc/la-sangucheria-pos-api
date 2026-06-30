@@ -16,7 +16,8 @@ export class CustomerMother {
       taxRegime: params.taxRegime ?? 'SIMPLIFIED',
       defaultAddressId: params.defaultAddressId ?? null,
       notes: params.notes ?? null,
-      status: params.status ?? 'active'
+      status: params.status ?? 'active',
+      lifetimeValue: 0
     }
     return Customer.fromPrimitives(primitives)
   }

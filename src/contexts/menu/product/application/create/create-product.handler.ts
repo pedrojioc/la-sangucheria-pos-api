@@ -2,15 +2,6 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
 import { CreateProductCommand } from './create-product.command'
 import { CreateProduct } from './create-product'
 
-/**
- * Handler for CreateProductCommand.
- *
- * This handler acts as an adapter between the Presentation layer and the Application layer.
- * It transforms infrastructure types (Express.Multer.File) to domain types (FileUpload)
- * before calling the use case.
- *
- * This is the correct place for this transformation in Onion Architecture.
- */
 @CommandHandler(CreateProductCommand)
 export class CreateProductCommandHandler implements ICommandHandler<CreateProductCommand> {
   constructor(private readonly createProduct: CreateProduct) {}
@@ -22,8 +13,9 @@ export class CreateProductCommandHandler implements ICommandHandler<CreateProduc
       command.categoryId,
       command.price,
       command.sku,
+      command.inventoryStrategyType,
       command.description,
-      command.recipeId,
+      command.ingredientId,
       command.imageFile,
       command.preparationTime,
       command.displayOrder,

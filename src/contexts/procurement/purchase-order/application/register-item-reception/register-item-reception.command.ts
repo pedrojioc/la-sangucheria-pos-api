@@ -1,5 +1,6 @@
 export interface ReceivedItemData {
   purchaseOrderItemId: string
+  notReceived?: boolean
   quantityReceived: number
   quantityReceivedUnitId: string
   unitCost: number

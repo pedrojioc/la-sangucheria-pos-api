@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { PurchaseOrderEntity } from '../persistence/typeorm/purchase-order.entity'
+import { UserEntity } from '@/contexts/iam/user/infrastructure/persistence/typeorm/user.entity'
 import { PurchaseOrderQueryService } from '../../application/services/purchase-order-query.service'
 import { PurchaseOrderListItem } from '../../application/dto/purchase-order-list-item'
 import {
@@ -31,7 +32,9 @@ import { PurchaseMethod } from '../../domain/purchase-method'
 export class TypeOrmPurchaseOrderQueryService implements PurchaseOrderQueryService {
   constructor(
     @InjectRepository(PurchaseOrderEntity)
-    private readonly repository: Repository<PurchaseOrderEntity>
+    private readonly repository: Repository<PurchaseOrderEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>
   ) {}
 
   /**
@@ -51,9 +54,11 @@ export class TypeOrmPurchaseOrderQueryService implements PurchaseOrderQueryServi
         'po.status',
         'po.itemCount',
         'po.requestedBy',
+        'po.submittedBy',
         'po.approvedBy',
         'po.rejectedBy',
         'po.sentBy',
+        'po.cancelledBy',
         'po.closedBy',
         'po.receivedBy',
         'po.purchaseMethod',
@@ -62,9 +67,12 @@ export class TypeOrmPurchaseOrderQueryService implements PurchaseOrderQueryServi
         'po.currency',
         'po.requestedDate',
         'po.expectedDeliveryDate',
+        'po.submittedDate',
         'po.approvedDate',
         'po.sentDate',
         'po.receivedDate',
+        'po.rejectedDate',
+        'po.cancelledDate',
         'po.closedDate',
         'po.notes'
       ])
@@ -94,9 +102,11 @@ export class TypeOrmPurchaseOrderQueryService implements PurchaseOrderQueryServi
       status: entity.status as PurchaseOrderStatus,
       itemCount: entity.itemCount,
       requestedBy: entity.requestedBy,
+      submittedBy: entity.submittedBy,
       approvedBy: entity.approvedBy,
       rejectedBy: entity.rejectedBy,
       sentBy: entity.sentBy,
+      cancelledBy: entity.cancelledBy,
       receivedBy: entity.receivedBy,
       closedBy: entity.closedBy,
       purchaseMethod: entity.purchaseMethod,
@@ -105,9 +115,12 @@ export class TypeOrmPurchaseOrderQueryService implements PurchaseOrderQueryServi
       currency: entity.currency,
       requestedDate: entity.requestedDate,
       expectedDeliveryDate: entity.expectedDeliveryDate,
+      submittedDate: entity.submittedDate,
       approvedDate: entity.approvedDate,
       sentDate: entity.sentDate,
       receivedDate: entity.receivedDate,
+      rejectedDate: entity.rejectedDate,
+      cancelledDate: entity.cancelledDate,
       closedDate: entity.closedDate,
       notes: entity.notes
     }))
@@ -140,6 +153,19 @@ export class TypeOrmPurchaseOrderQueryService implements PurchaseOrderQueryServi
     if (!entity) {
       return null
     }
+
+    const userIds = [
+      entity.requestedBy,
+      entity.submittedBy,
+      entity.approvedBy,
+      entity.rejectedBy,
+      entity.sentBy,
+      entity.cancelledBy,
+      entity.receivedBy,
+      entity.closedBy
+    ].filter((uid): uid is string => uid !== null)
+
+    const userMap = await this.resolveUsers(userIds)
 
     // Map items to read model
     const items: PurchaseOrderItemReadModel[] = entity.items.map(item => ({
@@ -175,24 +201,45 @@ export class TypeOrmPurchaseOrderQueryService implements PurchaseOrderQueryServi
       status: entity.status as PurchaseOrderStatus,
       items,
       itemCount: entity.itemCount,
-      requestedBy: entity.requestedBy,
-      approvedBy: entity.approvedBy,
-      rejectedBy: entity.rejectedBy,
-      sentBy: entity.sentBy,
-      receivedBy: entity.receivedBy,
-      closedBy: entity.closedBy,
+      requestedBy: userMap.get(entity.requestedBy) ?? {
+        id: entity.requestedBy,
+        name: entity.requestedBy
+      },
+      submittedBy: entity.submittedBy ? (userMap.get(entity.submittedBy) ?? null) : null,
+      approvedBy: entity.approvedBy ? (userMap.get(entity.approvedBy) ?? null) : null,
+      rejectedBy: entity.rejectedBy ? (userMap.get(entity.rejectedBy) ?? null) : null,
+      sentBy: entity.sentBy ? (userMap.get(entity.sentBy) ?? null) : null,
+      cancelledBy: entity.cancelledBy ? (userMap.get(entity.cancelledBy) ?? null) : null,
+      receivedBy: entity.receivedBy ? (userMap.get(entity.receivedBy) ?? null) : null,
+      closedBy: entity.closedBy ? (userMap.get(entity.closedBy) ?? null) : null,
       purchaseMethod: entity.purchaseMethod as PurchaseMethod | null,
       purchaseMethodDetails: entity.purchaseMethodDetails,
       totalAmount: Number(entity.totalAmount),
       currency: entity.currency,
       requestedDate: entity.requestedDate,
       expectedDeliveryDate: entity.expectedDeliveryDate,
+      submittedDate: entity.submittedDate,
       approvedDate: entity.approvedDate,
       sentDate: entity.sentDate,
       receivedDate: entity.receivedDate,
+      rejectedDate: entity.rejectedDate,
+      cancelledDate: entity.cancelledDate,
       closedDate: entity.closedDate,
       notes: entity.notes
     }
+  }
+
+  private async resolveUsers(ids: string[]): Promise<Map<string, { id: string; name: string }>> {
+    if (ids.length === 0) return new Map()
+
+    const unique = [...new Set(ids)]
+    const users = await this.userRepository
+      .createQueryBuilder('u')
+      .select(['u.id', 'u.fullName', 'u.username'])
+      .where('u.id IN (:...ids)', { ids: unique })
+      .getMany()
+
+    return new Map(users.map(u => [u.id, { id: u.id, name: u.fullName ?? u.username }]))
   }
 
   /**

@@ -8,7 +8,18 @@ export class SearchCustomersByPhone {
     const customers = await this.repository.searchByPhone(phone)
     return customers.map(c => {
       const p = c.toPrimitives()
-      return new CustomerResponse(p.id, p.name, p.phone, p.email, p.documentType, p.documentNumber, p.taxRegime, p.defaultAddressId, p.notes, p.status)
+      return new CustomerResponse(
+        p.id,
+        p.name,
+        p.phone,
+        p.email,
+        p.documentType,
+        p.documentNumber,
+        p.taxRegime,
+        p.defaultAddressId,
+        p.notes,
+        p.status
+      )
     })
   }
 }

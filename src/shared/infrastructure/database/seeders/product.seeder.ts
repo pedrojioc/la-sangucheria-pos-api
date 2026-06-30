@@ -173,7 +173,7 @@ export class ProductSeeder implements Seeder {
         name: def.name,
         description: faker.commerce.productDescription(),
         categoryId: category.id,
-        recipeId: recipe?.id || null,
+        ingredientId: null,
         price: def.price,
         imageUrl: null,
         imageStorageKey: null,

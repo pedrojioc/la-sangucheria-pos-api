@@ -28,7 +28,16 @@ export class AddAddress {
 
     const isFirst = (await this.addressRepository.countByCustomer(customerId)) === 0
 
-    const address = Address.create(id, customerId, label, street, neighborhood, city, reference, coordinates)
+    const address = Address.create(
+      id,
+      customerId,
+      label,
+      street,
+      neighborhood,
+      city,
+      reference,
+      coordinates
+    )
     await this.addressRepository.save(address)
 
     if (isFirst) {

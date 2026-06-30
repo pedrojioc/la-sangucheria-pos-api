@@ -9,6 +9,6 @@ export class CancelPurchaseOrderItemsHandler
   constructor(private readonly useCase: CancelPurchaseOrderItems) {}
 
   async execute(command: CancelPurchaseOrderItemsCommand): Promise<void> {
-    await this.useCase.run(command.purchaseOrderId, command.itemIds, command.reason)
+    await this.useCase.run(command.purchaseOrderId, command.itemId, command.reason)
   }
 }

@@ -23,7 +23,9 @@ function toDomain(entity: EmployeeEntity): Employee {
     notes: entity.notes,
     userId: entity.userId,
     salary:
-      entity.salaryAmount !== null && entity.salaryBasis !== null && entity.paymentFrequency !== null
+      entity.salaryAmount !== null &&
+      entity.salaryBasis !== null &&
+      entity.paymentFrequency !== null
         ? {
             amount: Number(entity.salaryAmount),
             basis: entity.salaryBasis,

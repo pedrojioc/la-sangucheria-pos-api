@@ -7,6 +7,12 @@ export class CreatePositionHandler implements ICommandHandler<CreatePositionComm
   constructor(private readonly createPosition: CreatePosition) {}
 
   async execute(command: CreatePositionCommand): Promise<void> {
-    await this.createPosition.run(command.id, command.name, command.description, command.color, command.icon)
+    await this.createPosition.run(
+      command.id,
+      command.name,
+      command.description,
+      command.color,
+      command.icon
+    )
   }
 }

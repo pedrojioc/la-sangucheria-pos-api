@@ -16,7 +16,8 @@ export class CreatePreparationRecipeHandler
       command.outputIngredientId,
       command.yieldPercentage,
       command.additionalIngredients,
-      command.description
+      command.description,
+      command.yieldTolerancePercentage
     )
   }
 }

@@ -5,7 +5,6 @@ import { PurchaseOrderStatus } from '@/contexts/procurement/purchase-order/domai
 import { InvalidStatusTransition } from '@/contexts/procurement/purchase-order/domain/exceptions/invalid-status-transition.exception'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 import { PurchaseOrderMother } from '../__mothers__/PurchaseOrderMother'
-import { PurchaseOrderId } from '@/contexts/procurement/purchase-order/domain/purchase-order-id'
 
 describe('ApprovePurchaseOrder', () => {
   let useCase: ApprovePurchaseOrder
@@ -52,34 +51,26 @@ describe('ApprovePurchaseOrder', () => {
     const purchaseOrder = PurchaseOrderMother.pendingApproval()
     repository.findById.mockResolvedValue(purchaseOrder)
 
-    await useCase.run(
-      purchaseOrder.toPrimitives().id,
-      UuidMother.random()
-    )
+    await useCase.run(purchaseOrder.toPrimitives().id, UuidMother.random())
 
     expect(eventBus.publish).toHaveBeenCalledTimes(1)
     const events = eventBus.publish.mock.calls[0][0]
     expect(events).toHaveLength(1)
-    expect(events[0].eventName).toBe('purchase-order.approved')
+    expect(events[0].eventName).toBe('procurement.purchase_order.approved')
   })
 
   it('should throw error when purchase order not found', async () => {
     repository.findById.mockResolvedValue(null)
 
-    await expect(
-      useCase.run(UuidMother.random(), UuidMother.random())
-    ).rejects.toThrow('not found')
+    await expect(useCase.run(UuidMother.random(), UuidMother.random())).rejects.toThrow('not found')
   })
 
   it('should throw error when approving from invalid status', async () => {
     const purchaseOrder = PurchaseOrderMother.inDraft()
     repository.findById.mockResolvedValue(purchaseOrder)
 
-    await expect(
-      useCase.run(
-        purchaseOrder.toPrimitives().id,
-        UuidMother.random()
-      )
-    ).rejects.toThrow(InvalidStatusTransition)
+    await expect(useCase.run(purchaseOrder.toPrimitives().id, UuidMother.random())).rejects.toThrow(
+      InvalidStatusTransition
+    )
   })
 })

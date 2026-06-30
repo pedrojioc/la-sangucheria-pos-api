@@ -5,8 +5,6 @@ export class FindAllUnits {
   constructor(private readonly repository: UnitRepository) {}
 
   async run(): Promise<Unit[]> {
-    const units = await this.repository.findAll()
-
-    return units
+    return this.repository.findAll()
   }
 }

@@ -28,6 +28,7 @@ export class PurchaseOrderEntity {
       'DRAFT',
       'PENDING_APPROVAL',
       'APPROVED',
+      'ORDERED',
       'PARTIALLY_RECEIVED',
       'CLOSED',
       'REJECTED',
@@ -39,6 +40,9 @@ export class PurchaseOrderEntity {
   @Column({ type: 'uuid', name: 'requested_by' })
   requestedBy: string
 
+  @Column({ type: 'uuid', name: 'submitted_by', nullable: true })
+  submittedBy: string | null
+
   @Column({ type: 'uuid', name: 'approved_by', nullable: true })
   approvedBy: string | null
 
@@ -47,6 +51,9 @@ export class PurchaseOrderEntity {
 
   @Column({ type: 'uuid', name: 'sent_by', nullable: true })
   sentBy: string | null
+
+  @Column({ type: 'uuid', name: 'cancelled_by', nullable: true })
+  cancelledBy: string | null
 
   @Column({ type: 'uuid', name: 'closed_by', nullable: true })
   closedBy: string | null
@@ -77,6 +84,9 @@ export class PurchaseOrderEntity {
   @Column({ type: 'timestamp', name: 'expected_delivery_date', nullable: true })
   expectedDeliveryDate: Date | null
 
+  @Column({ type: 'timestamp', name: 'submitted_date', nullable: true })
+  submittedDate: Date | null
+
   @Column({ type: 'timestamp', name: 'approved_date', nullable: true })
   approvedDate: Date | null
 
@@ -85,6 +95,12 @@ export class PurchaseOrderEntity {
 
   @Column({ type: 'timestamp', name: 'received_date', nullable: true })
   receivedDate: Date | null
+
+  @Column({ type: 'timestamp', name: 'rejected_date', nullable: true })
+  rejectedDate: Date | null
+
+  @Column({ type: 'timestamp', name: 'cancelled_date', nullable: true })
+  cancelledDate: Date | null
 
   @Column({ type: 'timestamp', name: 'closed_date', nullable: true })
   closedDate: Date | null

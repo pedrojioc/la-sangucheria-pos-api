@@ -26,7 +26,11 @@ import { CustomerController } from './presentation/http/controllers/customer.con
 import { createProvider } from '@/core/utils/create-provider'
 
 const CommandHandlers = [CreateCustomerHandler, UpdateCustomerHandler]
-const QueryHandlers = [FindCustomerHandler, SearchCustomersByPhoneHandler, SearchCustomersByCriteriaHandler]
+const QueryHandlers = [
+  FindCustomerHandler,
+  SearchCustomersByPhoneHandler,
+  SearchCustomersByCriteriaHandler
+]
 
 @Module({
   imports: [TypeOrmModule.forFeature([CustomerEntity]), CqrsModule],

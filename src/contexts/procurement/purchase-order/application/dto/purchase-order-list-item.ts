@@ -27,9 +27,11 @@ export interface PurchaseOrderListItem {
 
   // Workflow tracking
   requestedBy: string
+  submittedBy: string | null
   approvedBy: string | null
   rejectedBy: string | null
   sentBy: string | null
+  cancelledBy: string | null
   receivedBy: string | null
   closedBy: string | null
 
@@ -44,9 +46,12 @@ export interface PurchaseOrderListItem {
   // Dates
   requestedDate: Date
   expectedDeliveryDate: Date | null
+  submittedDate: Date | null
   approvedDate: Date | null
   sentDate: Date | null
   receivedDate: Date | null
+  rejectedDate: Date | null
+  cancelledDate: Date | null
   closedDate: Date | null
 
   notes: string | null

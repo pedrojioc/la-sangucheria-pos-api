@@ -8,6 +8,7 @@ export interface IngredientCreatedEventPayload {
   ingredientId: string
   name: string
   ingredientCategoryId: string
+  unitId: string
 }
 
 export class IngredientCreatedEvent extends DomainEvent {
