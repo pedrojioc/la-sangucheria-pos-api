@@ -46,11 +46,15 @@ import { StationRoutingPort } from '@contexts/orders/order/application/ports/sta
 import { TypeOrmStationRoutingAdapter } from '@contexts/orders/order/infrastructure/adapters/typeorm-station-routing.adapter'
 import { TableLabelPort } from '@contexts/orders/order/application/ports/table-label.port'
 import { TypeOrmTableLabelAdapter } from '@contexts/orders/order/infrastructure/adapters/typeorm-table-label.adapter'
+import { EstablishmentSettingsPort } from '@contexts/orders/order/application/ports/establishment-settings.port'
+import { TypeOrmEstablishmentSettingsAdapter } from '@contexts/orders/order/infrastructure/adapters/establishment-settings.adapter'
+
+import { EstablishmentModule } from '@contexts/establishment/establishment/establishment.module'
 
 import { createProvider } from '@core/utils/create-provider'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([OrderEntity]), TableModule, CustomerModule],
+  imports: [TypeOrmModule.forFeature([OrderEntity]), TableModule, CustomerModule, EstablishmentModule],
   controllers: [OrderController, KitchenController],
   providers: [
     // REPOSITORIES
@@ -68,10 +72,14 @@ import { createProvider } from '@core/utils/create-provider'
       provide: TableLabelPort,
       useClass: TypeOrmTableLabelAdapter
     },
+    {
+      provide: EstablishmentSettingsPort,
+      useClass: TypeOrmEstablishmentSettingsAdapter
+    },
 
     // USE CASES
     createProvider(FindOrder, [OrderRepository]),
-    createProvider(OpenOrder, [OrderRepository, EventBus]),
+    createProvider(OpenOrder, [OrderRepository, EventBus, EstablishmentSettingsPort]),
     createProvider(AddOrderItems, [OrderRepository, FindOrder, EventBus]),
     createProvider(UpdateOrderItem, [OrderRepository, FindOrder]),
     createProvider(RemoveOrderItem, [OrderRepository, FindOrder, EventBus]),

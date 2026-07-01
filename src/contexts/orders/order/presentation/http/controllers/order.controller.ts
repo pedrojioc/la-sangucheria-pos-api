@@ -69,8 +69,7 @@ export class OrderController {
       dto.tableId,
       dto.customerId,
       dto.addressId,
-      dto.deliveryFee,
-      dto.currency
+      dto.deliveryFee
     )
     return { orderNumber }
   }
