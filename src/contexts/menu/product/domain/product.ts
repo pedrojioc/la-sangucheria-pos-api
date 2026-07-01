@@ -256,6 +256,12 @@ export class Product extends AggregateRoot {
     return this.inventoryStrategyType
   }
 
+  markAsRecipe(): void {
+    this.inventoryStrategyType = 'RECIPE'
+    this.ingredientId = null
+    this.updatedAt = new Date()
+  }
+
   private ensureValidInventoryConfig(): void {
     if (this.inventoryStrategyType === 'DIRECT' && !this.ingredientId) {
       throw new DirectProductRequiresIngredient()

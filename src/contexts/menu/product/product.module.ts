@@ -42,6 +42,10 @@ import { TypeOrmProductAvailabilityQueryService } from '@/contexts/menu/product/
 // Controllers
 import { ProductController } from '@/contexts/menu/product/presentation/http/controllers/product.controller'
 
+// Subscribers
+import { OnProductRecipeSavedUpdateStrategySubscriber } from '@/contexts/menu/product/application/on-product-recipe-saved/on-product-recipe-saved-update-strategy.subscriber'
+import { OnProductRecipeSavedUpdateStrategy } from '@/contexts/menu/product/application/on-product-recipe-saved/on-product-recipe-saved-update-strategy'
+
 // Utils
 import { createProvider } from '@/core/utils/create-provider'
 import { LocalFileStorage } from '@/shared/infrastructure/storage/local/local-file-storage.service'
@@ -60,6 +64,8 @@ const QueryHandlers = [
   SearchProductsByCriteriaHandler,
   GenerateProductSkuHandler
 ]
+
+const Subscribers = [OnProductRecipeSavedUpdateStrategySubscriber]
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductEntity]), ProductCategoryModule, IngredientModule],
@@ -105,11 +111,17 @@ const QueryHandlers = [
     createProvider(SearchProductsByCriteria, [ProductQueryService]),
     createProvider(GenerateProductSku, [ProductRepository]),
 
+    // USE CASE (subscriber)
+    createProvider(OnProductRecipeSavedUpdateStrategy, [ProductRepository]),
+
     // COMMAND HANDLERS
     ...CommandHandlers,
 
     // QUERY HANDLERS
-    ...QueryHandlers
+    ...QueryHandlers,
+
+    // SUBSCRIBERS
+    ...Subscribers
   ],
   exports: [ProductRepository]
 })
