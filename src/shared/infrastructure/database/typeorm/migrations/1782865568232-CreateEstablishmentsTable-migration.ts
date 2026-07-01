@@ -19,7 +19,7 @@ export class CreateEstablishmentsTableMigration1782865568232 implements Migratio
                 '00000000-0000-0000-0000-000000000001',
                 'Mi Establecimiento', 'Mi Establecimiento', 'Mi Establecimiento S.A.S.', '000000000-0',
                 'COP', 0.0800, 'INC', true,
-                'STATIONS', 'America/Bogota', 'es-CO', false
+                'NONE', 'America/Bogota', 'es-CO', false
             ) ON CONFLICT (id) DO NOTHING
         `);
     }

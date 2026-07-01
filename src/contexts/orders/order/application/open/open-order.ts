@@ -26,7 +26,7 @@ export class OpenOrder {
     const settings = await this.establishmentSettingsPort.resolve()
     const taxConfig = TaxConfig.create(
       settings.taxRate,
-      settings.taxType as TaxType,
+      settings.taxType,
       settings.taxInclusive
     )
 

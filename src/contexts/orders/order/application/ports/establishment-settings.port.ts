@@ -1,7 +1,9 @@
+import { TaxType } from '@shared/domain/value-objects/tax-type'
+
 export interface OrderEstablishmentSettings {
   currency: string
   taxRate: number
-  taxType: string
+  taxType: TaxType
   taxInclusive: boolean
 }
 

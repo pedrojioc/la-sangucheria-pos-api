@@ -34,8 +34,4 @@ export class OpenOrderRequest {
   @Min(0)
   @IsOptional()
   deliveryFee?: number | null
-
-  @IsString()
-  @IsOptional()
-  currency?: string
 }
