@@ -394,7 +394,9 @@ export class Order extends AggregateRoot {
       label: string
       itemIds: string[]
       payment: { method: 'CASH' | 'CARD' | 'TRANSFER'; amount: number }
-    }> | null
+    }> | null,
+    customerDocumentType: string | null = null,
+    customerDocumentNumber: string | null = null
   ): void {
     if (this.status !== OrderStatus.IN_PROGRESS && this.status !== OrderStatus.READY) {
       throw new OrderNotReadyToClose(this.status)
@@ -424,6 +426,28 @@ export class Order extends AggregateRoot {
     this.closedBy = closedBy
     this.closedAt = now
 
+    const taxConfigPrimitives = this.taxConfig.toPrimitives()
+    const activeItems = this.items.filter(i => i.isActive())
+    const orderTaxAmount = this.taxAmount.amount
+
+    // Distribute tax proportionally per item: item.lineTotal / orderTotal * orderTaxAmount.
+    // If orderTotal is 0, each item taxAmount is 0.
+    const itemPayloads = activeItems.map(item => {
+      const p = item.toPrimitives()
+      const proportionalTax =
+        orderTotal > 0
+          ? Math.round((p.unitPrice * p.quantity / orderTotal) * orderTaxAmount * 100) / 100
+          : 0
+      return {
+        productId: p.productId,
+        productName: p.productName,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+        lineTotal: item.lineTotal.amount,
+        taxAmount: proportionalTax
+      }
+    })
+
     this.record(
       new OrderClosedEvent({
         orderId: this.id.value,
@@ -436,7 +460,19 @@ export class Order extends AggregateRoot {
         payments: this.payments.map(p => p.toPrimitives()),
         splits: this.splits ? this.splits.map(s => s.toPrimitives()) : null,
         closedBy,
-        closedAt: now
+        closedAt: now,
+        subtotal: this.subtotal.amount,
+        discountTotal: this.discountTotal.amount,
+        taxBase: this.taxBase.amount,
+        taxAmount: orderTaxAmount,
+        taxConfig: {
+          rate: taxConfigPrimitives.rate,
+          type: taxConfigPrimitives.type,
+          inclusive: taxConfigPrimitives.inclusive
+        },
+        items: itemPayloads,
+        customerDocumentType,
+        customerDocumentNumber
       })
     )
   }

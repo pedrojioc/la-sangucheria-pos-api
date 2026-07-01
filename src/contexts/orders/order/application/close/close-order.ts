@@ -25,10 +25,19 @@ export class CloseOrder {
     payments: CloseOrderPaymentInput[],
     closedBy: string,
     tip?: number | null,
-    splits?: CloseOrderSplitInput[] | null
+    splits?: CloseOrderSplitInput[] | null,
+    customerDocumentType?: string,
+    customerDocumentNumber?: string
   ): Promise<void> {
     const order = await this.findOrder.run(orderId)
-    order.close(payments, closedBy, tip, splits)
+    order.close(
+      payments,
+      closedBy,
+      tip,
+      splits,
+      customerDocumentType ?? null,
+      customerDocumentNumber ?? null
+    )
     await this.repository.save(order)
     await this.eventBus.publish(order.pullDomainEvents())
   }
