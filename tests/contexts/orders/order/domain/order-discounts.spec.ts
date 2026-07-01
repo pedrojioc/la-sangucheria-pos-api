@@ -4,6 +4,10 @@ import { DiscountType } from '@contexts/orders/order/domain/discount-type'
 import { DiscountMethod } from '@contexts/orders/order/domain/discount-method'
 import { TaxType } from '@contexts/orders/order/domain/tax-type'
 import { OrderCannotBeModified } from '@contexts/orders/order/domain/exceptions/order-cannot-be-modified.exception'
+import { OrderItemDiscountAppliedEvent } from '@contexts/orders/order/domain/events/order-item-discount-applied.event'
+import { OrderItemDiscountRemovedEvent } from '@contexts/orders/order/domain/events/order-item-discount-removed.event'
+import { OrderDiscountAppliedEvent } from '@contexts/orders/order/domain/events/order-discount-applied.event'
+import { OrderDiscountRemovedEvent } from '@contexts/orders/order/domain/events/order-discount-removed.event'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 import { OrderMother } from '../__mothers__/order.mother'
 import { OrderItemMother } from '../__mothers__/order-item.mother'
@@ -258,6 +262,231 @@ describe('Order - Full Calculation Chain', () => {
     expect(primitives.total).toBe(0)
     expect(primitives.taxBase).toBe(0)
     expect(primitives.taxAmount).toBe(0)
+  })
+})
+
+describe('Order - Discount Domain Events', () => {
+  const percentageDiscount = () =>
+    Discount.create(DiscountType.EMPLOYEE, DiscountMethod.PERCENTAGE, 10, 'user-1')
+
+  describe('applyItemDiscount', () => {
+    it('should record OrderItemDiscountAppliedEvent on the Order root with correct payload', () => {
+      const itemId = UuidMother.random()
+      const order = OrderMother.create({
+        status: OrderStatus.OPEN,
+        items: [OrderItemMother.pending({ id: itemId, unitPrice: 25000, quantity: 1 })]
+      })
+      const discount = percentageDiscount()
+
+      order.applyItemDiscount(itemId, discount)
+
+      const events = order.pullDomainEvents()
+      expect(events).toHaveLength(1)
+      expect(events[0]).toBeInstanceOf(OrderItemDiscountAppliedEvent)
+      const event = events[0] as OrderItemDiscountAppliedEvent
+      expect(event.toPrimitives().orderId).toBe(order.id.value)
+      expect(event.toPrimitives().itemId).toBe(itemId)
+      expect(event.toPrimitives().discount).toEqual(discount.toPrimitives())
+    })
+
+    it('should record only one applied event when replacing an existing item discount', () => {
+      const itemId = UuidMother.random()
+      const order = OrderMother.create({
+        status: OrderStatus.OPEN,
+        items: [OrderItemMother.pending({ id: itemId, unitPrice: 25000, quantity: 1 })]
+      })
+      const first = Discount.create(DiscountType.PROMO, DiscountMethod.FLAT, 1000, 'user-1')
+      order.applyItemDiscount(itemId, first)
+      order.pullDomainEvents() // drain
+
+      const second = percentageDiscount()
+      order.applyItemDiscount(itemId, second)
+
+      const events = order.pullDomainEvents()
+      expect(events).toHaveLength(1)
+      expect(events[0]).toBeInstanceOf(OrderItemDiscountAppliedEvent)
+    })
+  })
+
+  describe('removeItemDiscount', () => {
+    it('should record OrderItemDiscountRemovedEvent on the Order root with correct payload', () => {
+      const itemId = UuidMother.random()
+      const order = OrderMother.create({
+        status: OrderStatus.OPEN,
+        items: [OrderItemMother.pending({ id: itemId, unitPrice: 25000, quantity: 1 })]
+      })
+      order.applyItemDiscount(itemId, percentageDiscount())
+      order.pullDomainEvents() // drain applied event
+
+      order.removeItemDiscount(itemId)
+
+      const events = order.pullDomainEvents()
+      expect(events).toHaveLength(1)
+      expect(events[0]).toBeInstanceOf(OrderItemDiscountRemovedEvent)
+      const event = events[0] as OrderItemDiscountRemovedEvent
+      expect(event.toPrimitives().orderId).toBe(order.id.value)
+      expect(event.toPrimitives().itemId).toBe(itemId)
+    })
+  })
+
+  describe('applyOrderDiscount', () => {
+    it('should record OrderDiscountAppliedEvent on the Order root with correct payload', () => {
+      const order = OrderMother.create({ status: OrderStatus.OPEN })
+      const discount = percentageDiscount()
+
+      order.applyOrderDiscount(discount)
+
+      const events = order.pullDomainEvents()
+      expect(events).toHaveLength(1)
+      expect(events[0]).toBeInstanceOf(OrderDiscountAppliedEvent)
+      const event = events[0] as OrderDiscountAppliedEvent
+      expect(event.toPrimitives().orderId).toBe(order.id.value)
+      expect(event.toPrimitives().discount).toEqual(discount.toPrimitives())
+    })
+
+    it('should record only one applied event when replacing an existing order discount', () => {
+      const order = OrderMother.create({ status: OrderStatus.OPEN })
+      order.applyOrderDiscount(Discount.create(DiscountType.PROMO, DiscountMethod.FLAT, 500, 'u1'))
+      order.pullDomainEvents() // drain
+
+      order.applyOrderDiscount(percentageDiscount())
+
+      const events = order.pullDomainEvents()
+      expect(events).toHaveLength(1)
+      expect(events[0]).toBeInstanceOf(OrderDiscountAppliedEvent)
+    })
+  })
+
+  describe('removeOrderDiscount', () => {
+    it('should record OrderDiscountRemovedEvent on the Order root with correct payload', () => {
+      const order = OrderMother.create({ status: OrderStatus.OPEN })
+      order.applyOrderDiscount(percentageDiscount())
+      order.pullDomainEvents() // drain applied event
+
+      order.removeOrderDiscount()
+
+      const events = order.pullDomainEvents()
+      expect(events).toHaveLength(1)
+      expect(events[0]).toBeInstanceOf(OrderDiscountRemovedEvent)
+      const event = events[0] as OrderDiscountRemovedEvent
+      expect(event.toPrimitives().orderId).toBe(order.id.value)
+    })
+  })
+
+  describe('event recording invariants', () => {
+    it('should record item-discount event on Order root, accessible via order.pullDomainEvents()', () => {
+      const itemId = UuidMother.random()
+      const order = OrderMother.create({
+        status: OrderStatus.OPEN,
+        items: [OrderItemMother.pending({ id: itemId, unitPrice: 10000, quantity: 1 })]
+      })
+
+      order.applyItemDiscount(itemId, percentageDiscount())
+
+      // Event is on root, not swallowed by OrderItem
+      const events = order.pullDomainEvents()
+      expect(events.some(e => e instanceof OrderItemDiscountAppliedEvent)).toBe(true)
+    })
+
+    it('should accumulate multiple events across successive discount operations', () => {
+      const itemId = UuidMother.random()
+      const order = OrderMother.create({
+        status: OrderStatus.OPEN,
+        items: [OrderItemMother.pending({ id: itemId, unitPrice: 10000, quantity: 1 })]
+      })
+
+      order.applyItemDiscount(itemId, percentageDiscount())
+      order.applyOrderDiscount(percentageDiscount())
+
+      const events = order.pullDomainEvents()
+      expect(events).toHaveLength(2)
+      expect(events[0]).toBeInstanceOf(OrderItemDiscountAppliedEvent)
+      expect(events[1]).toBeInstanceOf(OrderDiscountAppliedEvent)
+    })
+
+    it('should clear event list after pullDomainEvents is called', () => {
+      const order = OrderMother.create({ status: OrderStatus.OPEN })
+      order.applyOrderDiscount(percentageDiscount())
+
+      order.pullDomainEvents()
+      const secondPull = order.pullDomainEvents()
+
+      expect(secondPull).toHaveLength(0)
+    })
+  })
+
+  describe('toPrimitives / fromPrimitives round-trip', () => {
+    it('OrderItemDiscountAppliedEvent round-trips correctly', () => {
+      const orderId = UuidMother.random()
+      const itemId = UuidMother.random()
+      const discount = percentageDiscount()
+      const event = new OrderItemDiscountAppliedEvent({ orderId, itemId, discount: discount.toPrimitives() })
+
+      const primitives = event.toPrimitives()
+      const restored = OrderItemDiscountAppliedEvent.fromPrimitives({
+        eventId: event.eventId,
+        occurredOn: event.occurredOn,
+        aggregateId: orderId,
+        version: OrderItemDiscountAppliedEvent.VERSION,
+        payload: primitives,
+        metadata: {}
+      })
+
+      expect(restored.toPrimitives()).toEqual(primitives)
+    })
+
+    it('OrderItemDiscountRemovedEvent round-trips correctly', () => {
+      const orderId = UuidMother.random()
+      const itemId = UuidMother.random()
+      const event = new OrderItemDiscountRemovedEvent({ orderId, itemId })
+
+      const primitives = event.toPrimitives()
+      const restored = OrderItemDiscountRemovedEvent.fromPrimitives({
+        eventId: event.eventId,
+        occurredOn: event.occurredOn,
+        aggregateId: orderId,
+        version: OrderItemDiscountRemovedEvent.VERSION,
+        payload: primitives,
+        metadata: {}
+      })
+
+      expect(restored.toPrimitives()).toEqual(primitives)
+    })
+
+    it('OrderDiscountAppliedEvent round-trips correctly', () => {
+      const orderId = UuidMother.random()
+      const discount = percentageDiscount()
+      const event = new OrderDiscountAppliedEvent({ orderId, discount: discount.toPrimitives() })
+
+      const primitives = event.toPrimitives()
+      const restored = OrderDiscountAppliedEvent.fromPrimitives({
+        eventId: event.eventId,
+        occurredOn: event.occurredOn,
+        aggregateId: orderId,
+        version: OrderDiscountAppliedEvent.VERSION,
+        payload: primitives,
+        metadata: {}
+      })
+
+      expect(restored.toPrimitives()).toEqual(primitives)
+    })
+
+    it('OrderDiscountRemovedEvent round-trips correctly', () => {
+      const orderId = UuidMother.random()
+      const event = new OrderDiscountRemovedEvent({ orderId })
+
+      const primitives = event.toPrimitives()
+      const restored = OrderDiscountRemovedEvent.fromPrimitives({
+        eventId: event.eventId,
+        occurredOn: event.occurredOn,
+        aggregateId: orderId,
+        version: OrderDiscountRemovedEvent.VERSION,
+        payload: primitives,
+        metadata: {}
+      })
+
+      expect(restored.toPrimitives()).toEqual(primitives)
+    })
   })
 })
 

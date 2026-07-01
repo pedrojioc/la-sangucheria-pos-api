@@ -97,10 +97,10 @@ import { createProvider } from '@core/utils/create-provider'
     createProvider(GetKitchenQueue, [OrderRepository]),
     createProvider(CloseOrder, [OrderRepository, FindOrder, EventBus]),
     createProvider(SearchOrdersByCriteria, [OrderQueryService]),
-    createProvider(ApplyItemDiscount, [OrderRepository, FindOrder]),
-    createProvider(RemoveItemDiscount, [OrderRepository, FindOrder]),
-    createProvider(ApplyOrderDiscount, [OrderRepository, FindOrder]),
-    createProvider(RemoveOrderDiscount, [OrderRepository, FindOrder]),
+    createProvider(ApplyItemDiscount, [OrderRepository, FindOrder, EventBus]),
+    createProvider(RemoveItemDiscount, [OrderRepository, FindOrder, EventBus]),
+    createProvider(ApplyOrderDiscount, [OrderRepository, FindOrder, EventBus]),
+    createProvider(RemoveOrderDiscount, [OrderRepository, FindOrder, EventBus]),
 
     // QUERY SERVICES
     {

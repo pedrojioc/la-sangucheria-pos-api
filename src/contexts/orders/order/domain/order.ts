@@ -31,6 +31,10 @@ import { OrderItemCancelledEvent } from './events/order-item-cancelled.event'
 import { OrderCancelledEvent } from './events/order-cancelled.event'
 import { OrderClosedEvent } from './events/order-closed.event'
 import { OrderReadyEvent } from './events/order-ready.event'
+import { OrderItemDiscountAppliedEvent } from './events/order-item-discount-applied.event'
+import { OrderItemDiscountRemovedEvent } from './events/order-item-discount-removed.event'
+import { OrderDiscountAppliedEvent } from './events/order-discount-applied.event'
+import { OrderDiscountRemovedEvent } from './events/order-discount-removed.event'
 
 export interface AddItemInput {
   id: string
@@ -462,22 +466,26 @@ export class Order extends AggregateRoot {
     this.ensureCanBeModified()
     const item = this.findItem(itemId)
     item.applyDiscount(discount)
+    this.record(new OrderItemDiscountAppliedEvent({ orderId: this.id.value, itemId, discount: discount.toPrimitives() }))
   }
 
   removeItemDiscount(itemId: string): void {
     this.ensureCanBeModified()
     const item = this.findItem(itemId)
     item.removeDiscount()
+    this.record(new OrderItemDiscountRemovedEvent({ orderId: this.id.value, itemId }))
   }
 
   applyOrderDiscount(discount: Discount): void {
     this.ensureCanBeModified()
     this.orderDiscount = discount
+    this.record(new OrderDiscountAppliedEvent({ orderId: this.id.value, discount: discount.toPrimitives() }))
   }
 
   removeOrderDiscount(): void {
     this.ensureCanBeModified()
     this.orderDiscount = null
+    this.record(new OrderDiscountRemovedEvent({ orderId: this.id.value }))
   }
 
   /** Gross subtotal: sum of active item line totals (before any discounts) */
