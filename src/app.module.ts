@@ -51,6 +51,9 @@ import { KitchenPrinterModule } from '@contexts/kitchen-operations/kitchen-print
 // Orders Modules
 import { OrderModule } from '@contexts/orders/order/order.module'
 
+// Establishment Modules
+import { EstablishmentModule } from '@contexts/establishment/establishment/establishment.module'
+
 @Module({
   imports: [
     // =====================================
@@ -103,6 +106,11 @@ import { OrderModule } from '@contexts/orders/order/order.module'
     // ORDERS
     // =====================================
     OrderModule,
+
+    // =====================================
+    // ESTABLISHMENT
+    // =====================================
+    EstablishmentModule,
 
     // =====================================
     // FEATURE MODULES
