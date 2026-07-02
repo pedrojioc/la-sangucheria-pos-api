@@ -1,15 +1,25 @@
-import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common'
-import { CommandBus } from '@nestjs/cqrs'
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common'
+import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import { AddAddressRequest } from '../dto/add-address.request'
 import { UpdateAddressRequest } from '../dto/update-address.request'
 import { AddAddressCommand } from '../../../application/add/add-address.command'
 import { UpdateAddressCommand } from '../../../application/update/update-address.command'
 import { RemoveAddressCommand } from '../../../application/remove/remove-address.command'
 import { SetDefaultAddressCommand } from '../../../application/set-default/set-default-address.command'
+import { FindAddressesByCustomerQuery } from '../../../application/find-by-customer/find-addresses-by-customer.query'
+import { AddressResponse } from '../../../application/dto/address.response'
 
 @Controller('customers/:customerId/addresses')
 export class AddressController {
-  constructor(private readonly commandBus: CommandBus) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus
+  ) {}
+
+  @Get()
+  findAll(@Param('customerId') customerId: string): Promise<AddressResponse[]> {
+    return this.queryBus.execute(new FindAddressesByCustomerQuery(customerId))
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

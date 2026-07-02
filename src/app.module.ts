@@ -54,6 +54,9 @@ import { OrderModule } from '@contexts/orders/order/order.module'
 // Establishment Modules
 import { EstablishmentModule } from '@contexts/establishment/establishment/establishment.module'
 
+// Billing Modules
+import { BillingModule } from '@contexts/billing/billing.module'
+
 @Module({
   imports: [
     // =====================================
@@ -111,6 +114,11 @@ import { EstablishmentModule } from '@contexts/establishment/establishment/estab
     // ESTABLISHMENT
     // =====================================
     EstablishmentModule,
+
+    // =====================================
+    // BILLING
+    // =====================================
+    BillingModule,
 
     // =====================================
     // FEATURE MODULES

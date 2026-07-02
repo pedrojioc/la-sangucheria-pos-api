@@ -14,11 +14,13 @@ import { AddAddress } from './application/add/add-address'
 import { UpdateAddress } from './application/update/update-address'
 import { RemoveAddress } from './application/remove/remove-address'
 import { SetDefaultAddress } from './application/set-default/set-default-address'
+import { FindAddressesByCustomer } from './application/find-by-customer/find-addresses-by-customer'
 
 import { AddAddressHandler } from './application/add/add-address.handler'
 import { UpdateAddressHandler } from './application/update/update-address.handler'
 import { RemoveAddressHandler } from './application/remove/remove-address.handler'
 import { SetDefaultAddressHandler } from './application/set-default/set-default-address.handler'
+import { FindAddressesByCustomerHandler } from './application/find-by-customer/find-addresses-by-customer.handler'
 
 import { AddressController } from './presentation/http/controllers/address.controller'
 
@@ -31,6 +33,8 @@ const CommandHandlers = [
   SetDefaultAddressHandler
 ]
 
+const QueryHandlers = [FindAddressesByCustomerHandler]
+
 @Module({
   imports: [TypeOrmModule.forFeature([AddressEntity]), CqrsModule, CustomerModule],
   controllers: [AddressController],
@@ -41,8 +45,10 @@ const CommandHandlers = [
     createProvider(UpdateAddress, [AddressRepository, EventBus]),
     createProvider(RemoveAddress, [AddressRepository, CustomerRepository, EventBus]),
     createProvider(SetDefaultAddress, [AddressRepository, CustomerRepository, EventBus]),
+    createProvider(FindAddressesByCustomer, [AddressRepository]),
 
-    ...CommandHandlers
+    ...CommandHandlers,
+    ...QueryHandlers
   ],
   exports: [AddressRepository]
 })
