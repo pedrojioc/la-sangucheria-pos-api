@@ -29,6 +29,9 @@ export class BillingConfigEntity {
   @Column({ name: 'resolucion_valid_to', type: 'date' })
   resolucionValidTo: Date
 
+  @Column({ name: 'singleton_guard', type: 'integer', default: 1 })
+  singletonGuard: number
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
 

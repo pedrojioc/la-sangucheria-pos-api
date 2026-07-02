@@ -10,11 +10,9 @@ import { TypeOrmInvoiceRepository } from '@contexts/billing/invoice/infrastructu
 
 // Ports
 import { FactusApiPort } from '@contexts/billing/invoice/application/ports/factus-api.port'
-import { BillingEstablishmentPort } from '@contexts/billing/invoice/application/ports/billing-establishment.port'
 
 // Adapters
 import { FactusApiAdapter } from '@contexts/billing/invoice/infrastructure/adapters/factus-api.adapter'
-import { BillingEstablishmentAdapter } from '@contexts/billing/invoice/infrastructure/adapters/billing-establishment.adapter'
 
 // Use Cases
 import { IssueInvoice } from '@contexts/billing/invoice/application/issue-invoice/issue-invoice'
@@ -29,7 +27,6 @@ import { InvoiceController } from '@contexts/billing/invoice/presentation/invoic
 
 // Cross-module imports
 import { BillingConfigModule } from '@contexts/billing/billing-config/billing-config.module'
-import { EstablishmentModule } from '@contexts/establishment/establishment/establishment.module'
 import { BillingConfigRepository } from '@contexts/billing/billing-config/domain/repositories/billing-config.repository'
 
 // Events
@@ -41,8 +38,7 @@ import { createProvider } from '@core/utils/create-provider'
 @Module({
   imports: [
     TypeOrmModule.forFeature([InvoiceEntity]),
-    BillingConfigModule,
-    EstablishmentModule
+    BillingConfigModule
   ],
   controllers: [InvoiceController],
   providers: [
@@ -57,10 +53,6 @@ import { createProvider } from '@core/utils/create-provider'
       provide: FactusApiPort,
       useClass: FactusApiAdapter
     },
-    {
-      provide: BillingEstablishmentPort,
-      useClass: BillingEstablishmentAdapter
-    },
 
     // USE CASES
     createProvider(IssueInvoice, [InvoiceRepository, BillingConfigRepository, FactusApiPort, EventBus]),
@@ -68,7 +60,7 @@ import { createProvider } from '@core/utils/create-provider'
     createProvider(ListPendingInvoices, [InvoiceRepository]),
 
     // SUBSCRIBERS
-    createProvider(OnOrderClosedIssueBillingDocument, [BillingConfigRepository, IssueInvoice])
+    createProvider(OnOrderClosedIssueBillingDocument, [IssueInvoice])
   ]
 })
 export class InvoiceModule implements OnModuleInit {

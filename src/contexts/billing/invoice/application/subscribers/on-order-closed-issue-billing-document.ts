@@ -5,14 +5,11 @@ import { OrderClosedEvent } from '@contexts/orders/order/domain/events/order-clo
 import type { OrderClosedItemPayload } from '@contexts/orders/order/domain/events/order-closed.event'
 import { DocumentType } from '@contexts/billing/invoice/domain/document-type'
 import { InvoiceSnapshot } from '@contexts/billing/invoice/domain/invoice-snapshot'
-import { BillingNotConfigured } from '@contexts/billing/billing-config/domain/exceptions/billing-not-configured.exception'
-import { BillingConfigRepository } from '@contexts/billing/billing-config/domain/repositories/billing-config.repository'
 import { IssueInvoice } from '../issue-invoice/issue-invoice'
 
 @Injectable()
 export class OnOrderClosedIssueBillingDocument implements DomainEventSubscriber<OrderClosedEvent> {
   constructor(
-    private readonly billingConfigRepository: BillingConfigRepository,
     private readonly issueInvoice: IssueInvoice,
   ) {}
 
@@ -21,13 +18,6 @@ export class OnOrderClosedIssueBillingDocument implements DomainEventSubscriber<
   }
 
   async on(event: OrderClosedEvent): Promise<void> {
-    try {
-      await this.billingConfigRepository.findSingleton()
-    } catch (error) {
-      if (error instanceof BillingNotConfigured) return
-      throw error
-    }
-
     const { payload } = event
 
     const documentType = payload.customerDocumentType

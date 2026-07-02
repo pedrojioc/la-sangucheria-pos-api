@@ -90,15 +90,27 @@ describe('IssueInvoice', () => {
     expect(publishedEvents.some((e) => e.constructor.name === 'InvoiceFailedEvent')).toBe(true)
   })
 
-  it('should propagate BillingNotConfigured when billing is not configured', async () => {
+  it('should persist invoice as FAILED with reason billing_not_configured when billing is not configured', async () => {
     const snapshot = InvoiceSnapshotMother.create()
     const invoiceId = UuidMother.random()
 
+    const savedStatuses: InvoiceStatus[] = []
+    invoiceRepository.save.mockImplementation(async (invoice: Invoice) => {
+      savedStatuses.push(invoice.toPrimitives().status)
+    })
+
     billingConfigRepository.findSingleton.mockRejectedValue(new BillingNotConfigured())
 
-    await expect(useCase.run(invoiceId, snapshot)).rejects.toThrow(BillingNotConfigured)
+    await useCase.run(invoiceId, snapshot)
 
-    expect(invoiceRepository.save).not.toHaveBeenCalled()
+    expect(invoiceRepository.save).toHaveBeenCalledTimes(2)
+    expect(savedStatuses[0]).toBe(InvoiceStatus.PENDING)
+    expect(savedStatuses[1]).toBe(InvoiceStatus.FAILED)
+
+    const finalInvoice = invoiceRepository.save.mock.calls[1][0] as Invoice
+    expect(finalInvoice.toPrimitives().failureReason).toBe('billing_not_configured')
+
     expect(factusApiPort.issue).not.toHaveBeenCalled()
+    expect(eventBus.publish).toHaveBeenCalledTimes(1)
   })
 })

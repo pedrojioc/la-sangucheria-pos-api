@@ -1,39 +1,28 @@
 import { OnOrderClosedIssueBillingDocument } from '@contexts/billing/invoice/application/subscribers/on-order-closed-issue-billing-document'
-import { BillingConfigRepository } from '@contexts/billing/billing-config/domain/repositories/billing-config.repository'
 import { IssueInvoice } from '@contexts/billing/invoice/application/issue-invoice/issue-invoice'
-import { BillingNotConfigured } from '@contexts/billing/billing-config/domain/exceptions/billing-not-configured.exception'
 import { DocumentType } from '@contexts/billing/invoice/domain/document-type'
-import { BillingConfigMother } from '@test/contexts/billing/billing-config/__mothers__/billing-config.mother'
 import { OrderClosedEventMother } from '@test/contexts/billing/invoice/__mothers__/order-closed-event.mother'
 
 describe('OnOrderClosedIssueBillingDocument', () => {
-  let billingConfigRepository: jest.Mocked<BillingConfigRepository>
   let issueInvoice: jest.Mocked<IssueInvoice>
   let subscriber: OnOrderClosedIssueBillingDocument
 
   beforeEach(() => {
-    billingConfigRepository = { findSingleton: jest.fn(), save: jest.fn() } as any
     issueInvoice = { run: jest.fn() } as any
-
     issueInvoice.run.mockResolvedValue(undefined)
 
-    subscriber = new OnOrderClosedIssueBillingDocument(billingConfigRepository, issueInvoice)
+    subscriber = new OnOrderClosedIssueBillingDocument(issueInvoice)
   })
 
-  it('should return silently without calling issueInvoice when billing is not configured', async () => {
-    billingConfigRepository.findSingleton.mockRejectedValue(new BillingNotConfigured())
-
+  it('should always call issueInvoice — BillingNotConfigured is handled inside IssueInvoice', async () => {
     const event = OrderClosedEventMother.anonymous()
 
     await subscriber.on(event)
 
-    expect(issueInvoice.run).not.toHaveBeenCalled()
+    expect(issueInvoice.run).toHaveBeenCalledTimes(1)
   })
 
   it('should call issueInvoice with DOCUMENTO_EQUIVALENTE when customer fields are null', async () => {
-    const config = BillingConfigMother.create()
-    billingConfigRepository.findSingleton.mockResolvedValue(config)
-
     const event = OrderClosedEventMother.anonymous()
 
     await subscriber.on(event)
@@ -46,9 +35,6 @@ describe('OnOrderClosedIssueBillingDocument', () => {
   })
 
   it('should call issueInvoice with FACTURA_NOMBRADA when customer fields are present', async () => {
-    const config = BillingConfigMother.create()
-    billingConfigRepository.findSingleton.mockResolvedValue(config)
-
     const event = OrderClosedEventMother.withCustomer('900123456', 'NIT')
 
     await subscriber.on(event)
@@ -60,21 +46,7 @@ describe('OnOrderClosedIssueBillingDocument', () => {
     expect(snapshot.customerDocumentNumber).toBe('900123456')
   })
 
-  it('should rethrow unexpected errors from billingConfigRepository', async () => {
-    const unexpectedError = new Error('Database connection lost')
-    billingConfigRepository.findSingleton.mockRejectedValue(unexpectedError)
-
-    const event = OrderClosedEventMother.anonymous()
-
-    await expect(subscriber.on(event)).rejects.toThrow('Database connection lost')
-
-    expect(issueInvoice.run).not.toHaveBeenCalled()
-  })
-
   it('should map snapshot fields correctly from the OrderClosedEvent payload', async () => {
-    const config = BillingConfigMother.create()
-    billingConfigRepository.findSingleton.mockResolvedValue(config)
-
     const event = OrderClosedEventMother.create({
       total: 50000,
       subtotal: 42017,

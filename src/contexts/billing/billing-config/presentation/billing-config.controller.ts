@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Put } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Patch, Post, Put } from '@nestjs/common'
 
 import { GetBillingConfig } from '@contexts/billing/billing-config/application/get-billing-config/get-billing-config'
 import { UpdateBillingConfig } from '@contexts/billing/billing-config/application/update-billing-config/update-billing-config'
@@ -27,7 +27,9 @@ export class BillingConfigController {
     }
   }
 
+  @Post()
   @Put()
+  @Patch()
   @HttpCode(HttpStatus.NO_CONTENT)
   async update(@Body() dto: UpdateBillingConfigRequest): Promise<void> {
     await this.updateBillingConfig.run({
