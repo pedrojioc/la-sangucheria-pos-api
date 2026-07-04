@@ -5,6 +5,7 @@ export interface OrderEstablishmentSettings {
   taxRate: number
   taxType: TaxType
   taxInclusive: boolean
+  enabledOrderTypes: string[]
 }
 
 export abstract class EstablishmentSettingsPort {
