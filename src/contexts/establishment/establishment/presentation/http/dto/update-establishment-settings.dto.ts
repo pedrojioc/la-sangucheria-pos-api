@@ -95,6 +95,8 @@ export class ServiceChargeDto {
 
   @IsNumber()
   @Min(0)
+  @ValidateIf((o: ServiceChargeDto) => o.type === 'PERCENTAGE')
+  @Max(1)
   value!: number
 }
 

@@ -4,8 +4,8 @@ export class EstablishmentTipSuggestions {
   readonly value: [number, number, number]
 
   constructor(value: [number, number, number]) {
-    this.value = value
     this.ensureIsValid(value)
+    this.value = value
   }
 
   private ensureIsValid(value: [number, number, number]): void {

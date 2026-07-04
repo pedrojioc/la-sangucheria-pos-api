@@ -9,19 +9,6 @@ import { KitchenMode } from '../../../domain/kitchen-mode'
 import { TaxType } from '@shared/domain/value-objects/tax-type'
 import { EstablishmentEntity } from './establishment.entity'
 
-// NOTE: After this PR merges, run the migration:
-//   name=CreateEstablishmentsTable pnpm migration:generate
-// Review and edit the generated migration to add the idempotent seed:
-//   INSERT INTO establishments (id, name, display_name, legal_name, tax_id,
-//     default_currency, default_tax_rate, default_tax_type, tax_inclusive,
-//     kitchen_mode, timezone, locale, loyalty_enabled)
-//   VALUES (
-//     'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-//     'La Sanguchería', 'La Sanguchería', 'La Sanguchería S.A.S.', '900000000-0',
-//     'COP', 0.08, 'INC', true, 'NONE', 'America/Bogota', 'es-CO', false
-//   )
-//   ON CONFLICT (id) DO NOTHING;
-
 @Injectable()
 export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
   constructor(

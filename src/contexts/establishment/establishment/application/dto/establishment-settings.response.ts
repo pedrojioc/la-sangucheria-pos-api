@@ -1,8 +1,6 @@
 import { TaxType } from '@shared/domain/value-objects/tax-type'
 import { KitchenMode } from '../../domain/kitchen-mode'
-import { Establishment } from '../../domain/establishment'
-import { OperatingHoursShape } from '../../domain/establishment-operating-hours'
-import { ServiceChargeShape } from '../../domain/establishment-service-charge'
+import { Establishment, EstablishmentPrimitives } from '../../domain/establishment'
 
 export class EstablishmentSettingsResponse {
   constructor(
@@ -26,9 +24,9 @@ export class EstablishmentSettingsResponse {
     public readonly timezone: string,
     public readonly locale: string,
     public readonly loyaltyEnabled: boolean,
-    public readonly operatingHours: OperatingHoursShape | null,
+    public readonly operatingHours: EstablishmentPrimitives['operatingHours'],
     public readonly enabledOrderTypes: string[],
-    public readonly serviceCharge: ServiceChargeShape | null,
+    public readonly serviceCharge: EstablishmentPrimitives['serviceCharge'],
     public readonly tipSuggestions: [number, number, number] | null,
     public readonly splitCheck: boolean,
     public readonly paymentMethods: string[]

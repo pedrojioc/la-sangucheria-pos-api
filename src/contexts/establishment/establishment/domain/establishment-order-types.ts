@@ -7,8 +7,8 @@ export class EstablishmentOrderTypes {
 
   constructor(value: string[]) {
     const deduped = value.filter((v, i, arr) => arr.indexOf(v) === i)
-    this.value = deduped
     this.ensureIsValid(deduped)
+    this.value = deduped
   }
 
   private ensureIsValid(value: string[]): void {
