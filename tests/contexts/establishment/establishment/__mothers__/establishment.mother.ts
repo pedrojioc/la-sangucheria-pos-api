@@ -25,7 +25,13 @@ const COLOMBIAN_DEFAULTS: EstablishmentPrimitives = {
   receiptFooter: null,
   timezone: 'America/Bogota',
   locale: 'es-CO',
-  loyaltyEnabled: false
+  loyaltyEnabled: false,
+  operatingHours: null,
+  enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT'],
+  serviceCharge: null,
+  tipSuggestions: null,
+  splitCheck: false,
+  paymentMethods: ['CASH', 'CARD']
 }
 
 export class EstablishmentMother {
@@ -39,5 +45,14 @@ export class EstablishmentMother {
 
   static withLoyaltyEnabled(): Establishment {
     return EstablishmentMother.create({ loyaltyEnabled: true })
+  }
+
+  static withEnabledOrderTypes(types: string[]): Establishment {
+    return EstablishmentMother.create({ enabledOrderTypes: types })
+  }
+
+  static withDisabledOrderType(disabledType: string): Establishment {
+    const all = ['DINE_IN', 'DELIVERY', 'TAKEOUT']
+    return EstablishmentMother.create({ enabledOrderTypes: all.filter(t => t !== disabledType) })
   }
 }

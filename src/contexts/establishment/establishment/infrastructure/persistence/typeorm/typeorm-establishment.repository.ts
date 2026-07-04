@@ -59,7 +59,13 @@ export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
       receiptFooter: entity.receiptFooter,
       timezone: entity.timezone,
       locale: entity.locale,
-      loyaltyEnabled: entity.loyaltyEnabled
+      loyaltyEnabled: entity.loyaltyEnabled,
+      operatingHours: (entity.operatingHours as any) ?? null,
+      enabledOrderTypes: entity.enabledOrderTypes ?? ['DINE_IN', 'DELIVERY', 'TAKEOUT'],
+      serviceCharge: (entity.serviceCharge as any) ?? null,
+      tipSuggestions: (entity.tipSuggestions as any) ?? null,
+      splitCheck: entity.splitCheck ?? false,
+      paymentMethods: entity.paymentMethods ?? ['CASH', 'CARD']
     })
   }
 
@@ -85,7 +91,13 @@ export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
       receiptFooter: primitives.receiptFooter,
       timezone: primitives.timezone,
       locale: primitives.locale,
-      loyaltyEnabled: primitives.loyaltyEnabled
+      loyaltyEnabled: primitives.loyaltyEnabled,
+      operatingHours: primitives.operatingHours,
+      enabledOrderTypes: primitives.enabledOrderTypes,
+      serviceCharge: primitives.serviceCharge,
+      tipSuggestions: primitives.tipSuggestions,
+      splitCheck: primitives.splitCheck,
+      paymentMethods: primitives.paymentMethods
     })
     await this.repository.save(entity)
   }
