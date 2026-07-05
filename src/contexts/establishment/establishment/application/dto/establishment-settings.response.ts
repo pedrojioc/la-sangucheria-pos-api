@@ -1,6 +1,6 @@
 import { TaxType } from '@shared/domain/value-objects/tax-type'
 import { KitchenMode } from '../../domain/kitchen-mode'
-import { Establishment } from '../../domain/establishment'
+import { Establishment, EstablishmentPrimitives } from '../../domain/establishment'
 
 export class EstablishmentSettingsResponse {
   constructor(
@@ -23,10 +23,20 @@ export class EstablishmentSettingsResponse {
     public readonly receiptFooter: string | null,
     public readonly timezone: string,
     public readonly locale: string,
-    public readonly loyaltyEnabled: boolean
+    public readonly loyaltyEnabled: boolean,
+    public readonly operatingHours: EstablishmentPrimitives['operatingHours'],
+    public readonly enabledOrderTypes: string[],
+    public readonly serviceCharge: EstablishmentPrimitives['serviceCharge'],
+    public readonly tipSuggestions: [number, number, number] | null,
+    public readonly splitCheck: boolean,
+    public readonly paymentMethods: string[],
+    public readonly autoSendToKitchen: boolean
   ) {}
 
-  static fromDomain(establishment: Establishment): EstablishmentSettingsResponse {
+  static fromDomain(
+    establishment: Establishment,
+    kitchenMode: KitchenMode
+  ): EstablishmentSettingsResponse {
     const p = establishment.toPrimitives()
     return new EstablishmentSettingsResponse(
       p.id,
@@ -43,12 +53,19 @@ export class EstablishmentSettingsResponse {
       p.defaultTaxRate,
       p.defaultTaxType,
       p.taxInclusive,
-      p.kitchenMode,
+      kitchenMode,
       p.receiptHeader,
       p.receiptFooter,
       p.timezone,
       p.locale,
-      p.loyaltyEnabled
+      p.loyaltyEnabled,
+      p.operatingHours,
+      p.enabledOrderTypes,
+      p.serviceCharge,
+      p.tipSuggestions,
+      p.splitCheck,
+      p.paymentMethods,
+      p.autoSendToKitchen
     )
   }
 }

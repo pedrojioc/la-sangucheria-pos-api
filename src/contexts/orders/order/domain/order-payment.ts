@@ -1,4 +1,4 @@
-export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER'
+export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'VOUCHER' | 'OTHER'
 
 export interface OrderPaymentPrimitives {
   method: PaymentMethod

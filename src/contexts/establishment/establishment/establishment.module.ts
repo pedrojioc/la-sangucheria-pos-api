@@ -8,6 +8,10 @@ import { EstablishmentEntity } from './infrastructure/persistence/typeorm/establ
 import { EstablishmentRepository } from './domain/repositories/establishment.repository'
 import { TypeOrmEstablishmentRepository } from './infrastructure/persistence/typeorm/typeorm-establishment.repository'
 
+// Ports & Adapters
+import { StationOutputDevicesPort } from './application/ports/station-output-devices.port'
+import { TypeOrmStationOutputDevicesAdapter } from './infrastructure/adapters/typeorm-station-output-devices.adapter'
+
 // Events
 import { EventBus } from '@shared/domain/events'
 
@@ -18,11 +22,14 @@ import { UpdateEstablishmentSettings } from './application/update-settings/updat
 // Controllers
 import { EstablishmentController } from './presentation/http/controllers/establishment.controller'
 
+// External modules
+import { StationModule } from '@contexts/kitchen-operations/station/station.module'
+
 // Utils
 import { createProvider } from '@core/utils/create-provider'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([EstablishmentEntity])],
+  imports: [TypeOrmModule.forFeature([EstablishmentEntity]), StationModule],
   controllers: [EstablishmentController],
   providers: [
     // REPOSITORIES
@@ -31,8 +38,14 @@ import { createProvider } from '@core/utils/create-provider'
       useClass: TypeOrmEstablishmentRepository
     },
 
+    // PORTS
+    {
+      provide: StationOutputDevicesPort,
+      useClass: TypeOrmStationOutputDevicesAdapter
+    },
+
     // USE CASES
-    createProvider(GetEstablishmentSettings, [EstablishmentRepository]),
+    createProvider(GetEstablishmentSettings, [EstablishmentRepository, StationOutputDevicesPort]),
     createProvider(UpdateEstablishmentSettings, [EstablishmentRepository, EventBus])
   ],
   exports: [GetEstablishmentSettings]

@@ -3,6 +3,7 @@ import { OrderRepository } from '@contexts/orders/order/domain/repositories/orde
 import { EventBus } from '@shared/domain/events'
 import { EstablishmentSettingsPort } from '@contexts/orders/order/application/ports/establishment-settings.port'
 import { EstablishmentNotConfigured } from '@contexts/establishment/establishment/domain/exceptions/establishment-not-configured.exception'
+import { OrderTypeNotEnabled } from '@contexts/orders/order/application/exceptions/order-type-not-enabled.exception'
 import { OrderType } from '@contexts/orders/order/domain/order-type'
 import { Order } from '@contexts/orders/order/domain/order'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
@@ -46,7 +47,8 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
         currency: 'USD',
         taxRate: 0.10,
         taxType: TaxType.IVA,
-        taxInclusive: false
+        taxInclusive: false,
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT']
       })
 
       await useCase.run(orderId, OrderType.DINE_IN, UuidMother.random(), null)
@@ -67,7 +69,8 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
         currency: 'USD',
         taxRate: 0.10,
         taxType: TaxType.IVA,
-        taxInclusive: false
+        taxInclusive: false,
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT']
       })
 
       await useCase.run(UuidMother.random(), OrderType.TAKEOUT, UuidMother.random(), null)
@@ -83,12 +86,80 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
         currency: 'COP',
         taxRate: 0.08,
         taxType: TaxType.INC,
-        taxInclusive: true
+        taxInclusive: true,
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT']
       })
 
       const result = await useCase.run(UuidMother.random(), OrderType.DINE_IN, UuidMother.random(), null)
 
       expect(result).toBe('ORD-0099')
+    })
+  })
+
+  describe('orderTypes enforcement', () => {
+    it('should create the order when the type is in enabledOrderTypes (Scenario 2.1)', async () => {
+      orderRepository.nextOrderNumber.mockResolvedValue('ORD-0010')
+      orderRepository.save.mockResolvedValue(undefined)
+      eventBus.publish.mockResolvedValue(undefined)
+      establishmentPort.resolve.mockResolvedValue({
+        currency: 'COP',
+        taxRate: 0.08,
+        taxType: TaxType.INC,
+        taxInclusive: true,
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT']
+      })
+
+      await expect(
+        useCase.run(UuidMother.random(), OrderType.DINE_IN, UuidMother.random(), null)
+      ).resolves.toBe('ORD-0010')
+
+      expect(orderRepository.save).toHaveBeenCalledTimes(1)
+    })
+
+    it('should throw OrderTypeNotEnabled when the type is disabled (Scenario 2.2)', async () => {
+      establishmentPort.resolve.mockResolvedValue({
+        currency: 'COP',
+        taxRate: 0.08,
+        taxType: TaxType.INC,
+        taxInclusive: true,
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY']
+      })
+
+      await expect(
+        useCase.run(UuidMother.random(), OrderType.TAKEOUT, UuidMother.random(), null)
+      ).rejects.toThrow(OrderTypeNotEnabled)
+    })
+
+    it('should NOT call nextOrderNumber when the order type is disabled', async () => {
+      establishmentPort.resolve.mockResolvedValue({
+        currency: 'COP',
+        taxRate: 0.08,
+        taxType: TaxType.INC,
+        taxInclusive: true,
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY']
+      })
+
+      await expect(
+        useCase.run(UuidMother.random(), OrderType.TAKEOUT, UuidMother.random(), null)
+      ).rejects.toThrow(OrderTypeNotEnabled)
+
+      expect(orderRepository.nextOrderNumber).not.toHaveBeenCalled()
+    })
+
+    it('should NOT save any order when the order type is disabled', async () => {
+      establishmentPort.resolve.mockResolvedValue({
+        currency: 'COP',
+        taxRate: 0.08,
+        taxType: TaxType.INC,
+        taxInclusive: true,
+        enabledOrderTypes: ['DINE_IN']
+      })
+
+      await expect(
+        useCase.run(UuidMother.random(), OrderType.DELIVERY, UuidMother.random(), null)
+      ).rejects.toThrow(OrderTypeNotEnabled)
+
+      expect(orderRepository.save).not.toHaveBeenCalled()
     })
   })
 

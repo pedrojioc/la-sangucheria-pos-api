@@ -68,6 +68,9 @@ export class EstablishmentEntity {
   @Column({ name: 'kitchen_mode', type: 'varchar', length: 30 })
   kitchenMode: KitchenMode
 
+  @Column({ name: 'auto_send_to_kitchen', type: 'boolean', default: false })
+  autoSendToKitchen: boolean
+
   // Receipt
   @Column({ name: 'receipt_header', type: 'text', nullable: true })
   receiptHeader: string | null
@@ -85,6 +88,25 @@ export class EstablishmentEntity {
   // Loyalty
   @Column({ name: 'loyalty_enabled', type: 'boolean', default: false })
   loyaltyEnabled: boolean
+
+  // Extended config (SDD-2)
+  @Column({ name: 'operating_hours', type: 'jsonb', nullable: true })
+  operatingHours: object | null
+
+  @Column({ name: 'enabled_order_types', type: 'jsonb', default: () => '\'["DINE_IN","DELIVERY","TAKEOUT"]\'' })
+  enabledOrderTypes: string[]
+
+  @Column({ name: 'service_charge', type: 'jsonb', nullable: true })
+  serviceCharge: object | null
+
+  @Column({ name: 'tip_suggestions', type: 'jsonb', nullable: true })
+  tipSuggestions: number[] | null
+
+  @Column({ name: 'split_check', type: 'boolean', default: false })
+  splitCheck: boolean
+
+  @Column({ name: 'payment_methods', type: 'jsonb', default: () => '\'["CASH","CARD"]\'' })
+  paymentMethods: string[]
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date

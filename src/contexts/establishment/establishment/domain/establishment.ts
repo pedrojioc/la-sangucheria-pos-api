@@ -21,6 +21,13 @@ import { EstablishmentLocale } from './establishment-locale'
 import { LoyaltyEnabled } from './loyalty-enabled'
 import { EstablishmentSettingsUpdatedEvent } from './events/establishment-settings-updated.event'
 import { InvalidArgument } from '@shared/domain/exceptions/invalid-argument.exception'
+import { EstablishmentOperatingHours, OperatingHoursShape } from './establishment-operating-hours'
+import { EstablishmentOrderTypes, ORDER_TYPE_VALUES } from './establishment-order-types'
+import { EstablishmentServiceCharge, ServiceChargeShape } from './establishment-service-charge'
+import { EstablishmentTipSuggestions } from './establishment-tip-suggestions'
+import { EstablishmentSplitCheck } from './establishment-split-check'
+import { EstablishmentPaymentMethods } from './establishment-payment-methods'
+import { EstablishmentAutoSendToKitchen } from './establishment-auto-send-to-kitchen'
 
 export interface EstablishmentPrimitives {
   id: string
@@ -43,6 +50,13 @@ export interface EstablishmentPrimitives {
   timezone: string
   locale: string
   loyaltyEnabled: boolean
+  operatingHours: OperatingHoursShape | null
+  enabledOrderTypes: string[]
+  serviceCharge: ServiceChargeShape | null
+  tipSuggestions: [number, number, number] | null
+  splitCheck: boolean
+  paymentMethods: string[]
+  autoSendToKitchen: boolean
 }
 
 export type EstablishmentUpdateParams = Partial<Omit<EstablishmentPrimitives, 'id'>>
@@ -68,7 +82,14 @@ export class Establishment extends AggregateRoot {
     private receiptFooter: ReceiptFooter | null,
     private timezone: EstablishmentTimezone,
     private locale: EstablishmentLocale,
-    private loyaltyEnabled: LoyaltyEnabled
+    private loyaltyEnabled: LoyaltyEnabled,
+    private operatingHours: EstablishmentOperatingHours | null,
+    private enabledOrderTypes: EstablishmentOrderTypes,
+    private serviceCharge: EstablishmentServiceCharge | null,
+    private tipSuggestions: EstablishmentTipSuggestions | null,
+    private splitCheck: EstablishmentSplitCheck,
+    private paymentMethods: EstablishmentPaymentMethods,
+    private autoSendToKitchen: EstablishmentAutoSendToKitchen
   ) {
     super()
   }
@@ -115,7 +136,14 @@ export class Establishment extends AggregateRoot {
       receiptFooter,
       timezone,
       locale,
-      loyaltyEnabled
+      loyaltyEnabled,
+      operatingHours: null,
+      enabledOrderTypes: ORDER_TYPE_VALUES.slice(),
+      serviceCharge: null,
+      tipSuggestions: null,
+      splitCheck: false,
+      paymentMethods: ['CASH', 'CARD'],
+      autoSendToKitchen: false
     })
 
     establishment.record(
@@ -179,7 +207,20 @@ export class Establishment extends AggregateRoot {
       primitives.receiptFooter !== null ? new ReceiptFooter(primitives.receiptFooter) : null,
       new EstablishmentTimezone(primitives.timezone),
       new EstablishmentLocale(primitives.locale),
-      new LoyaltyEnabled(primitives.loyaltyEnabled)
+      new LoyaltyEnabled(primitives.loyaltyEnabled),
+      primitives.operatingHours !== null
+        ? new EstablishmentOperatingHours(primitives.operatingHours)
+        : null,
+      new EstablishmentOrderTypes(primitives.enabledOrderTypes),
+      primitives.serviceCharge !== null
+        ? new EstablishmentServiceCharge(primitives.serviceCharge)
+        : null,
+      primitives.tipSuggestions !== null
+        ? new EstablishmentTipSuggestions(primitives.tipSuggestions)
+        : null,
+      new EstablishmentSplitCheck(primitives.splitCheck),
+      new EstablishmentPaymentMethods(primitives.paymentMethods),
+      new EstablishmentAutoSendToKitchen(primitives.autoSendToKitchen)
     )
   }
 
@@ -204,7 +245,14 @@ export class Establishment extends AggregateRoot {
       receiptFooter: this.receiptFooter?.value ?? null,
       timezone: this.timezone.value,
       locale: this.locale.value,
-      loyaltyEnabled: this.loyaltyEnabled.value
+      loyaltyEnabled: this.loyaltyEnabled.value,
+      operatingHours: this.operatingHours?.value ?? null,
+      enabledOrderTypes: this.enabledOrderTypes.value,
+      serviceCharge: this.serviceCharge?.value ?? null,
+      tipSuggestions: this.tipSuggestions?.value ?? null,
+      splitCheck: this.splitCheck.value,
+      paymentMethods: this.paymentMethods.value,
+      autoSendToKitchen: this.autoSendToKitchen.value
     }
   }
 }

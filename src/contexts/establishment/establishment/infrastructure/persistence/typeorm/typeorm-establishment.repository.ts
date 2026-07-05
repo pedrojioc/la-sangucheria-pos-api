@@ -9,19 +9,6 @@ import { KitchenMode } from '../../../domain/kitchen-mode'
 import { TaxType } from '@shared/domain/value-objects/tax-type'
 import { EstablishmentEntity } from './establishment.entity'
 
-// NOTE: After this PR merges, run the migration:
-//   name=CreateEstablishmentsTable pnpm migration:generate
-// Review and edit the generated migration to add the idempotent seed:
-//   INSERT INTO establishments (id, name, display_name, legal_name, tax_id,
-//     default_currency, default_tax_rate, default_tax_type, tax_inclusive,
-//     kitchen_mode, timezone, locale, loyalty_enabled)
-//   VALUES (
-//     'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-//     'La Sanguchería', 'La Sanguchería', 'La Sanguchería S.A.S.', '900000000-0',
-//     'COP', 0.08, 'INC', true, 'NONE', 'America/Bogota', 'es-CO', false
-//   )
-//   ON CONFLICT (id) DO NOTHING;
-
 @Injectable()
 export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
   constructor(
@@ -59,7 +46,14 @@ export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
       receiptFooter: entity.receiptFooter,
       timezone: entity.timezone,
       locale: entity.locale,
-      loyaltyEnabled: entity.loyaltyEnabled
+      loyaltyEnabled: entity.loyaltyEnabled,
+      operatingHours: (entity.operatingHours as any) ?? null,
+      enabledOrderTypes: entity.enabledOrderTypes ?? ['DINE_IN', 'DELIVERY', 'TAKEOUT'],
+      serviceCharge: (entity.serviceCharge as any) ?? null,
+      tipSuggestions: (entity.tipSuggestions as any) ?? null,
+      splitCheck: entity.splitCheck ?? false,
+      paymentMethods: entity.paymentMethods ?? ['CASH', 'CARD'],
+      autoSendToKitchen: entity.autoSendToKitchen ?? false
     })
   }
 
@@ -85,7 +79,14 @@ export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
       receiptFooter: primitives.receiptFooter,
       timezone: primitives.timezone,
       locale: primitives.locale,
-      loyaltyEnabled: primitives.loyaltyEnabled
+      loyaltyEnabled: primitives.loyaltyEnabled,
+      operatingHours: primitives.operatingHours,
+      enabledOrderTypes: primitives.enabledOrderTypes,
+      serviceCharge: primitives.serviceCharge,
+      tipSuggestions: primitives.tipSuggestions,
+      splitCheck: primitives.splitCheck,
+      paymentMethods: primitives.paymentMethods,
+      autoSendToKitchen: primitives.autoSendToKitchen
     })
     await this.repository.save(entity)
   }
