@@ -92,6 +92,38 @@ describe('GetEstablishmentSettings', () => {
     })
   })
 
+  describe('kitchen mode derivation — scenario coverage', () => {
+    it('should derive kitchenMode NONE for a verbal restaurant with no stations', async () => {
+      // Verbal restaurant: no hardware at all — kitchenMode must be NONE
+      repository.findSingleton.mockResolvedValue(EstablishmentMother.create())
+      stationOutputDevicesPort.list.mockResolvedValue([])
+
+      const result = await useCase.run()
+
+      expect(result.kitchenMode).toBe(KitchenMode.NONE)
+    })
+
+    it('should derive kitchenMode STATIONS for a KDS restaurant with mixed device types', async () => {
+      // KDS restaurant: at least one kds device present, regardless of other device types
+      repository.findSingleton.mockResolvedValue(EstablishmentMother.create())
+      stationOutputDevicesPort.list.mockResolvedValue(['kds', 'none'])
+
+      const result = await useCase.run()
+
+      expect(result.kitchenMode).toBe(KitchenMode.STATIONS)
+    })
+
+    it('should derive kitchenMode SINGLE_PRINTER for a printer-only restaurant with multiple printers', async () => {
+      // Printer-only restaurant: all stations are printers — no KDS present
+      repository.findSingleton.mockResolvedValue(EstablishmentMother.create())
+      stationOutputDevicesPort.list.mockResolvedValue(['printer', 'printer'])
+
+      const result = await useCase.run()
+
+      expect(result.kitchenMode).toBe(KitchenMode.SINGLE_PRINTER)
+    })
+  })
+
   describe('not configured', () => {
     it('should propagate EstablishmentNotConfigured when repository throws', async () => {
       repository.findSingleton.mockRejectedValue(new EstablishmentNotConfigured())
