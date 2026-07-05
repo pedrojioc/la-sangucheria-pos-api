@@ -221,4 +221,8 @@ export class UpdateEstablishmentSettingsDto {
   @ArrayMinSize(1)
   @IsIn(['CASH', 'CARD', 'TRANSFER', 'VOUCHER', 'OTHER'], { each: true })
   paymentMethods?: string[]
+
+  @IsOptional()
+  @IsBoolean()
+  autoSendToKitchen?: boolean
 }

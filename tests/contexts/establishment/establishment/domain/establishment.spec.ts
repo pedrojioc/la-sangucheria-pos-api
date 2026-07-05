@@ -209,7 +209,8 @@ describe('Establishment aggregate', () => {
         serviceCharge: { type: 'PERCENTAGE' as const, value: 0.10 },
         tipSuggestions: [0.05, 0.10, 0.15] as [number, number, number],
         splitCheck: true,
-        paymentMethods: ['CASH', 'TRANSFER']
+        paymentMethods: ['CASH', 'TRANSFER'],
+        autoSendToKitchen: false
       }
 
       const establishment = Establishment.fromPrimitives(primitives)
@@ -221,6 +222,24 @@ describe('Establishment aggregate', () => {
       expect(result.tipSuggestions).toEqual(primitives.tipSuggestions)
       expect(result.splitCheck).toBe(primitives.splitCheck)
       expect(result.paymentMethods).toEqual(primitives.paymentMethods)
+    })
+  })
+
+  describe('autoSendToKitchen field', () => {
+    it('should default to false', () => {
+      const establishment = EstablishmentMother.create()
+      expect(establishment.toPrimitives().autoSendToKitchen).toBe(false)
+    })
+
+    it('should round-trip autoSendToKitchen=true through fromPrimitives/toPrimitives', () => {
+      const establishment = EstablishmentMother.withAutoSendToKitchen(true)
+      expect(establishment.toPrimitives().autoSendToKitchen).toBe(true)
+    })
+
+    it('should update autoSendToKitchen via update()', () => {
+      const establishment = EstablishmentMother.create()
+      const updated = establishment.update({ autoSendToKitchen: true })
+      expect(updated.toPrimitives().autoSendToKitchen).toBe(true)
     })
   })
 })

@@ -80,6 +80,32 @@ describe('UpdateEstablishmentSettings', () => {
     })
   })
 
+  describe('autoSendToKitchen round-trip', () => {
+    it('should persist autoSendToKitchen=true when included in update params', async () => {
+      const establishment = EstablishmentMother.create()
+      repository.findSingleton.mockResolvedValue(establishment)
+      repository.save.mockResolvedValue(undefined)
+      eventBus.publish.mockResolvedValue(undefined)
+
+      await useCase.run({ autoSendToKitchen: true })
+
+      const savedArg = repository.save.mock.calls[0][0]
+      expect(savedArg.toPrimitives().autoSendToKitchen).toBe(true)
+    })
+
+    it('should persist autoSendToKitchen=false when set to false', async () => {
+      const establishment = EstablishmentMother.withAutoSendToKitchen(true)
+      repository.findSingleton.mockResolvedValue(establishment)
+      repository.save.mockResolvedValue(undefined)
+      eventBus.publish.mockResolvedValue(undefined)
+
+      await useCase.run({ autoSendToKitchen: false })
+
+      const savedArg = repository.save.mock.calls[0][0]
+      expect(savedArg.toPrimitives().autoSendToKitchen).toBe(false)
+    })
+  })
+
   describe('invalid tax rate', () => {
     it('should throw a domain exception and NOT call repo.save when tax rate exceeds 1', async () => {
       const establishment = EstablishmentMother.create()

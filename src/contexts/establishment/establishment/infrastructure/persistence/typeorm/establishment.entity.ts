@@ -68,6 +68,9 @@ export class EstablishmentEntity {
   @Column({ name: 'kitchen_mode', type: 'varchar', length: 30 })
   kitchenMode: KitchenMode
 
+  @Column({ name: 'auto_send_to_kitchen', type: 'boolean', default: false })
+  autoSendToKitchen: boolean
+
   // Receipt
   @Column({ name: 'receipt_header', type: 'text', nullable: true })
   receiptHeader: string | null

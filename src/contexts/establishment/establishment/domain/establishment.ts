@@ -21,18 +21,13 @@ import { EstablishmentLocale } from './establishment-locale'
 import { LoyaltyEnabled } from './loyalty-enabled'
 import { EstablishmentSettingsUpdatedEvent } from './events/establishment-settings-updated.event'
 import { InvalidArgument } from '@shared/domain/exceptions/invalid-argument.exception'
-import {
-  EstablishmentOperatingHours,
-  OperatingHoursShape
-} from './establishment-operating-hours'
+import { EstablishmentOperatingHours, OperatingHoursShape } from './establishment-operating-hours'
 import { EstablishmentOrderTypes, ORDER_TYPE_VALUES } from './establishment-order-types'
-import {
-  EstablishmentServiceCharge,
-  ServiceChargeShape
-} from './establishment-service-charge'
+import { EstablishmentServiceCharge, ServiceChargeShape } from './establishment-service-charge'
 import { EstablishmentTipSuggestions } from './establishment-tip-suggestions'
 import { EstablishmentSplitCheck } from './establishment-split-check'
 import { EstablishmentPaymentMethods } from './establishment-payment-methods'
+import { EstablishmentAutoSendToKitchen } from './establishment-auto-send-to-kitchen'
 
 export interface EstablishmentPrimitives {
   id: string
@@ -61,6 +56,7 @@ export interface EstablishmentPrimitives {
   tipSuggestions: [number, number, number] | null
   splitCheck: boolean
   paymentMethods: string[]
+  autoSendToKitchen: boolean
 }
 
 export type EstablishmentUpdateParams = Partial<Omit<EstablishmentPrimitives, 'id'>>
@@ -92,7 +88,8 @@ export class Establishment extends AggregateRoot {
     private serviceCharge: EstablishmentServiceCharge | null,
     private tipSuggestions: EstablishmentTipSuggestions | null,
     private splitCheck: EstablishmentSplitCheck,
-    private paymentMethods: EstablishmentPaymentMethods
+    private paymentMethods: EstablishmentPaymentMethods,
+    private autoSendToKitchen: EstablishmentAutoSendToKitchen
   ) {
     super()
   }
@@ -145,7 +142,8 @@ export class Establishment extends AggregateRoot {
       serviceCharge: null,
       tipSuggestions: null,
       splitCheck: false,
-      paymentMethods: ['CASH', 'CARD']
+      paymentMethods: ['CASH', 'CARD'],
+      autoSendToKitchen: false
     })
 
     establishment.record(
@@ -221,7 +219,8 @@ export class Establishment extends AggregateRoot {
         ? new EstablishmentTipSuggestions(primitives.tipSuggestions)
         : null,
       new EstablishmentSplitCheck(primitives.splitCheck),
-      new EstablishmentPaymentMethods(primitives.paymentMethods)
+      new EstablishmentPaymentMethods(primitives.paymentMethods),
+      new EstablishmentAutoSendToKitchen(primitives.autoSendToKitchen)
     )
   }
 
@@ -252,7 +251,8 @@ export class Establishment extends AggregateRoot {
       serviceCharge: this.serviceCharge?.value ?? null,
       tipSuggestions: this.tipSuggestions?.value ?? null,
       splitCheck: this.splitCheck.value,
-      paymentMethods: this.paymentMethods.value
+      paymentMethods: this.paymentMethods.value,
+      autoSendToKitchen: this.autoSendToKitchen.value
     }
   }
 }

@@ -31,7 +31,8 @@ const COLOMBIAN_DEFAULTS: EstablishmentPrimitives = {
   serviceCharge: null,
   tipSuggestions: null,
   splitCheck: false,
-  paymentMethods: ['CASH', 'CARD']
+  paymentMethods: ['CASH', 'CARD'],
+  autoSendToKitchen: false
 }
 
 export class EstablishmentMother {
@@ -54,5 +55,9 @@ export class EstablishmentMother {
   static withDisabledOrderType(disabledType: string): Establishment {
     const all = ['DINE_IN', 'DELIVERY', 'TAKEOUT']
     return EstablishmentMother.create({ enabledOrderTypes: all.filter(t => t !== disabledType) })
+  }
+
+  static withAutoSendToKitchen(value: boolean): Establishment {
+    return EstablishmentMother.create({ autoSendToKitchen: value })
   }
 }

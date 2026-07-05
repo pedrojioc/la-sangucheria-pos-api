@@ -52,7 +52,8 @@ export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
       serviceCharge: (entity.serviceCharge as any) ?? null,
       tipSuggestions: (entity.tipSuggestions as any) ?? null,
       splitCheck: entity.splitCheck ?? false,
-      paymentMethods: entity.paymentMethods ?? ['CASH', 'CARD']
+      paymentMethods: entity.paymentMethods ?? ['CASH', 'CARD'],
+      autoSendToKitchen: entity.autoSendToKitchen ?? false
     })
   }
 
@@ -84,7 +85,8 @@ export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
       serviceCharge: primitives.serviceCharge,
       tipSuggestions: primitives.tipSuggestions,
       splitCheck: primitives.splitCheck,
-      paymentMethods: primitives.paymentMethods
+      paymentMethods: primitives.paymentMethods,
+      autoSendToKitchen: primitives.autoSendToKitchen
     })
     await this.repository.save(entity)
   }
