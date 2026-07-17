@@ -1,6 +1,8 @@
 import { UpdateEstablishmentSettings } from '@contexts/establishment/establishment/application/update-settings/update-establishment-settings'
 import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
 import { EventBus } from '@shared/domain/events'
+import { TaxType } from '@shared/domain/value-objects/tax-type'
+import { InvalidTaxRateForTaxType } from '@contexts/establishment/establishment/domain/exceptions/invalid-tax-rate-for-tax-type.exception'
 import { EstablishmentMother } from '../__mothers__/establishment.mother'
 
 describe('UpdateEstablishmentSettings', () => {
@@ -123,6 +125,51 @@ describe('UpdateEstablishmentSettings', () => {
       await expect(useCase.run({ defaultTaxRate: -0.1 })).rejects.toThrow()
 
       expect(repository.save).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('cross-field tax type/rate — partial update', () => {
+    it('should throw InvalidTaxRateForTaxType when only defaultTaxType is updated to a now-invalid combination', async () => {
+      const establishment = EstablishmentMother.withTaxConfig(TaxType.INC, 0.08)
+      repository.findSingleton.mockResolvedValue(establishment)
+
+      await expect(useCase.run({ defaultTaxType: TaxType.EXEMPT })).rejects.toThrow(
+        InvalidTaxRateForTaxType
+      )
+      expect(repository.save).not.toHaveBeenCalled()
+    })
+
+    it('should succeed when only defaultTaxType is updated to a still-valid combination', async () => {
+      const establishment = EstablishmentMother.withTaxConfig(TaxType.INC, 0.08)
+      repository.findSingleton.mockResolvedValue(establishment)
+      repository.save.mockResolvedValue(undefined)
+      eventBus.publish.mockResolvedValue(undefined)
+
+      await useCase.run({ defaultTaxType: TaxType.IVA })
+
+      const savedArg = repository.save.mock.calls[0][0]
+      expect(savedArg.toPrimitives().defaultTaxType).toBe(TaxType.IVA)
+      expect(savedArg.toPrimitives().defaultTaxRate).toBe(0.08)
+    })
+
+    it('should throw InvalidTaxRateForTaxType when only defaultTaxRate is updated to a now-invalid combination', async () => {
+      const establishment = EstablishmentMother.withTaxConfig(TaxType.EXEMPT, 0)
+      repository.findSingleton.mockResolvedValue(establishment)
+
+      await expect(useCase.run({ defaultTaxRate: 0.05 })).rejects.toThrow(InvalidTaxRateForTaxType)
+      expect(repository.save).not.toHaveBeenCalled()
+    })
+
+    it('should succeed when only defaultTaxRate is updated to a still-valid combination', async () => {
+      const establishment = EstablishmentMother.withTaxConfig(TaxType.INC, 0.08)
+      repository.findSingleton.mockResolvedValue(establishment)
+      repository.save.mockResolvedValue(undefined)
+      eventBus.publish.mockResolvedValue(undefined)
+
+      await useCase.run({ defaultTaxRate: 0.1 })
+
+      const savedArg = repository.save.mock.calls[0][0]
+      expect(savedArg.toPrimitives().defaultTaxRate).toBe(0.1)
     })
   })
 })

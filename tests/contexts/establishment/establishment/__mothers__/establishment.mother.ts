@@ -63,4 +63,8 @@ export class EstablishmentMother {
   static withAutoSendToKitchen(value: boolean): Establishment {
     return EstablishmentMother.create({ autoSendToKitchen: value })
   }
+
+  static withTaxConfig(type: TaxType, rate: number): Establishment {
+    return EstablishmentMother.create({ defaultTaxType: type, defaultTaxRate: rate })
+  }
 }

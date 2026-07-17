@@ -21,6 +21,7 @@ import { EstablishmentLocale } from './establishment-locale'
 import { LoyaltyEnabled } from './loyalty-enabled'
 import { EstablishmentSettingsUpdatedEvent } from './events/establishment-settings-updated.event'
 import { InvalidArgument } from '@shared/domain/exceptions/invalid-argument.exception'
+import { InvalidTaxRateForTaxType } from './exceptions/invalid-tax-rate-for-tax-type.exception'
 import { EstablishmentOperatingHours, OperatingHoursShape } from './establishment-operating-hours'
 import { EstablishmentOrderTypes, ORDER_TYPE_VALUES } from './establishment-order-types'
 import { EstablishmentServiceCharge, ServiceChargeShape } from './establishment-service-charge'
@@ -187,6 +188,8 @@ export class Establishment extends AggregateRoot {
       )
     }
 
+    Establishment.ensureTaxRateMatchesTaxType(primitives.defaultTaxType, primitives.defaultTaxRate)
+
     return new Establishment(
       new EstablishmentId(primitives.id),
       new EstablishmentName(primitives.name),
@@ -222,6 +225,12 @@ export class Establishment extends AggregateRoot {
       new EstablishmentPaymentMethods(primitives.paymentMethods),
       new EstablishmentAutoSendToKitchen(primitives.autoSendToKitchen)
     )
+  }
+
+  private static ensureTaxRateMatchesTaxType(taxType: TaxType, taxRate: number): void {
+    const isExempt = taxType === TaxType.EXEMPT
+    if (isExempt && taxRate !== 0) throw new InvalidTaxRateForTaxType(taxType, taxRate)
+    if (!isExempt && taxRate <= 0) throw new InvalidTaxRateForTaxType(taxType, taxRate)
   }
 
   toPrimitives(): EstablishmentPrimitives {

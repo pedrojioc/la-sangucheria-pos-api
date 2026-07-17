@@ -43,6 +43,21 @@ export class ServiceChargePercentageMaxConstraint implements ValidatorConstraint
   }
 }
 
+@ValidatorConstraint({ name: 'taxRateMatchesTaxType' })
+export class TaxRateMatchesTaxTypeConstraint implements ValidatorConstraintInterface {
+  validate(_value: unknown, args: ValidationArguments): boolean {
+    const obj = args.object as { defaultTaxType?: TaxType; defaultTaxRate?: number }
+    // Fire only when BOTH fields present (partial updates deferred to domain)
+    if (obj.defaultTaxType === undefined || obj.defaultTaxRate === undefined) return true
+    if (obj.defaultTaxType === TaxType.EXEMPT) return obj.defaultTaxRate === 0
+    return obj.defaultTaxRate > 0
+  }
+
+  defaultMessage(_args: ValidationArguments): string {
+    return 'defaultTaxRate must be 0 when defaultTaxType is EXEMPT, and greater than 0 for IVA/INC'
+  }
+}
+
 @ValidatorConstraint({ name: 'tipSuggestionsUniqueAndSorted' })
 export class TipSuggestionsUniqueAndSortedConstraint implements ValidatorConstraintInterface {
   validate(value: unknown, _args: ValidationArguments): boolean {
@@ -144,6 +159,7 @@ export class UpdateEstablishmentSettingsDto {
   @IsNumber()
   @Min(0)
   @Max(1)
+  @Validate(TaxRateMatchesTaxTypeConstraint)
   defaultTaxRate?: number
 
   @IsOptional()

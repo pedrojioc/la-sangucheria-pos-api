@@ -2,6 +2,7 @@ import { Establishment } from '@contexts/establishment/establishment/domain/esta
 import { TaxType } from '@shared/domain/value-objects/tax-type'
 import { KitchenMode } from '@contexts/establishment/establishment/domain/kitchen-mode'
 import { EstablishmentSettingsUpdatedEvent } from '@contexts/establishment/establishment/domain/events/establishment-settings-updated.event'
+import { InvalidTaxRateForTaxType } from '@contexts/establishment/establishment/domain/exceptions/invalid-tax-rate-for-tax-type.exception'
 import { EstablishmentMother } from '../__mothers__/establishment.mother'
 
 describe('Establishment aggregate', () => {
@@ -52,6 +53,68 @@ describe('Establishment aggregate', () => {
       const establishment = EstablishmentMother.create()
 
       expect(() => establishment.update({ defaultTaxRate: -0.01 })).toThrow()
+    })
+  })
+
+  describe('cross-field tax type/rate', () => {
+    it('should allow EXEMPT with rate 0', () => {
+      expect(() => EstablishmentMother.withTaxConfig(TaxType.EXEMPT, 0)).not.toThrow()
+    })
+
+    it('should allow IVA with a positive rate', () => {
+      expect(() => EstablishmentMother.withTaxConfig(TaxType.IVA, 0.19)).not.toThrow()
+    })
+
+    it('should allow INC with a positive rate', () => {
+      expect(() => EstablishmentMother.withTaxConfig(TaxType.INC, 0.08)).not.toThrow()
+    })
+
+    it('should throw InvalidTaxRateForTaxType for EXEMPT with a nonzero rate', () => {
+      expect(() => EstablishmentMother.withTaxConfig(TaxType.EXEMPT, 0.05)).toThrow(
+        InvalidTaxRateForTaxType
+      )
+    })
+
+    it('should throw InvalidTaxRateForTaxType for IVA with rate 0', () => {
+      expect(() => EstablishmentMother.withTaxConfig(TaxType.IVA, 0)).toThrow(
+        InvalidTaxRateForTaxType
+      )
+    })
+
+    it('should throw InvalidTaxRateForTaxType for INC with rate 0', () => {
+      expect(() => EstablishmentMother.withTaxConfig(TaxType.INC, 0)).toThrow(
+        InvalidTaxRateForTaxType
+      )
+    })
+
+    it('should throw when update() sets only defaultTaxType to EXEMPT against an existing nonzero rate', () => {
+      const establishment = EstablishmentMother.withTaxConfig(TaxType.INC, 0.08)
+
+      expect(() => establishment.update({ defaultTaxType: TaxType.EXEMPT })).toThrow(
+        InvalidTaxRateForTaxType
+      )
+    })
+
+    it('should throw when update() sets only defaultTaxType to IVA against an existing rate of 0', () => {
+      const establishment = EstablishmentMother.withTaxConfig(TaxType.EXEMPT, 0)
+
+      expect(() => establishment.update({ defaultTaxType: TaxType.IVA })).toThrow(
+        InvalidTaxRateForTaxType
+      )
+    })
+
+    it('should succeed when update() sets only defaultTaxRate to a new positive value against an existing non-exempt type', () => {
+      const establishment = EstablishmentMother.withTaxConfig(TaxType.INC, 0.08)
+
+      const updated = establishment.update({ defaultTaxRate: 0.1 })
+
+      expect(updated.toPrimitives().defaultTaxRate).toBe(0.1)
+    })
+
+    it('should throw when update() sets only defaultTaxRate to a nonzero value against an existing EXEMPT type', () => {
+      const establishment = EstablishmentMother.withTaxConfig(TaxType.EXEMPT, 0)
+
+      expect(() => establishment.update({ defaultTaxRate: 0.05 })).toThrow(InvalidTaxRateForTaxType)
     })
   })
 
