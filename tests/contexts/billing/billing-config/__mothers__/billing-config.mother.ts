@@ -1,5 +1,8 @@
 import { faker } from '@faker-js/faker'
-import { BillingConfig, BillingConfigPrimitives } from '@contexts/billing/billing-config/domain/billing-config'
+import {
+  BillingConfig,
+  BillingConfigPrimitives
+} from '@contexts/billing/billing-config/domain/billing-config'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 export class BillingConfigMother {

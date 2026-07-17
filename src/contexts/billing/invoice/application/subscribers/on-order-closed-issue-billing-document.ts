@@ -9,9 +9,7 @@ import { IssueInvoice } from '../issue-invoice/issue-invoice'
 
 @Injectable()
 export class OnOrderClosedIssueBillingDocument implements DomainEventSubscriber<OrderClosedEvent> {
-  constructor(
-    private readonly issueInvoice: IssueInvoice,
-  ) {}
+  constructor(private readonly issueInvoice: IssueInvoice) {}
 
   subscribedTo(): DomainEventClass[] {
     return [OrderClosedEvent]
@@ -35,7 +33,7 @@ export class OnOrderClosedIssueBillingDocument implements DomainEventSubscriber<
       taxConfig: {
         name: payload.taxConfig.type,
         rate: payload.taxConfig.rate,
-        inclusive: payload.taxConfig.inclusive,
+        inclusive: payload.taxConfig.inclusive
       },
       items: payload.items.map((item: OrderClosedItemPayload) => ({
         productId: item.productId,
@@ -43,12 +41,12 @@ export class OnOrderClosedIssueBillingDocument implements DomainEventSubscriber<
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         taxAmount: item.taxAmount,
-        lineTotal: item.lineTotal,
+        lineTotal: item.lineTotal
       })),
       customerDocumentType: payload.customerDocumentType,
       customerDocumentNumber: payload.customerDocumentNumber,
       closedAt: payload.closedAt,
-      currency: payload.currency,
+      currency: payload.currency
     }
 
     await this.issueInvoice.run(Uuid.random().value, snapshot)

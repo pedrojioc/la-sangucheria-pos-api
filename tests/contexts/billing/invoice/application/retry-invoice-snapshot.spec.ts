@@ -5,7 +5,10 @@ import { FactusApiPort } from '@contexts/billing/invoice/application/ports/factu
 import { EventBus } from '@shared/domain/events/event-bus'
 import { Invoice } from '@contexts/billing/invoice/domain/invoice'
 import { InvoiceStatus } from '@contexts/billing/invoice/domain/invoice-status'
-import { InvoiceMother, InvoiceSnapshotMother } from '@test/contexts/billing/invoice/__mothers__/invoice.mother'
+import {
+  InvoiceMother,
+  InvoiceSnapshotMother
+} from '@test/contexts/billing/invoice/__mothers__/invoice.mother'
 import { BillingConfigMother } from '@test/contexts/billing/billing-config/__mothers__/billing-config.mother'
 
 describe('RetryInvoice — snapshot isolation and status transitions', () => {
@@ -33,7 +36,7 @@ describe('RetryInvoice — snapshot isolation and status transitions', () => {
       orderId: 'order-abc-123',
       orderNumber: 9876,
       subtotal: 55000,
-      taxAmount: 10450,
+      taxAmount: 10450
     })
     const failedInvoice = InvoiceMother.failed({ snapshot: specificSnapshot })
     const config = BillingConfigMother.create()
@@ -73,7 +76,10 @@ describe('RetryInvoice — snapshot isolation and status transitions', () => {
 
     invoiceRepository.search.mockResolvedValue(failedInvoice)
     billingConfigRepository.findSingleton.mockResolvedValue(config)
-    factusApiPort.issue.mockResolvedValue({ cufeCude: newCufeCude, documentNumber: newDocumentNumber })
+    factusApiPort.issue.mockResolvedValue({
+      cufeCude: newCufeCude,
+      documentNumber: newDocumentNumber
+    })
 
     // Act
     await useCase.run(failedInvoice.id.value)

@@ -41,7 +41,7 @@ export interface OrderClosedPayload {
   taxAmount: number
   taxConfig: OrderClosedTaxConfigPayload
   items: OrderClosedItemPayload[]
-  customerDocumentType: string | null  // from Customer at close time; null => Consumidor Final
+  customerDocumentType: string | null // from Customer at close time; null => Consumidor Final
   customerDocumentNumber: string | null
 }
 

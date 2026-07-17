@@ -41,7 +41,7 @@ describe('CreatePurchaseOrder', () => {
     const requestedBy = UuidMother.random()
     const items = PurchaseOrderItemMother.createPrimitives(2)
 
-    await useCase.run(id, supplierId, requestedBy, 'PEN', null, null, items)
+    await useCase.run(id, supplierId, requestedBy, 'COP', null, null, items)
 
     expect(repository.save).toHaveBeenCalledTimes(1)
     const savedOrder = repository.save.mock.calls[0][0] as PurchaseOrder
@@ -60,7 +60,7 @@ describe('CreatePurchaseOrder', () => {
       UuidMother.random(),
       UuidMother.random(),
       UuidMother.random(),
-      'PEN',
+      'COP',
       null,
       null,
       items
@@ -80,7 +80,7 @@ describe('CreatePurchaseOrder', () => {
       UuidMother.random(),
       UuidMother.random(),
       UuidMother.random(),
-      'PEN',
+      'COP',
       expectedDeliveryDate,
       'Urgent order',
       items

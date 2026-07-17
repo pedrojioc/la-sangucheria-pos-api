@@ -420,7 +420,11 @@ describe('Order - Discount Domain Events', () => {
       const orderId = UuidMother.random()
       const itemId = UuidMother.random()
       const discount = percentageDiscount()
-      const event = new OrderItemDiscountAppliedEvent({ orderId, itemId, discount: discount.toPrimitives() })
+      const event = new OrderItemDiscountAppliedEvent({
+        orderId,
+        itemId,
+        discount: discount.toPrimitives()
+      })
 
       const primitives = event.toPrimitives()
       const restored = OrderItemDiscountAppliedEvent.fromPrimitives({

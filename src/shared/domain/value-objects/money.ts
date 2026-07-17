@@ -1,4 +1,5 @@
 import { NumberValueObject } from './number'
+import { MONEY_CURRENCIES } from './currency'
 
 export class Money {
   constructor(
@@ -61,8 +62,8 @@ export class Money {
   }
 
   private ensureIsValidCurrency(currency: string): void {
-    if (!currency || currency.trim().length !== 3) {
-      throw new Error('Currency must be a 3-letter code')
+    if (!(MONEY_CURRENCIES as readonly string[]).includes(currency)) {
+      throw new Error(`Currency must be one of ${MONEY_CURRENCIES.join(', ')}`)
     }
   }
   private ensureIsValidAmount(amount: number): void {

@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -30,6 +31,7 @@ class ModifierDto {
 
   @IsString()
   @IsOptional()
+  @IsIn(['COP', 'USD', 'MXN'])
   currency?: string
 }
 
@@ -52,6 +54,7 @@ class OrderItemDto {
 
   @IsString()
   @IsOptional()
+  @IsIn(['COP', 'USD', 'MXN'])
   currency?: string
 
   @IsNumber()

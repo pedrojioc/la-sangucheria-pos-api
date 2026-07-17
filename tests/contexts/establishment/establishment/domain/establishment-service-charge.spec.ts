@@ -20,8 +20,8 @@ describe('EstablishmentServiceCharge', () => {
 
   describe('PERCENTAGE type', () => {
     it('should accept a percentage of 0.10 (10%)', () => {
-      const vo = new EstablishmentServiceCharge({ type: 'PERCENTAGE', value: 0.10 })
-      expect(vo.value).toEqual({ type: 'PERCENTAGE', value: 0.10 })
+      const vo = new EstablishmentServiceCharge({ type: 'PERCENTAGE', value: 0.1 })
+      expect(vo.value).toEqual({ type: 'PERCENTAGE', value: 0.1 })
     })
 
     it('should accept a percentage of 0 (0%)', () => {
@@ -47,9 +47,9 @@ describe('EstablishmentServiceCharge', () => {
     })
 
     it('should throw for an invalid type', () => {
-      expect(
-        () => new EstablishmentServiceCharge({ type: 'FLAT' as never, value: 100 })
-      ).toThrow(InvalidValueObjectException)
+      expect(() => new EstablishmentServiceCharge({ type: 'FLAT' as never, value: 100 })).toThrow(
+        InvalidValueObjectException
+      )
     })
   })
 })

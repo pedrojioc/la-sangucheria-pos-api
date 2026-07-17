@@ -1,4 +1,7 @@
-import { deriveKitchenMode, KitchenMode } from '@contexts/establishment/establishment/domain/kitchen-mode'
+import {
+  deriveKitchenMode,
+  KitchenMode
+} from '@contexts/establishment/establishment/domain/kitchen-mode'
 
 describe('deriveKitchenMode', () => {
   it('returns STATIONS when at least one device is kds', () => {

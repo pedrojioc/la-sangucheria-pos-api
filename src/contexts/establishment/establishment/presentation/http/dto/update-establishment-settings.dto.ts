@@ -9,7 +9,6 @@ import {
   IsObject,
   IsOptional,
   IsString,
-  Length,
   Matches,
   Max,
   Min,
@@ -138,8 +137,7 @@ export class UpdateEstablishmentSettingsDto {
   websiteUrl?: string
 
   @IsOptional()
-  @IsString()
-  @Length(3, 3)
+  @IsIn(['COP', 'USD', 'MXN'])
   defaultCurrency?: string
 
   @IsOptional()

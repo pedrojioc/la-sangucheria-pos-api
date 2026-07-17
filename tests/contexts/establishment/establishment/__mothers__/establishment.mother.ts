@@ -1,4 +1,7 @@
-import { Establishment, EstablishmentPrimitives } from '@contexts/establishment/establishment/domain/establishment'
+import {
+  Establishment,
+  EstablishmentPrimitives
+} from '@contexts/establishment/establishment/domain/establishment'
 import { TaxType } from '@shared/domain/value-objects/tax-type'
 import { KitchenMode } from '@contexts/establishment/establishment/domain/kitchen-mode'
 

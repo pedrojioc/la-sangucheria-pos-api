@@ -126,7 +126,8 @@ export class Invoice extends AggregateRoot {
       documentType: this.documentType,
       status: this.status,
       cufeCude: this.cufeCude !== null ? this.cufeCude.value : null,
-      factusDocumentNumber: this.factusDocumentNumber !== null ? this.factusDocumentNumber.value : null,
+      factusDocumentNumber:
+        this.factusDocumentNumber !== null ? this.factusDocumentNumber.value : null,
       failureReason: this.failureReason !== null ? this.failureReason.value : null,
       attempts: this.attempts,
       createdAt: this.createdAt,

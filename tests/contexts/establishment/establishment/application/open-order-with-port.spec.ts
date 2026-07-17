@@ -45,7 +45,7 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
       eventBus.publish.mockResolvedValue(undefined)
       establishmentPort.resolve.mockResolvedValue({
         currency: 'USD',
-        taxRate: 0.10,
+        taxRate: 0.1,
         taxType: TaxType.IVA,
         taxInclusive: false,
         enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT']
@@ -57,7 +57,7 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
       const savedOrder = orderRepository.save.mock.calls[0][0] as Order
       const p = savedOrder.toPrimitives()
       expect(p.currency).toBe('USD')
-      expect(p.taxConfig.rate).toBe(0.10)
+      expect(p.taxConfig.rate).toBe(0.1)
       expect(p.taxConfig.inclusive).toBe(false)
     })
 
@@ -67,7 +67,7 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
       eventBus.publish.mockResolvedValue(undefined)
       establishmentPort.resolve.mockResolvedValue({
         currency: 'USD',
-        taxRate: 0.10,
+        taxRate: 0.1,
         taxType: TaxType.IVA,
         taxInclusive: false,
         enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT']
@@ -90,7 +90,12 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
         enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT']
       })
 
-      const result = await useCase.run(UuidMother.random(), OrderType.DINE_IN, UuidMother.random(), null)
+      const result = await useCase.run(
+        UuidMother.random(),
+        OrderType.DINE_IN,
+        UuidMother.random(),
+        null
+      )
 
       expect(result).toBe('ORD-0099')
     })

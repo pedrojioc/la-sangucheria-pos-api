@@ -22,7 +22,7 @@ describe('PurchaseOrder', () => {
         orderNumber,
         supplierId,
         requestedBy,
-        'PEN',
+        'COP',
         null,
         null,
         items
@@ -42,7 +42,7 @@ describe('PurchaseOrder', () => {
         PurchaseOrderNumberMother.random(),
         UuidMother.random(),
         UuidMother.random(),
-        'PEN',
+        'COP',
         null,
         null,
         [PurchaseOrderItemMother.random()]

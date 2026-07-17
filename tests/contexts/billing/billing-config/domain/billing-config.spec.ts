@@ -112,7 +112,11 @@ describe('BillingConfig', () => {
       const config = BillingConfigMother.create()
 
       // Act
-      const updated = config.update({ factusApiToken: 'new-token', resolucionFrom: 10, resolucionTo: 500 })
+      const updated = config.update({
+        factusApiToken: 'new-token',
+        resolucionFrom: 10,
+        resolucionTo: 500
+      })
 
       // Assert
       expect(updated.toPrimitives().factusApiToken).toBe('new-token')
@@ -129,7 +133,9 @@ describe('BillingConfig', () => {
       const config = BillingConfigMother.create({ resolucionFrom: 1, resolucionTo: 100 })
 
       // Act & Assert
-      expect(() => config.update({ resolucionFrom: 200, resolucionTo: 50 })).toThrow(InvalidResolucionRange)
+      expect(() => config.update({ resolucionFrom: 200, resolucionTo: 50 })).toThrow(
+        InvalidResolucionRange
+      )
     })
 
     it('should preserve unchanged fields when updating partial params', () => {

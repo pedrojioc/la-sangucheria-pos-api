@@ -56,8 +56,8 @@ describe('RetryInvoice', () => {
     expect(finalInvoice.toPrimitives().cufeCude).toBe(cufeCude)
 
     expect(eventBus.publish).toHaveBeenCalledTimes(1)
-    const publishedEvents = (eventBus.publish.mock.calls[0][0] as any[])
-    expect(publishedEvents.some((e) => e.constructor.name === 'InvoiceIssuedEvent')).toBe(true)
+    const publishedEvents = eventBus.publish.mock.calls[0][0] as any[]
+    expect(publishedEvents.some(e => e.constructor.name === 'InvoiceIssuedEvent')).toBe(true)
   })
 
   it('should throw InvoiceNotExist when the invoice is not found', async () => {

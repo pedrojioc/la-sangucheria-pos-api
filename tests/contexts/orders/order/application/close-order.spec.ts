@@ -59,7 +59,9 @@ describe('CloseOrder use case', () => {
       expect(repository.save).toHaveBeenCalledTimes(1)
       expect(eventBus.publish).toHaveBeenCalledTimes(1)
       const publishedEvents = (eventBus.publish as jest.Mock).mock.calls[0][0]
-      const closedEvent = publishedEvents.find((e: unknown) => e instanceof OrderClosedEvent) as OrderClosedEvent
+      const closedEvent = publishedEvents.find(
+        (e: unknown) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
       expect(closedEvent).toBeInstanceOf(OrderClosedEvent)
 
       const payload = closedEvent.toPrimitives()
@@ -101,7 +103,9 @@ describe('CloseOrder use case', () => {
 
       // Assert
       const publishedEvents = (eventBus.publish as jest.Mock).mock.calls[0][0]
-      const closedEvent = publishedEvents.find((e: unknown) => e instanceof OrderClosedEvent) as OrderClosedEvent
+      const closedEvent = publishedEvents.find(
+        (e: unknown) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
       const payload = closedEvent.toPrimitives()
 
       expect(payload.customerDocumentType).toBe('NIT')
@@ -122,15 +126,13 @@ describe('CloseOrder use case', () => {
       repository.search.mockResolvedValue(order)
 
       // Act — no customer document params at all
-      await useCase.run(
-        orderId,
-        [{ method: 'CASH', amount: 10000 }],
-        UuidMother.random()
-      )
+      await useCase.run(orderId, [{ method: 'CASH', amount: 10000 }], UuidMother.random())
 
       // Assert
       const publishedEvents = (eventBus.publish as jest.Mock).mock.calls[0][0]
-      const closedEvent = publishedEvents.find((e: unknown) => e instanceof OrderClosedEvent) as OrderClosedEvent
+      const closedEvent = publishedEvents.find(
+        (e: unknown) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
       const payload = closedEvent.toPrimitives()
 
       expect(payload.customerDocumentType).toBeNull()
@@ -161,7 +163,9 @@ describe('CloseOrder use case', () => {
 
       // Assert
       const publishedEvents = (eventBus.publish as jest.Mock).mock.calls[0][0]
-      const closedEvent = publishedEvents.find((e: unknown) => e instanceof OrderClosedEvent) as OrderClosedEvent
+      const closedEvent = publishedEvents.find(
+        (e: unknown) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
       const payload = closedEvent.toPrimitives()
 
       expect(payload.customerDocumentType).toBeNull()

@@ -27,7 +27,7 @@ export class InventoryBatchMother {
     const initialQuantity = params.initialQuantity ?? NumberMother.random({ min: 10, max: 100 })
     const availableQuantity = params.availableQuantity ?? initialQuantity
     const unitCost = params.unitCost ?? NumberMother.random({ min: 1, max: 100 }) // TODO: Use randomFloat
-    const currency = params.currency ?? 'PEN'
+    const currency = params.currency ?? 'COP'
     const receivedAt = params.receivedAt ?? new Date()
     const expiresAt =
       params.expiresAt === undefined
@@ -93,7 +93,7 @@ export class InventoryBatchMother {
     })
   }
 
-  static withCost(unitCost: number, currency: string = 'PEN'): InventoryBatch {
+  static withCost(unitCost: number, currency: string = 'COP'): InventoryBatch {
     return this.create({ unitCost, currency })
   }
 }

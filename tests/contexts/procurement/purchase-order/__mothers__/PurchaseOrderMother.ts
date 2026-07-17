@@ -36,7 +36,7 @@ export class PurchaseOrderMother {
       purchaseMethod: params.purchaseMethod ?? null,
       purchaseMethodDetails: params.purchaseMethodDetails ?? null,
       totalAmount: totalAmount,
-      currency: params.currency ?? 'PEN',
+      currency: params.currency ?? 'COP',
       requestedDate: params.requestedDate ?? new Date(),
       expectedDeliveryDate: params.expectedDeliveryDate ?? null,
       submittedDate: params.submittedDate ?? null,

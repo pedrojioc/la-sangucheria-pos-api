@@ -16,13 +16,13 @@ const makeConfig = (overrides: Partial<BillingConfigPrimitives> = {}): BillingCo
   resolucionValidFrom: new Date('2025-01-01'),
   resolucionValidTo: new Date('2026-01-01'),
   updatedAt: new Date(),
-  ...overrides,
+  ...overrides
 })
 
 const makeSnapshot = (overrides: Partial<InvoiceSnapshot> = {}): InvoiceSnapshot =>
   InvoiceSnapshotMother.create({
     documentType: DocumentType.DOCUMENTO_EQUIVALENTE,
-    ...overrides,
+    ...overrides
   })
 
 describe('FactusApiAdapter', () => {
@@ -43,9 +43,9 @@ describe('FactusApiAdapter', () => {
         status: 200,
         json: jest.fn().mockResolvedValue({
           cufe_cude: 'abc123',
-          document_number: 'FE-001',
+          document_number: 'FE-001'
         }),
-        text: jest.fn(),
+        text: jest.fn()
       }
       global.fetch = jest.fn().mockResolvedValue(mockResponse)
 
@@ -60,7 +60,7 @@ describe('FactusApiAdapter', () => {
         ok: false,
         status: 422,
         json: jest.fn(),
-        text: jest.fn().mockResolvedValue('Validation error'),
+        text: jest.fn().mockResolvedValue('Validation error')
       }
       global.fetch = jest.fn().mockResolvedValue(mockResponse)
 
@@ -68,9 +68,9 @@ describe('FactusApiAdapter', () => {
     })
 
     it('throws an error when fetch is aborted due to timeout', async () => {
-      global.fetch = jest.fn().mockRejectedValue(
-        new DOMException('The operation was aborted.', 'AbortError'),
-      )
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(new DOMException('The operation was aborted.', 'AbortError'))
 
       await expect(adapter.issue(makeConfig(), makeSnapshot())).rejects.toThrow()
     })

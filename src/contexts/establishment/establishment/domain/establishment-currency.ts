@@ -1,8 +1,7 @@
 import { StringValueObject } from '@shared/domain/value-objects/string'
-import { InvalidArgument } from '@shared/domain/exceptions/invalid-argument.exception'
+import { InvalidValueObjectException } from '@shared/domain/exceptions/domain.exception'
 
-// ISO 4217 currency codes are exactly 3 uppercase letters.
-const ISO_4217_REGEX = /^[A-Z]{3}$/
+export const ESTABLISHMENT_CURRENCIES = ['COP', 'USD', 'MXN'] as const
 
 export class EstablishmentCurrency extends StringValueObject {
   constructor(value: string) {
@@ -11,9 +10,9 @@ export class EstablishmentCurrency extends StringValueObject {
   }
 
   private ensureIsValidCurrency(value: string): void {
-    if (!ISO_4217_REGEX.test(value)) {
-      throw new InvalidArgument(
-        `<EstablishmentCurrency> expects a 3-letter ISO 4217 code, got <${value}>`
+    if (!(ESTABLISHMENT_CURRENCIES as readonly string[]).includes(value)) {
+      throw new InvalidValueObjectException(
+        `<EstablishmentCurrency> does not allow the value <${value}>. Valid values: ${ESTABLISHMENT_CURRENCIES.join(', ')}`
       )
     }
   }

@@ -53,7 +53,14 @@ describe('ApplyItemDiscount use case', () => {
     })
     repository.search.mockResolvedValue(order)
 
-    await useCase.run(orderId, itemId, DiscountType.EMPLOYEE, DiscountMethod.PERCENTAGE, 10, 'user-1')
+    await useCase.run(
+      orderId,
+      itemId,
+      DiscountType.EMPLOYEE,
+      DiscountMethod.PERCENTAGE,
+      10,
+      'user-1'
+    )
 
     expect(repository.save).toHaveBeenCalledTimes(1)
     expect(eventBus.publish).toHaveBeenCalledTimes(1)
@@ -72,10 +79,21 @@ describe('ApplyItemDiscount use case', () => {
       items: [OrderItemMother.pending({ id: itemId, unitPrice: 20000, quantity: 1 })]
     })
     repository.search.mockResolvedValue(order)
-    repository.save.mockImplementation(async () => { callOrder.push('save') })
-    eventBus.publish.mockImplementation(async () => { callOrder.push('publish') })
+    repository.save.mockImplementation(async () => {
+      callOrder.push('save')
+    })
+    eventBus.publish.mockImplementation(async () => {
+      callOrder.push('publish')
+    })
 
-    await useCase.run(orderId, itemId, DiscountType.EMPLOYEE, DiscountMethod.PERCENTAGE, 10, 'user-1')
+    await useCase.run(
+      orderId,
+      itemId,
+      DiscountType.EMPLOYEE,
+      DiscountMethod.PERCENTAGE,
+      10,
+      'user-1'
+    )
 
     expect(callOrder).toEqual(['save', 'publish'])
   })
@@ -102,7 +120,10 @@ describe('RemoveItemDiscount use case', () => {
     })
     // Apply a discount first so remove has something to remove
     const { Discount } = await import('@contexts/orders/order/domain/discount')
-    order.applyItemDiscount(itemId, Discount.create(DiscountType.PROMO, DiscountMethod.FLAT, 1000, 'u1'))
+    order.applyItemDiscount(
+      itemId,
+      Discount.create(DiscountType.PROMO, DiscountMethod.FLAT, 1000, 'u1')
+    )
     order.pullDomainEvents() // drain pre-existing events
     repository.search.mockResolvedValue(order)
 

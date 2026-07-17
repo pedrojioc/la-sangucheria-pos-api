@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Patch, Post, Put } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+  Patch,
+  Post,
+  Put
+} from '@nestjs/common'
 
 import { GetBillingConfig } from '@contexts/billing/billing-config/application/get-billing-config/get-billing-config'
 import { UpdateBillingConfig } from '@contexts/billing/billing-config/application/update-billing-config/update-billing-config'

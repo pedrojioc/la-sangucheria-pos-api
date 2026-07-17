@@ -9,6 +9,6 @@ export interface FactusIssueResult {
 export abstract class FactusApiPort {
   abstract issue(
     config: BillingConfigPrimitives,
-    snapshot: InvoiceSnapshot,
+    snapshot: InvoiceSnapshot
   ): Promise<FactusIssueResult>
 }

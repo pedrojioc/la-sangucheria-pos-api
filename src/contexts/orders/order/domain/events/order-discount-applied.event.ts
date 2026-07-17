@@ -35,9 +35,7 @@ export class OrderDiscountAppliedEvent extends DomainEvent {
     return this.payload
   }
 
-  static fromPrimitives(
-    params: DomainEventFromPrimitivesParams
-  ): OrderDiscountAppliedEvent {
+  static fromPrimitives(params: DomainEventFromPrimitivesParams): OrderDiscountAppliedEvent {
     return new OrderDiscountAppliedEvent(
       params.payload as OrderDiscountAppliedPayload,
       params.metadata,

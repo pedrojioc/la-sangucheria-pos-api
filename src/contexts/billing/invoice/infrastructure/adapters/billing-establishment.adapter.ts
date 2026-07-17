@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { GetEstablishmentSettings } from '@contexts/establishment/establishment/application/get-settings/get-establishment-settings'
 import {
   BillingEstablishmentIdentity,
-  BillingEstablishmentPort,
+  BillingEstablishmentPort
 } from '@contexts/billing/invoice/application/ports/billing-establishment.port'
 
 @Injectable()
@@ -18,7 +18,7 @@ export class BillingEstablishmentAdapter extends BillingEstablishmentPort {
       nit: settings.taxId,
       businessName: settings.legalName,
       address: settings.address ?? '',
-      phone: settings.phone ?? '',
+      phone: settings.phone ?? ''
     }
   }
 }

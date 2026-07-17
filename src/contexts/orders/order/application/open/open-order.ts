@@ -29,11 +29,7 @@ export class OpenOrder {
       throw new OrderTypeNotEnabled(type)
     }
 
-    const taxConfig = TaxConfig.create(
-      settings.taxRate,
-      settings.taxType,
-      settings.taxInclusive
-    )
+    const taxConfig = TaxConfig.create(settings.taxRate, settings.taxType, settings.taxInclusive)
 
     const orderNumber = await this.repository.nextOrderNumber(new Date())
 

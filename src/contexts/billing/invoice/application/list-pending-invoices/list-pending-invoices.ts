@@ -6,6 +6,6 @@ export class ListPendingInvoices {
 
   async run(): Promise<InvoicePrimitives[]> {
     const invoices = await this.invoiceRepository.searchPending()
-    return invoices.map((invoice) => invoice.toPrimitives())
+    return invoices.map(invoice => invoice.toPrimitives())
   }
 }

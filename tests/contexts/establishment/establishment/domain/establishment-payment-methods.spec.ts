@@ -43,7 +43,9 @@ describe('EstablishmentPaymentMethods', () => {
     })
 
     it('should throw when all entries are unknown', () => {
-      expect(() => new EstablishmentPaymentMethods(['BITCOIN'])).toThrow(InvalidValueObjectException)
+      expect(() => new EstablishmentPaymentMethods(['BITCOIN'])).toThrow(
+        InvalidValueObjectException
+      )
     })
   })
 })

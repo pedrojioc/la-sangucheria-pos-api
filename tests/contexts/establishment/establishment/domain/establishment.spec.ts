@@ -162,8 +162,8 @@ describe('Establishment aggregate', () => {
 
     it('should update tipSuggestions from null to a valid tuple', () => {
       const establishment = EstablishmentMother.create()
-      const updated = establishment.update({ tipSuggestions: [0.05, 0.10, 0.15] })
-      expect(updated.toPrimitives().tipSuggestions).toEqual([0.05, 0.10, 0.15])
+      const updated = establishment.update({ tipSuggestions: [0.05, 0.1, 0.15] })
+      expect(updated.toPrimitives().tipSuggestions).toEqual([0.05, 0.1, 0.15])
     })
 
     it('should update operatingHours from null to a configured value', () => {
@@ -206,8 +206,8 @@ describe('Establishment aggregate', () => {
           holidays: ['2024-12-25']
         },
         enabledOrderTypes: ['DINE_IN', 'DELIVERY'],
-        serviceCharge: { type: 'PERCENTAGE' as const, value: 0.10 },
-        tipSuggestions: [0.05, 0.10, 0.15] as [number, number, number],
+        serviceCharge: { type: 'PERCENTAGE' as const, value: 0.1 },
+        tipSuggestions: [0.05, 0.1, 0.15] as [number, number, number],
         splitCheck: true,
         paymentMethods: ['CASH', 'TRANSFER'],
         autoSendToKitchen: false

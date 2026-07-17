@@ -1,5 +1,8 @@
 import { faker } from '@faker-js/faker'
-import { OrderClosedEvent, OrderClosedPayload } from '@contexts/orders/order/domain/events/order-closed.event'
+import {
+  OrderClosedEvent,
+  OrderClosedPayload
+} from '@contexts/orders/order/domain/events/order-closed.event'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 export class OrderClosedEventMother {
@@ -28,25 +31,27 @@ export class OrderClosedEventMother {
           quantity: 1,
           unitPrice: 50000,
           lineTotal: 50000,
-          taxAmount: 7983,
-        },
+          taxAmount: 7983
+        }
       ],
-      customerDocumentType: overrides.customerDocumentType !== undefined ? overrides.customerDocumentType : null,
-      customerDocumentNumber: overrides.customerDocumentNumber !== undefined ? overrides.customerDocumentNumber : null,
+      customerDocumentType:
+        overrides.customerDocumentType !== undefined ? overrides.customerDocumentType : null,
+      customerDocumentNumber:
+        overrides.customerDocumentNumber !== undefined ? overrides.customerDocumentNumber : null
     })
   }
 
   static withCustomer(documentNumber: string, documentType: string = 'NIT'): OrderClosedEvent {
     return OrderClosedEventMother.create({
       customerDocumentType: documentType,
-      customerDocumentNumber: documentNumber,
+      customerDocumentNumber: documentNumber
     })
   }
 
   static anonymous(): OrderClosedEvent {
     return OrderClosedEventMother.create({
       customerDocumentType: null,
-      customerDocumentNumber: null,
+      customerDocumentNumber: null
     })
   }
 }

@@ -45,7 +45,7 @@ export class TypeOrmInvoiceRepository implements InvoiceRepository {
         status: In([InvoiceStatus.FAILED, InvoiceStatus.PENDING])
       }
     })
-    return entities.map((entity) => Invoice.fromPrimitives(this.toDomain(entity)))
+    return entities.map(entity => Invoice.fromPrimitives(this.toDomain(entity)))
   }
 
   private toDomain(entity: InvoiceEntity): InvoicePrimitives {

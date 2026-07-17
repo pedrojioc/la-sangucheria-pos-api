@@ -61,7 +61,7 @@ describe('ListPendingInvoices — searchPending delegation and primitives mappin
       customerDocumentType: null,
       customerDocumentNumber: null,
       closedAt: new Date('2025-06-01'),
-      currency: 'COP',
+      currency: 'COP'
     }
     const failedInvoice = InvoiceMother.failed({ snapshot, failureReason: 'Network timeout' })
 

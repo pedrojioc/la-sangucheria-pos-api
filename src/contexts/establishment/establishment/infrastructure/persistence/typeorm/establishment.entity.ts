@@ -1,10 +1,4 @@
-import {
-  Entity,
-  PrimaryColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn
-} from 'typeorm'
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm'
 
 import { TaxType } from '@shared/domain/value-objects/tax-type'
 import { KitchenMode } from '../../../domain/kitchen-mode'
@@ -93,7 +87,11 @@ export class EstablishmentEntity {
   @Column({ name: 'operating_hours', type: 'jsonb', nullable: true })
   operatingHours: object | null
 
-  @Column({ name: 'enabled_order_types', type: 'jsonb', default: () => '\'["DINE_IN","DELIVERY","TAKEOUT"]\'' })
+  @Column({
+    name: 'enabled_order_types',
+    type: 'jsonb',
+    default: () => '\'["DINE_IN","DELIVERY","TAKEOUT"]\''
+  })
   enabledOrderTypes: string[]
 
   @Column({ name: 'service_charge', type: 'jsonb', nullable: true })

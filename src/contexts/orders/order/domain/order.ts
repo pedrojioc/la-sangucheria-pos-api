@@ -436,7 +436,7 @@ export class Order extends AggregateRoot {
       const p = item.toPrimitives()
       const proportionalTax =
         orderTotal > 0
-          ? Math.round((p.unitPrice * p.quantity / orderTotal) * orderTaxAmount * 100) / 100
+          ? Math.round(((p.unitPrice * p.quantity) / orderTotal) * orderTaxAmount * 100) / 100
           : 0
       return {
         productId: p.productId,
@@ -502,7 +502,13 @@ export class Order extends AggregateRoot {
     this.ensureCanBeModified()
     const item = this.findItem(itemId)
     item.applyDiscount(discount)
-    this.record(new OrderItemDiscountAppliedEvent({ orderId: this.id.value, itemId, discount: discount.toPrimitives() }))
+    this.record(
+      new OrderItemDiscountAppliedEvent({
+        orderId: this.id.value,
+        itemId,
+        discount: discount.toPrimitives()
+      })
+    )
   }
 
   removeItemDiscount(itemId: string): void {
@@ -515,7 +521,9 @@ export class Order extends AggregateRoot {
   applyOrderDiscount(discount: Discount): void {
     this.ensureCanBeModified()
     this.orderDiscount = discount
-    this.record(new OrderDiscountAppliedEvent({ orderId: this.id.value, discount: discount.toPrimitives() }))
+    this.record(
+      new OrderDiscountAppliedEvent({ orderId: this.id.value, discount: discount.toPrimitives() })
+    )
   }
 
   removeOrderDiscount(): void {

@@ -7,7 +7,10 @@ import { InvoiceId } from '@contexts/billing/invoice/domain/invoice-id'
 import { InvoiceStatus } from '@contexts/billing/invoice/domain/invoice-status'
 import { InvoiceEntity } from '@contexts/billing/invoice/infrastructure/persistence/typeorm/invoice.entity'
 import { TypeOrmInvoiceRepository } from '@contexts/billing/invoice/infrastructure/persistence/typeorm/typeorm-invoice.repository'
-import { InvoiceMother, InvoiceSnapshotMother } from '@test/contexts/billing/invoice/__mothers__/invoice.mother'
+import {
+  InvoiceMother,
+  InvoiceSnapshotMother
+} from '@test/contexts/billing/invoice/__mothers__/invoice.mother'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('TypeOrmInvoiceRepository', () => {
@@ -137,8 +140,8 @@ describe('TypeOrmInvoiceRepository', () => {
       const results = await repository.searchPending()
 
       expect(results).toHaveLength(2)
-      expect(results.every((r) => r instanceof Invoice)).toBe(true)
-      expect(results.map((r) => r.toPrimitives().status)).toEqual(
+      expect(results.every(r => r instanceof Invoice)).toBe(true)
+      expect(results.map(r => r.toPrimitives().status)).toEqual(
         expect.arrayContaining([InvoiceStatus.PENDING, InvoiceStatus.FAILED])
       )
     })

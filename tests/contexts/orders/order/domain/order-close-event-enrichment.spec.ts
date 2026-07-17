@@ -38,7 +38,9 @@ describe('Order.close() — enriched OrderClosedEvent payload', () => {
       // Act
       order.close(payments, UuidMother.random())
       const events = order.pullDomainEvents()
-      const closedEvent = events.find((e: DomainEvent) => e instanceof OrderClosedEvent) as OrderClosedEvent
+      const closedEvent = events.find(
+        (e: DomainEvent) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
       const payload = closedEvent.toPrimitives()
 
       // Assert — fiscal totals
@@ -76,7 +78,9 @@ describe('Order.close() — enriched OrderClosedEvent payload', () => {
       // Act
       order.close(payments, UuidMother.random())
       const events = order.pullDomainEvents()
-      const closedEvent = events.find((e: DomainEvent) => e instanceof OrderClosedEvent) as OrderClosedEvent
+      const closedEvent = events.find(
+        (e: DomainEvent) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
       const payload = closedEvent.toPrimitives()
 
       // Assert — proportional tax:
@@ -104,11 +108,13 @@ describe('Order.close() — enriched OrderClosedEvent payload', () => {
       // Act
       order.close(payments, UuidMother.random())
       const events = order.pullDomainEvents()
-      const closedEvent = events.find((e: DomainEvent) => e instanceof OrderClosedEvent) as OrderClosedEvent
+      const closedEvent = events.find(
+        (e: DomainEvent) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
       const payload = closedEvent.toPrimitives()
 
       // Assert — zero-lineTotal item gets 0 proportional tax; non-zero item gets all the tax
-      expect(payload.items[0].taxAmount).toBe(0)       // unitPrice=0 → proportional = 0
+      expect(payload.items[0].taxAmount).toBe(0) // unitPrice=0 → proportional = 0
       expect(payload.items[1].taxAmount).toBeGreaterThan(0)
     })
 
@@ -127,7 +133,9 @@ describe('Order.close() — enriched OrderClosedEvent payload', () => {
       // Act
       order.close(payments, UuidMother.random())
       const events = order.pullDomainEvents()
-      const closedEvent = events.find((e: DomainEvent) => e instanceof OrderClosedEvent) as OrderClosedEvent
+      const closedEvent = events.find(
+        (e: DomainEvent) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
       const payload = closedEvent.toPrimitives()
 
       // Assert — only the active item appears
@@ -145,7 +153,9 @@ describe('Order.close() — enriched OrderClosedEvent payload', () => {
       // Act
       order.close(payments, UuidMother.random(), null, null, 'NIT', '900123456')
       const events = order.pullDomainEvents()
-      const closedEvent = events.find((e: DomainEvent) => e instanceof OrderClosedEvent) as OrderClosedEvent
+      const closedEvent = events.find(
+        (e: DomainEvent) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
       const payload = closedEvent.toPrimitives()
 
       // Assert
@@ -163,7 +173,9 @@ describe('Order.close() — enriched OrderClosedEvent payload', () => {
       // Act — no customer document params
       order.close(payments, UuidMother.random())
       const events = order.pullDomainEvents()
-      const closedEvent = events.find((e: DomainEvent) => e instanceof OrderClosedEvent) as OrderClosedEvent
+      const closedEvent = events.find(
+        (e: DomainEvent) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
       const payload = closedEvent.toPrimitives()
 
       // Assert
@@ -195,7 +207,9 @@ describe('Order.close() — enriched OrderClosedEvent payload', () => {
       // Act
       order.close([{ method: 'CASH', amount: 10000 }], closedBy)
       const events = order.pullDomainEvents()
-      const closedEvent = events.find((e: DomainEvent) => e instanceof OrderClosedEvent) as OrderClosedEvent
+      const closedEvent = events.find(
+        (e: DomainEvent) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
       const payload = closedEvent.toPrimitives()
 
       // Assert — original fields untouched

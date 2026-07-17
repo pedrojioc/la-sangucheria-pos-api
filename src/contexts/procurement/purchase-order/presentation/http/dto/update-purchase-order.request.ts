@@ -3,12 +3,12 @@ import {
   IsUUID,
   IsNotEmpty,
   IsOptional,
+  IsIn,
   IsISO8601,
   IsArray,
   ValidateNested,
   IsNumber,
-  IsPositive,
-  MaxLength
+  IsPositive
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
@@ -60,7 +60,7 @@ export class UpdatePurchaseOrderItemDto {
 export class UpdatePurchaseOrderRequest {
   @IsString()
   @IsNotEmpty()
-  @MaxLength(3)
+  @IsIn(['COP', 'USD', 'MXN'])
   currency: string
 
   @IsUUID()

@@ -21,18 +21,18 @@ describe('UpdateBillingConfig — upsert round-trip', () => {
     resolucionFrom: 1,
     resolucionTo: 1000,
     resolucionValidFrom: new Date('2025-01-01'),
-    resolucionValidTo: new Date('2025-12-31'),
+    resolucionValidTo: new Date('2025-12-31')
   }
 
   beforeEach(() => {
     mockRepository = {
       findSingleton: jest.fn(),
-      save: jest.fn(),
+      save: jest.fn()
     } as jest.Mocked<BillingConfigRepository>
 
     mockEventBus = {
       publish: jest.fn(),
-      addSubscribers: jest.fn(),
+      addSubscribers: jest.fn()
     } as unknown as jest.Mocked<EventBus>
 
     mockRepository.save.mockResolvedValue(undefined)

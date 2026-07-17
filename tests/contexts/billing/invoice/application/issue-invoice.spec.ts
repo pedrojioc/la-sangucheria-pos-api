@@ -57,8 +57,8 @@ describe('IssueInvoice', () => {
     expect(finalInvoice.toPrimitives().factusDocumentNumber).toBe(documentNumber)
 
     expect(eventBus.publish).toHaveBeenCalledTimes(1)
-    const publishedEvents = (eventBus.publish.mock.calls[0][0] as any[])
-    expect(publishedEvents.some((e) => e.constructor.name === 'InvoiceIssuedEvent')).toBe(true)
+    const publishedEvents = eventBus.publish.mock.calls[0][0] as any[]
+    expect(publishedEvents.some(e => e.constructor.name === 'InvoiceIssuedEvent')).toBe(true)
   })
 
   it('should create a PENDING invoice, mark as FAILED, and publish InvoiceFailedEvent on factus error', async () => {
@@ -86,8 +86,8 @@ describe('IssueInvoice', () => {
     expect(finalInvoice.toPrimitives().failureReason).toBe('Factus service unavailable')
 
     expect(eventBus.publish).toHaveBeenCalledTimes(1)
-    const publishedEvents = (eventBus.publish.mock.calls[0][0] as any[])
-    expect(publishedEvents.some((e) => e.constructor.name === 'InvoiceFailedEvent')).toBe(true)
+    const publishedEvents = eventBus.publish.mock.calls[0][0] as any[]
+    expect(publishedEvents.some(e => e.constructor.name === 'InvoiceFailedEvent')).toBe(true)
   })
 
   it('should persist invoice as FAILED with reason billing_not_configured when billing is not configured', async () => {

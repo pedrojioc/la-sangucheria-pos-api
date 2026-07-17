@@ -3,7 +3,7 @@ import {
   IsUUID,
   IsNotEmpty,
   IsOptional,
-  MaxLength,
+  IsIn,
   IsISO8601,
   IsArray,
   ArrayMinSize,
@@ -60,7 +60,7 @@ export class CreatePurchaseOrderRequest {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(3)
+  @IsIn(['COP', 'USD', 'MXN'])
   currency: string
 
   @IsArray()

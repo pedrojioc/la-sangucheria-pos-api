@@ -28,7 +28,12 @@ describe('OnOrderClosedIssueBillingDocument — full vertical slice (subscriber 
     eventBus.publish.mockResolvedValue(undefined)
 
     // Wire the REAL IssueInvoice — not a stub
-    issueInvoice = new IssueInvoice(invoiceRepository, billingConfigRepository, factusApiPort, eventBus)
+    issueInvoice = new IssueInvoice(
+      invoiceRepository,
+      billingConfigRepository,
+      factusApiPort,
+      eventBus
+    )
     subscriber = new OnOrderClosedIssueBillingDocument(issueInvoice)
   })
 
@@ -54,7 +59,7 @@ describe('OnOrderClosedIssueBillingDocument — full vertical slice (subscriber 
     expect(savedInvoices[1].cufeCude).toBe(cufeCude)
 
     const publishedEvents = eventBus.publish.mock.calls[0][0] as any[]
-    expect(publishedEvents.some((e) => e.constructor.name === 'InvoiceIssuedEvent')).toBe(true)
+    expect(publishedEvents.some(e => e.constructor.name === 'InvoiceIssuedEvent')).toBe(true)
   })
 
   it('should save invoice as PENDING then FAILED and publish InvoiceFailedEvent on Factus failure', async () => {
@@ -76,7 +81,7 @@ describe('OnOrderClosedIssueBillingDocument — full vertical slice (subscriber 
     expect(savedInvoices[1].failureReason).toContain('503')
 
     const publishedEvents = eventBus.publish.mock.calls[0][0] as any[]
-    expect(publishedEvents.some((e) => e.constructor.name === 'InvoiceFailedEvent')).toBe(true)
+    expect(publishedEvents.some(e => e.constructor.name === 'InvoiceFailedEvent')).toBe(true)
   })
 
   it('should persist invoice as FAILED with billing_not_configured reason when billing is not configured', async () => {

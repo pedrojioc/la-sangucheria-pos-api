@@ -11,7 +11,7 @@ export class IssueInvoice {
     private readonly invoiceRepository: InvoiceRepository,
     private readonly billingConfigRepository: BillingConfigRepository,
     private readonly factusApiPort: FactusApiPort,
-    private readonly eventBus: EventBus,
+    private readonly eventBus: EventBus
   ) {}
 
   async run(id: string, snapshot: InvoiceSnapshot): Promise<void> {
@@ -23,9 +23,12 @@ export class IssueInvoice {
       const result = await this.factusApiPort.issue(config.toPrimitives(), snapshot)
       invoice.markIssued(result.cufeCude, result.documentNumber)
     } catch (error) {
-      const reason = error instanceof BillingNotConfigured
-        ? 'billing_not_configured'
-        : (error instanceof Error ? error.message : String(error))
+      const reason =
+        error instanceof BillingNotConfigured
+          ? 'billing_not_configured'
+          : error instanceof Error
+            ? error.message
+            : String(error)
       invoice.markFailed(reason)
     }
 

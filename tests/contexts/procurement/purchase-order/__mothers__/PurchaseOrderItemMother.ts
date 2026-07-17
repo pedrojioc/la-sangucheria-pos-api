@@ -17,7 +17,7 @@ export class PurchaseOrderItemMother {
       quantityReceived: params.quantityReceived ?? null,
       quantityReceivedUnitId: params.quantityReceivedUnitId ?? null,
       unitCost: params.unitCost ?? NumberMother.random(),
-      currency: params.currency ?? 'PEN',
+      currency: params.currency ?? 'COP',
       totalCost: params.totalCost ?? (params.unitCost ?? 10) * (params.quantityRequested ?? 5),
       notes: params.notes ?? null,
       isCancelled: false,
@@ -63,7 +63,7 @@ export class PurchaseOrderItemMother {
       quantityRequested: params.quantityRequested ?? 10,
       unitId: params.unitId ?? UuidMother.random(),
       unitCost: params.unitCost ?? 50,
-      currency: params.currency ?? 'PEN',
+      currency: params.currency ?? 'COP',
       notes: params.notes ?? null
     }
   }

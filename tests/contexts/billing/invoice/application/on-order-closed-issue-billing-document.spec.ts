@@ -53,7 +53,7 @@ describe('OnOrderClosedIssueBillingDocument', () => {
       discountTotal: 5000,
       taxBase: 42017,
       taxAmount: 7983,
-      taxConfig: { rate: 0.19, type: 'IVA', inclusive: true },
+      taxConfig: { rate: 0.19, type: 'IVA', inclusive: true }
     })
 
     await subscriber.on(event)

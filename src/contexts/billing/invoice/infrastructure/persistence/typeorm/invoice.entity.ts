@@ -1,10 +1,4 @@
-import {
-  Entity,
-  PrimaryColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn
-} from 'typeorm'
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm'
 import { InvoiceSnapshot } from '@contexts/billing/invoice/domain/invoice-snapshot'
 
 @Entity('invoices')

@@ -36,10 +36,7 @@ import { EventBus } from '@shared/domain/events'
 import { createProvider } from '@core/utils/create-provider'
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([InvoiceEntity]),
-    BillingConfigModule
-  ],
+  imports: [TypeOrmModule.forFeature([InvoiceEntity]), BillingConfigModule],
   controllers: [InvoiceController],
   providers: [
     // REPOSITORIES
@@ -55,8 +52,18 @@ import { createProvider } from '@core/utils/create-provider'
     },
 
     // USE CASES
-    createProvider(IssueInvoice, [InvoiceRepository, BillingConfigRepository, FactusApiPort, EventBus]),
-    createProvider(RetryInvoice, [InvoiceRepository, BillingConfigRepository, FactusApiPort, EventBus]),
+    createProvider(IssueInvoice, [
+      InvoiceRepository,
+      BillingConfigRepository,
+      FactusApiPort,
+      EventBus
+    ]),
+    createProvider(RetryInvoice, [
+      InvoiceRepository,
+      BillingConfigRepository,
+      FactusApiPort,
+      EventBus
+    ]),
     createProvider(ListPendingInvoices, [InvoiceRepository]),
 
     // SUBSCRIBERS

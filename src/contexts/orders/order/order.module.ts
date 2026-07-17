@@ -54,7 +54,12 @@ import { EstablishmentModule } from '@contexts/establishment/establishment/estab
 import { createProvider } from '@core/utils/create-provider'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([OrderEntity]), TableModule, CustomerModule, EstablishmentModule],
+  imports: [
+    TypeOrmModule.forFeature([OrderEntity]),
+    TableModule,
+    CustomerModule,
+    EstablishmentModule
+  ],
   controllers: [OrderController, KitchenController],
   providers: [
     // REPOSITORIES

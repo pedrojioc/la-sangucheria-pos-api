@@ -6,9 +6,18 @@ export class FindAddressesByCustomer {
 
   async run(customerId: string): Promise<AddressResponse[]> {
     const addresses = await this.repository.findByCustomer(customerId)
-    return addresses.map((address) => {
+    return addresses.map(address => {
       const p = address.toPrimitives()
-      return new AddressResponse(p.id, p.customerId, p.label, p.street, p.neighborhood, p.city, p.reference, p.coordinates)
+      return new AddressResponse(
+        p.id,
+        p.customerId,
+        p.label,
+        p.street,
+        p.neighborhood,
+        p.city,
+        p.reference,
+        p.coordinates
+      )
     })
   }
 }

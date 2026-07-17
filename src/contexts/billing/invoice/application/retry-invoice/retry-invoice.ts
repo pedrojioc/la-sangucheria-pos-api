@@ -10,7 +10,7 @@ export class RetryInvoice {
     private readonly invoiceRepository: InvoiceRepository,
     private readonly billingConfigRepository: BillingConfigRepository,
     private readonly factusApiPort: FactusApiPort,
-    private readonly eventBus: EventBus,
+    private readonly eventBus: EventBus
   ) {}
 
   async run(id: string): Promise<void> {
@@ -25,7 +25,10 @@ export class RetryInvoice {
     await this.invoiceRepository.save(invoice)
 
     try {
-      const result = await this.factusApiPort.issue(config.toPrimitives(), invoice.toPrimitives().snapshot)
+      const result = await this.factusApiPort.issue(
+        config.toPrimitives(),
+        invoice.toPrimitives().snapshot
+      )
       invoice.markIssued(result.cufeCude, result.documentNumber)
     } catch (error) {
       invoice.markFailed(error instanceof Error ? error.message : String(error))
