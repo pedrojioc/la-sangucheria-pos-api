@@ -26,6 +26,8 @@ import { KitchenMode } from '../../../domain/kitchen-mode'
 import { WEEKDAYS } from '../../../domain/establishment-operating-hours'
 import type { Weekday } from '../../../domain/establishment-operating-hours'
 import type { ServiceChargeType } from '../../../domain/establishment-service-charge'
+import { isValidTimezone } from '../../../domain/establishment-timezone'
+import { isCanonicalBcp47Locale } from '../../../domain/establishment-locale'
 
 @ValidatorConstraint({ name: 'serviceChargePercentageMax' })
 export class ServiceChargePercentageMaxConstraint implements ValidatorConstraintInterface {
@@ -70,6 +72,32 @@ export class TipSuggestionsUniqueAndSortedConstraint implements ValidatorConstra
 
   defaultMessage(_args: ValidationArguments): string {
     return 'tipSuggestions must contain unique values sorted in ascending order'
+  }
+}
+
+@ValidatorConstraint({ name: 'isIanaTimezone' })
+export class IsIanaTimezoneConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown, _args: ValidationArguments): boolean {
+    if (value === undefined || value === null) return true // presence handled by @IsOptional
+    if (typeof value !== 'string') return true // type handled by @IsString
+    return isValidTimezone(value)
+  }
+
+  defaultMessage(_args: ValidationArguments): string {
+    return 'timezone must be a canonical IANA time zone name'
+  }
+}
+
+@ValidatorConstraint({ name: 'isBcp47Locale' })
+export class IsBcp47LocaleConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown, _args: ValidationArguments): boolean {
+    if (value === undefined || value === null) return true
+    if (typeof value !== 'string') return true
+    return isCanonicalBcp47Locale(value)
+  }
+
+  defaultMessage(_args: ValidationArguments): string {
+    return 'locale must be a canonical BCP-47 language tag (e.g. es-CO)'
   }
 }
 
@@ -184,10 +212,12 @@ export class UpdateEstablishmentSettingsDto {
 
   @IsOptional()
   @IsString()
+  @Validate(IsIanaTimezoneConstraint)
   timezone?: string
 
   @IsOptional()
   @IsString()
+  @Validate(IsBcp47LocaleConstraint)
   locale?: string
 
   @IsOptional()

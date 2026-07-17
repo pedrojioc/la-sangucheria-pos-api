@@ -118,6 +118,30 @@ describe('Establishment aggregate', () => {
     })
   })
 
+  describe('update — invalid timezone/locale (fromPrimitives re-validation)', () => {
+    it('should throw when update() sets only timezone to a non-canonical value', () => {
+      const establishment = EstablishmentMother.create()
+
+      expect(() => establishment.update({ timezone: 'US/Eastern' })).toThrow()
+    })
+
+    it('should throw when update() sets only locale to a non-canonical value', () => {
+      const establishment = EstablishmentMother.create()
+
+      expect(() => establishment.update({ locale: 'es_CO' })).toThrow()
+    })
+
+    it('should succeed when update() omits timezone/locale, re-validating the already-valid persisted values', () => {
+      const establishment = EstablishmentMother.create()
+
+      const updated = establishment.update({ name: 'Updated Name' })
+      const p = updated.toPrimitives()
+
+      expect(p.timezone).toBe('America/Bogota')
+      expect(p.locale).toBe('es-CO')
+    })
+  })
+
   describe('update — invalid kitchenMode', () => {
     it('should throw for an invalid enum value', () => {
       const establishment = EstablishmentMother.create()

@@ -52,3 +52,99 @@ describe('UpdateEstablishmentSettingsDto — taxRateMatchesTaxType constraint', 
     expect(taxRateError).toBeUndefined()
   })
 })
+
+describe('UpdateEstablishmentSettingsDto — isIanaTimezone constraint', () => {
+  it('should reject an invalid timezone (Foo/Bar)', async () => {
+    const dto = plainToInstance(UpdateEstablishmentSettingsDto, {
+      timezone: 'Foo/Bar'
+    })
+
+    const errors = await validate(dto)
+
+    const timezoneError = errors.find(error => error.property === 'timezone')
+    expect(timezoneError).toBeDefined()
+    expect(timezoneError?.constraints).toHaveProperty('isIanaTimezone')
+  })
+
+  it('should accept a valid canonical timezone (America/Bogota)', async () => {
+    const dto = plainToInstance(UpdateEstablishmentSettingsDto, {
+      timezone: 'America/Bogota'
+    })
+
+    const errors = await validate(dto)
+
+    const timezoneError = errors.find(error => error.property === 'timezone')
+    expect(timezoneError).toBeUndefined()
+  })
+
+  it('should not fire when timezone is omitted', async () => {
+    const dto = plainToInstance(UpdateEstablishmentSettingsDto, {
+      name: 'Some Name'
+    })
+
+    const errors = await validate(dto)
+
+    const timezoneError = errors.find(error => error.property === 'timezone')
+    expect(timezoneError).toBeUndefined()
+  })
+
+  it('should reject an empty string (DTO/domain parity)', async () => {
+    const dto = plainToInstance(UpdateEstablishmentSettingsDto, {
+      timezone: ''
+    })
+
+    const errors = await validate(dto)
+
+    const timezoneError = errors.find(error => error.property === 'timezone')
+    expect(timezoneError).toBeDefined()
+    expect(timezoneError?.constraints).toHaveProperty('isIanaTimezone')
+  })
+})
+
+describe('UpdateEstablishmentSettingsDto — isBcp47Locale constraint', () => {
+  it('should reject an invalid locale (es_CO)', async () => {
+    const dto = plainToInstance(UpdateEstablishmentSettingsDto, {
+      locale: 'es_CO'
+    })
+
+    const errors = await validate(dto)
+
+    const localeError = errors.find(error => error.property === 'locale')
+    expect(localeError).toBeDefined()
+    expect(localeError?.constraints).toHaveProperty('isBcp47Locale')
+  })
+
+  it('should accept a valid canonical locale (es-CO)', async () => {
+    const dto = plainToInstance(UpdateEstablishmentSettingsDto, {
+      locale: 'es-CO'
+    })
+
+    const errors = await validate(dto)
+
+    const localeError = errors.find(error => error.property === 'locale')
+    expect(localeError).toBeUndefined()
+  })
+
+  it('should not fire when locale is omitted', async () => {
+    const dto = plainToInstance(UpdateEstablishmentSettingsDto, {
+      name: 'Some Name'
+    })
+
+    const errors = await validate(dto)
+
+    const localeError = errors.find(error => error.property === 'locale')
+    expect(localeError).toBeUndefined()
+  })
+
+  it('should reject an empty string (DTO/domain parity)', async () => {
+    const dto = plainToInstance(UpdateEstablishmentSettingsDto, {
+      locale: ''
+    })
+
+    const errors = await validate(dto)
+
+    const localeError = errors.find(error => error.property === 'locale')
+    expect(localeError).toBeDefined()
+    expect(localeError?.constraints).toHaveProperty('isBcp47Locale')
+  })
+})
