@@ -12,17 +12,25 @@ describe('EstablishmentTipSuggestions', () => {
       const vo = new EstablishmentTipSuggestions([0, 0.5, 1])
       expect(vo.value).toEqual([0, 0.5, 1])
     })
+
+    it('should accept a single suggestion', () => {
+      const vo = new EstablishmentTipSuggestions([0.1])
+      expect(vo.value).toEqual([0.1])
+    })
+
+    it('should accept two suggestions', () => {
+      const vo = new EstablishmentTipSuggestions([0.05, 0.1])
+      expect(vo.value).toEqual([0.05, 0.1])
+    })
   })
 
   describe('wrong element count', () => {
-    it('should throw when the array has only 2 elements', () => {
-      expect(() => new EstablishmentTipSuggestions([0.05, 0.1] as never)).toThrow(
-        InvalidValueObjectException
-      )
+    it('should throw when the array is empty', () => {
+      expect(() => new EstablishmentTipSuggestions([])).toThrow(InvalidValueObjectException)
     })
 
     it('should throw when the array has 4 elements', () => {
-      expect(() => new EstablishmentTipSuggestions([0.05, 0.1, 0.15, 0.2] as never)).toThrow(
+      expect(() => new EstablishmentTipSuggestions([0.05, 0.1, 0.15, 0.2])).toThrow(
         InvalidValueObjectException
       )
     })

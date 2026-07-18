@@ -1,17 +1,17 @@
 import { InvalidValueObjectException } from '@shared/domain/exceptions/domain.exception'
 
 export class EstablishmentTipSuggestions {
-  readonly value: [number, number, number]
+  readonly value: number[]
 
-  constructor(value: [number, number, number]) {
+  constructor(value: number[]) {
     this.ensureIsValid(value)
     this.value = value
   }
 
-  private ensureIsValid(value: [number, number, number]): void {
-    if (value.length !== 3) {
+  private ensureIsValid(value: number[]): void {
+    if (value.length < 1 || value.length > 3) {
       throw new InvalidValueObjectException(
-        `<EstablishmentTipSuggestions> must contain exactly 3 elements, got <${value.length}>`
+        `<EstablishmentTipSuggestions> must contain between 1 and 3 elements, got <${value.length}>`
       )
     }
 
@@ -30,10 +30,12 @@ export class EstablishmentTipSuggestions {
       )
     }
 
-    if (value[0] >= value[1] || value[1] >= value[2]) {
-      throw new InvalidValueObjectException(
-        '<EstablishmentTipSuggestions> values must be in ascending order'
-      )
+    for (let i = 1; i < value.length; i++) {
+      if (value[i - 1] >= value[i]) {
+        throw new InvalidValueObjectException(
+          '<EstablishmentTipSuggestions> values must be in ascending order'
+        )
+      }
     }
   }
 }

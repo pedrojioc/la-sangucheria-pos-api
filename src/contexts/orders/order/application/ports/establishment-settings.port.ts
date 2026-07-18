@@ -6,6 +6,7 @@ export interface OrderEstablishmentSettings {
   taxType: TaxType
   taxInclusive: boolean
   enabledOrderTypes: string[]
+  tipSuggestions: number[] | null
 }
 
 export abstract class EstablishmentSettingsPort {

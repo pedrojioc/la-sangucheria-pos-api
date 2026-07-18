@@ -294,7 +294,7 @@ describe('Establishment aggregate', () => {
         },
         enabledOrderTypes: ['DINE_IN', 'DELIVERY'],
         serviceCharge: { type: 'PERCENTAGE' as const, value: 0.1 },
-        tipSuggestions: [0.05, 0.1, 0.15] as [number, number, number],
+        tipSuggestions: [0.05, 0.1, 0.15],
         splitCheck: true,
         paymentMethods: ['CASH', 'TRANSFER'],
         autoSendToKitchen: false

@@ -2,13 +2,16 @@ import { Type } from 'class-transformer'
 import {
   IsArray,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsPositive,
   IsString,
   IsUUID,
+  Max,
   Min,
+  ValidateIf,
   ValidateNested
 } from 'class-validator'
 
@@ -38,6 +41,20 @@ export class SplitDto {
   payment: PaymentDto
 }
 
+export type TipSelectionKind = 'NONE' | 'INDEX'
+
+export class TipSelectionDto {
+  @IsEnum(['NONE', 'INDEX'])
+  @IsNotEmpty()
+  kind: TipSelectionKind
+
+  @ValidateIf(o => o.kind === 'INDEX')
+  @IsInt()
+  @Min(0)
+  @Max(2)
+  index?: number
+}
+
 export class CloseOrderRequest {
   @IsArray()
   @ValidateNested({ each: true })
@@ -48,10 +65,10 @@ export class CloseOrderRequest {
   @IsNotEmpty()
   closedBy: string
 
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  tip?: number | null
+  @ValidateNested()
+  @Type(() => TipSelectionDto)
+  @IsNotEmpty()
+  tipSelection: TipSelectionDto
 
   @IsArray()
   @ValidateNested({ each: true })

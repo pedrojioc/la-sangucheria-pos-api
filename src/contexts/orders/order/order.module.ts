@@ -100,7 +100,7 @@ import { createProvider } from '@core/utils/create-provider'
     createProvider(CancelOrderItem, [OrderRepository, FindOrder, EventBus]),
     createProvider(CancelOrder, [OrderRepository, FindOrder, EventBus]),
     createProvider(GetKitchenQueue, [OrderRepository]),
-    createProvider(CloseOrder, [OrderRepository, FindOrder, EventBus]),
+    createProvider(CloseOrder, [OrderRepository, FindOrder, EventBus, EstablishmentSettingsPort]),
     createProvider(SearchOrdersByCriteria, [OrderQueryService]),
     createProvider(ApplyItemDiscount, [OrderRepository, FindOrder, EventBus]),
     createProvider(RemoveItemDiscount, [OrderRepository, FindOrder, EventBus]),

@@ -59,8 +59,8 @@ export class EstablishmentEntity {
   taxInclusive: boolean
 
   // Kitchen
-  @Column({ name: 'kitchen_mode', type: 'varchar', length: 30 })
-  kitchenMode: KitchenMode
+  @Column({ name: 'kitchen_mode', type: 'varchar', length: 30, nullable: true })
+  kitchenMode: KitchenMode | null
 
   @Column({ name: 'auto_send_to_kitchen', type: 'boolean', default: false })
   autoSendToKitchen: boolean

@@ -41,7 +41,7 @@ export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
       defaultTaxRate: entity.defaultTaxRate,
       defaultTaxType: entity.defaultTaxType as TaxType,
       taxInclusive: entity.taxInclusive,
-      kitchenMode: entity.kitchenMode as KitchenMode,
+      kitchenMode: (entity.kitchenMode as KitchenMode) ?? KitchenMode.NONE,
       receiptHeader: entity.receiptHeader,
       receiptFooter: entity.receiptFooter,
       timezone: entity.timezone,

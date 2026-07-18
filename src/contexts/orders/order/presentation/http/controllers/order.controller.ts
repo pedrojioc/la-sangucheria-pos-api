@@ -19,7 +19,7 @@ import { SendOrderToKitchen } from '../../../application/send-to-kitchen/send-or
 import { FindOrder } from '../../../application/find/find-order'
 import { CancelOrderItem } from '../../../application/cancel-item/cancel-order-item'
 import { CancelOrder } from '../../../application/cancel/cancel-order'
-import { CloseOrder } from '../../../application/close/close-order'
+import { CloseOrder, CloseOrderTipSelection } from '../../../application/close/close-order'
 import { SearchOrdersByCriteria } from '../../../application/search-by-criteria/search-orders-by-criteria'
 import { ApplyItemDiscount } from '../../../application/apply-item-discount/apply-item-discount'
 import { RemoveItemDiscount } from '../../../application/remove-item-discount/remove-item-discount'
@@ -144,7 +144,13 @@ export class OrderController {
   @Post(':id/close')
   @HttpCode(HttpStatus.OK)
   async close(@Param('id') id: string, @Body() dto: CloseOrderRequest): Promise<void> {
-    await this.closeOrder.run(id, dto.payments, dto.closedBy, dto.tip, dto.splits)
+    await this.closeOrder.run(
+      id,
+      dto.payments,
+      dto.closedBy,
+      dto.tipSelection as CloseOrderTipSelection,
+      dto.splits
+    )
   }
 
   @Patch(':id/items/:itemId/discount')

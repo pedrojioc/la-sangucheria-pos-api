@@ -18,7 +18,8 @@ export class TypeOrmEstablishmentSettingsAdapter extends EstablishmentSettingsPo
       taxRate: settings.defaultTaxRate,
       taxType: settings.defaultTaxType,
       taxInclusive: settings.taxInclusive,
-      enabledOrderTypes: settings.enabledOrderTypes
+      enabledOrderTypes: settings.enabledOrderTypes,
+      tipSuggestions: settings.tipSuggestions
     }
   }
 }

@@ -27,7 +27,7 @@ export class EstablishmentSettingsResponse {
     public readonly operatingHours: EstablishmentPrimitives['operatingHours'],
     public readonly enabledOrderTypes: string[],
     public readonly serviceCharge: EstablishmentPrimitives['serviceCharge'],
-    public readonly tipSuggestions: [number, number, number] | null,
+    public readonly tipSuggestions: number[] | null,
     public readonly splitCheck: boolean,
     public readonly paymentMethods: string[],
     public readonly autoSendToKitchen: boolean

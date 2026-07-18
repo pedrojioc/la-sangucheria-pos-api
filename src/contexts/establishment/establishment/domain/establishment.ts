@@ -54,7 +54,7 @@ export interface EstablishmentPrimitives {
   operatingHours: OperatingHoursShape | null
   enabledOrderTypes: string[]
   serviceCharge: ServiceChargeShape | null
-  tipSuggestions: [number, number, number] | null
+  tipSuggestions: number[] | null
   splitCheck: boolean
   paymentMethods: string[]
   autoSendToKitchen: boolean
@@ -159,7 +159,10 @@ export class Establishment extends AggregateRoot {
 
   update(params: EstablishmentUpdateParams): Establishment {
     const current = this.toPrimitives()
-    const merged = { ...current, ...params }
+    const definedParams = Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== undefined)
+    )
+    const merged = { ...current, ...definedParams }
 
     const updated = Establishment.fromPrimitives(merged)
 

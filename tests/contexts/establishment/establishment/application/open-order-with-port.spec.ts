@@ -48,7 +48,8 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
         taxRate: 0.1,
         taxType: TaxType.IVA,
         taxInclusive: false,
-        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT']
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT'],
+        tipSuggestions: null
       })
 
       await useCase.run(orderId, OrderType.DINE_IN, UuidMother.random(), null)
@@ -70,7 +71,8 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
         taxRate: 0.1,
         taxType: TaxType.IVA,
         taxInclusive: false,
-        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT']
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT'],
+        tipSuggestions: null
       })
 
       await useCase.run(UuidMother.random(), OrderType.TAKEOUT, UuidMother.random(), null)
@@ -87,7 +89,8 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
         taxRate: 0.08,
         taxType: TaxType.INC,
         taxInclusive: true,
-        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT']
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT'],
+        tipSuggestions: null
       })
 
       const result = await useCase.run(
@@ -111,7 +114,8 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
         taxRate: 0.08,
         taxType: TaxType.INC,
         taxInclusive: true,
-        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT']
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY', 'TAKEOUT'],
+        tipSuggestions: null
       })
 
       await expect(
@@ -127,7 +131,8 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
         taxRate: 0.08,
         taxType: TaxType.INC,
         taxInclusive: true,
-        enabledOrderTypes: ['DINE_IN', 'DELIVERY']
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY'],
+        tipSuggestions: null
       })
 
       await expect(
@@ -141,7 +146,8 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
         taxRate: 0.08,
         taxType: TaxType.INC,
         taxInclusive: true,
-        enabledOrderTypes: ['DINE_IN', 'DELIVERY']
+        enabledOrderTypes: ['DINE_IN', 'DELIVERY'],
+        tipSuggestions: null
       })
 
       await expect(
@@ -157,7 +163,8 @@ describe('OpenOrder — EstablishmentSettingsPort integration', () => {
         taxRate: 0.08,
         taxType: TaxType.INC,
         taxInclusive: true,
-        enabledOrderTypes: ['DINE_IN']
+        enabledOrderTypes: ['DINE_IN'],
+        tipSuggestions: null
       })
 
       await expect(
