@@ -2,6 +2,7 @@ import { KitchenPrinterDispatcher } from '@contexts/kitchen-operations/kitchen-p
 import { KitchenPrinterPort } from '@contexts/kitchen-operations/kitchen-printer/application/ports/kitchen-printer.port'
 import { PrinterStationResolverPort } from '@contexts/kitchen-operations/kitchen-printer/application/ports/printer-station-resolver.port'
 import { OrderSentToKitchenEvent } from '@contexts/orders/order/domain/events/order-sent-to-kitchen.event'
+import { OrderType } from '@contexts/orders/order/domain/order-type'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('KitchenPrinterDispatcher', () => {
@@ -31,6 +32,8 @@ describe('KitchenPrinterDispatcher', () => {
   const buildEvent = (
     overrides: Partial<{
       tableLabel: string | null
+      sentAt: Date
+      orderType: OrderType
       items: Array<{
         itemId: string
         stationId: string | null
@@ -48,9 +51,10 @@ describe('KitchenPrinterDispatcher', () => {
       ticketNumber: 1,
       items: overrides.items ?? [],
       sentBy: 'waiter-1',
-      sentAt: new Date(),
+      sentAt: overrides.sentAt ?? new Date(),
       tableId: UuidMother.random(),
-      tableLabel: 'tableLabel' in overrides ? (overrides.tableLabel ?? null) : 'Mesa 5'
+      tableLabel: 'tableLabel' in overrides ? (overrides.tableLabel ?? null) : 'Mesa 5',
+      orderType: overrides.orderType ?? OrderType.DINE_IN
     })
   }
 
@@ -242,5 +246,61 @@ describe('KitchenPrinterDispatcher', () => {
 
     const ticket = printerPort.print.mock.calls[0][0]
     expect(ticket.items[0].modifiers).toEqual(['Extra queso', 'Sin cebolla'])
+  })
+
+  it('threads sentAt and orderType from the event payload onto the ticket', async () => {
+    const stationId = UuidMother.random()
+    const sentAt = new Date('2026-07-18T15:30:00Z')
+
+    const event = buildEvent({
+      sentAt,
+      orderType: OrderType.TAKEOUT,
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      { stationId, stationName: 'Parrilla', printerAddress: '192.168.1.10' }
+    ])
+
+    await dispatcher.run(event)
+
+    const ticket = printerPort.print.mock.calls[0][0]
+    expect(ticket.sentAt).toBe(sentAt)
+    expect(ticket.orderType).toBe(OrderType.TAKEOUT)
+  })
+
+  it('always sets isReprint to false on the ticket', async () => {
+    const stationId = UuidMother.random()
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      { stationId, stationName: 'Parrilla', printerAddress: '192.168.1.10' }
+    ])
+
+    await dispatcher.run(event)
+
+    const ticket = printerPort.print.mock.calls[0][0]
+    expect(ticket.isReprint).toBe(false)
   })
 })

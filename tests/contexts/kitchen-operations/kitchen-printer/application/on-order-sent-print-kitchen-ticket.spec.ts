@@ -1,6 +1,7 @@
 import { OnOrderSentPrintKitchenTicket } from '@contexts/kitchen-operations/kitchen-printer/application/subscribers/on-order-sent-print-kitchen-ticket'
 import { KitchenPrinterDispatcher } from '@contexts/kitchen-operations/kitchen-printer/application/kitchen-printer-dispatcher'
 import { OrderSentToKitchenEvent } from '@contexts/orders/order/domain/events/order-sent-to-kitchen.event'
+import { OrderType } from '@contexts/orders/order/domain/order-type'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('OnOrderSentPrintKitchenTicket', () => {
@@ -29,7 +30,8 @@ describe('OnOrderSentPrintKitchenTicket', () => {
       sentBy: 'waiter-1',
       sentAt: new Date(),
       tableId: null,
-      tableLabel: null
+      tableLabel: null,
+      orderType: OrderType.DINE_IN
     })
 
     await subscriber.on(event)

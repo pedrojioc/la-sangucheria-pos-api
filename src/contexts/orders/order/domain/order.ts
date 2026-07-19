@@ -280,7 +280,8 @@ export class Order extends AggregateRoot {
         sentBy,
         sentAt: ticket.sentAt,
         tableId: tableId ?? null,
-        tableLabel: tableLabel ?? null
+        tableLabel: tableLabel ?? null,
+        orderType: this.type
       })
     )
   }

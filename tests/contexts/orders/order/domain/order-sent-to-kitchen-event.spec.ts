@@ -2,6 +2,7 @@ import {
   OrderSentToKitchenEvent,
   OrderSentToKitchenPayload
 } from '@contexts/orders/order/domain/events/order-sent-to-kitchen.event'
+import { OrderType } from '@contexts/orders/order/domain/order-type'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('OrderSentToKitchenEvent', () => {
@@ -31,7 +32,8 @@ describe('OrderSentToKitchenEvent', () => {
         sentBy: 'waiter-1',
         sentAt,
         tableId: null,
-        tableLabel: null
+        tableLabel: null,
+        orderType: OrderType.DINE_IN
       }
 
       const event = new OrderSentToKitchenEvent(payload)
@@ -43,10 +45,6 @@ describe('OrderSentToKitchenEvent', () => {
       expect(primitives.items[0].productName).toBe('Choripan')
       expect(primitives.items[0].quantity).toBe(2)
       expect(primitives.items[0].notes).toBe('Extra chimichurri')
-    })
-
-    it('should have VERSION 3', () => {
-      expect(OrderSentToKitchenEvent.VERSION).toBe(3)
     })
 
     it('should roundtrip through fromPrimitives with tableId and tableLabel', () => {
@@ -69,7 +67,8 @@ describe('OrderSentToKitchenEvent', () => {
         sentBy: 'waiter-1',
         sentAt,
         tableId,
-        tableLabel: 'Mesa 5'
+        tableLabel: 'Mesa 5',
+        orderType: OrderType.DINE_IN
       }
 
       const event = OrderSentToKitchenEvent.fromPrimitives({
@@ -127,6 +126,194 @@ describe('OrderSentToKitchenEvent', () => {
       const result = event.toPrimitives()
       expect(result.tableId).toBeNull()
       expect(result.tableLabel).toBeNull()
+    })
+  })
+
+  describe('v4 payload — orderType', () => {
+    it('should carry orderType and have VERSION 4', () => {
+      const orderId = UuidMother.random()
+      const ticketId = UuidMother.random()
+      const itemId = UuidMother.random()
+
+      const payload: OrderSentToKitchenPayload = {
+        orderId,
+        orderNumber: '#004',
+        ticketId,
+        ticketNumber: 1,
+        items: [
+          {
+            itemId,
+            stationId: null,
+            productName: 'Choripan',
+            quantity: 1,
+            notes: null,
+            modifiers: []
+          }
+        ],
+        sentBy: 'waiter-1',
+        sentAt: new Date(),
+        tableId: null,
+        tableLabel: null,
+        orderType: OrderType.TAKEOUT
+      }
+
+      const event = new OrderSentToKitchenEvent(payload)
+
+      expect(event.toPrimitives().orderType).toBe(OrderType.TAKEOUT)
+      expect(OrderSentToKitchenEvent.VERSION).toBe(4)
+    })
+
+    it('should default orderType to DINE_IN when deserializing v3 payload without orderType', () => {
+      const orderId = UuidMother.random()
+      const ticketId = UuidMother.random()
+      const itemId = UuidMother.random()
+      const tableId = UuidMother.random()
+      const sentAt = new Date()
+
+      const v3Payload = {
+        orderId,
+        orderNumber: '#005',
+        ticketId,
+        ticketNumber: 1,
+        items: [
+          {
+            itemId,
+            stationId: null,
+            productName: 'Empanada',
+            quantity: 1,
+            notes: null,
+            modifiers: []
+          }
+        ],
+        sentBy: 'waiter-1',
+        sentAt,
+        tableId,
+        tableLabel: 'Mesa 5'
+      }
+
+      const event = OrderSentToKitchenEvent.fromPrimitives({
+        aggregateId: orderId,
+        eventId: UuidMother.random(),
+        occurredOn: sentAt,
+        payload: v3Payload,
+        metadata: {},
+        version: 3
+      })
+
+      const result = event.toPrimitives()
+      expect(result.orderType).toBe(OrderType.DINE_IN)
+      expect(result.tableId).toBe(tableId)
+      expect(result.tableLabel).toBe('Mesa 5')
+    })
+
+    it('should default orderType to DINE_IN when deserializing v2 payload without orderType', () => {
+      const orderId = UuidMother.random()
+      const ticketId = UuidMother.random()
+      const itemId = UuidMother.random()
+      const sentAt = new Date()
+
+      const v2Payload = {
+        orderId,
+        orderNumber: '#006',
+        ticketId,
+        ticketNumber: 1,
+        items: [
+          {
+            itemId,
+            stationId: null,
+            productName: 'Empanada',
+            quantity: 1,
+            notes: null,
+            modifiers: []
+          }
+        ],
+        sentBy: 'waiter-1',
+        sentAt
+      }
+
+      const event = OrderSentToKitchenEvent.fromPrimitives({
+        aggregateId: orderId,
+        eventId: UuidMother.random(),
+        occurredOn: sentAt,
+        payload: v2Payload,
+        metadata: {},
+        version: 2
+      })
+
+      const result = event.toPrimitives()
+      expect(result.tableId).toBeNull()
+      expect(result.tableLabel).toBeNull()
+      expect(result.orderType).toBe(OrderType.DINE_IN)
+    })
+
+    it('should default orderType to DINE_IN when deserializing v1 payload', () => {
+      const orderId = UuidMother.random()
+      const ticketId = UuidMother.random()
+      const itemId1 = UuidMother.random()
+
+      const v1Payload = {
+        orderId,
+        ticketId,
+        ticketNumber: 1,
+        itemIds: [itemId1],
+        sentBy: 'waiter-1',
+        sentAt: new Date()
+      }
+
+      const event = OrderSentToKitchenEvent.fromPrimitives({
+        aggregateId: orderId,
+        eventId: UuidMother.random(),
+        occurredOn: new Date(),
+        payload: v1Payload,
+        metadata: {},
+        version: 1
+      })
+
+      const result = event.toPrimitives()
+      expect(result.items[0].productName).toBe('')
+      expect(result.items[0].quantity).toBe(0)
+      expect(result.items[0].stationId).toBeNull()
+      expect(result.orderType).toBe(OrderType.DINE_IN)
+    })
+
+    it('should roundtrip explicit orderType on v4 payload', () => {
+      const orderId = UuidMother.random()
+      const ticketId = UuidMother.random()
+      const itemId = UuidMother.random()
+      const sentAt = new Date()
+
+      const v4Payload = {
+        orderId,
+        orderNumber: '#007',
+        ticketId,
+        ticketNumber: 1,
+        items: [
+          {
+            itemId,
+            stationId: null,
+            productName: 'Empanada',
+            quantity: 1,
+            notes: null,
+            modifiers: []
+          }
+        ],
+        sentBy: 'waiter-1',
+        sentAt,
+        tableId: null,
+        tableLabel: null,
+        orderType: OrderType.DELIVERY
+      }
+
+      const event = OrderSentToKitchenEvent.fromPrimitives({
+        aggregateId: orderId,
+        eventId: UuidMother.random(),
+        occurredOn: sentAt,
+        payload: v4Payload,
+        metadata: {},
+        version: 4
+      })
+
+      expect(event.toPrimitives().orderType).toBe(OrderType.DELIVERY)
     })
   })
 

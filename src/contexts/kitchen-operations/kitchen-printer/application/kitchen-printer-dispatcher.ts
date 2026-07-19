@@ -42,6 +42,10 @@ export class KitchenPrinterDispatcher {
         tableLabel: payload.tableLabel ?? 'Para llevar',
         stationName: station.stationName,
         printerAddress: station.printerAddress,
+        sentAt: payload.sentAt,
+        orderType: payload.orderType,
+        // isReprint is hardcoded false until reprint trigger ships — see kitchen-ticket-design follow-up
+        isReprint: false,
         items: stationItems.map(item => ({
           productName: item.productName,
           quantity: item.quantity,
@@ -58,7 +62,8 @@ export class KitchenPrinterDispatcher {
           printerAddress: station.printerAddress,
           error: err instanceof Error ? err.message : String(err)
         })
-        // TODO: manual reprint flow — out of scope
+        // Manual reprint flow is out of scope — isReprint is hardcoded false until
+        // the reprint trigger ships (see kitchen-ticket-design follow-up).
         // continue to next station; do not rethrow
       }
     }

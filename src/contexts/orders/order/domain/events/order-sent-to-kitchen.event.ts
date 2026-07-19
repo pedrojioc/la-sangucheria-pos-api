@@ -3,6 +3,7 @@ import {
   DomainEventMetadata,
   DomainEventFromPrimitivesParams
 } from '@shared/domain/events'
+import { OrderType } from '@contexts/orders/order/domain/order-type'
 
 export interface SentToKitchenItem {
   itemId: string
@@ -28,6 +29,11 @@ export interface OrderSentToKitchenPayload {
    */
   tableId: string | null
   tableLabel: string | null
+  /**
+   * v4 field — order type frozen at send time.
+   * Defaults to DINE_IN when deserializing v1/v2/v3 payloads (backward compat).
+   */
+  orderType: OrderType
 }
 
 /**
@@ -45,7 +51,7 @@ interface OrderSentToKitchenPayloadV1 {
 
 export class OrderSentToKitchenEvent extends DomainEvent {
   static readonly EVENT_NAME = 'order.sent_to_kitchen'
-  static readonly VERSION = 3
+  static readonly VERSION = 4
 
   constructor(
     payload: OrderSentToKitchenPayload,
@@ -94,7 +100,9 @@ export class OrderSentToKitchenEvent extends DomainEvent {
           sentAt: v1.sentAt,
           // v1 payloads pre-date table context — default both fields to null
           tableId: null,
-          tableLabel: null
+          tableLabel: null,
+          // v1 payloads pre-date order type — default to DINE_IN
+          orderType: OrderType.DINE_IN
         },
         params.metadata,
         params.eventId,
@@ -102,12 +110,13 @@ export class OrderSentToKitchenEvent extends DomainEvent {
       )
     }
 
-    // v2 payloads pre-date table context — default both fields to null for backward compat
+    // v2/v3 payloads pre-date table context and/or order type — default missing fields for backward compat
     return new OrderSentToKitchenEvent(
       {
-        ...(raw as Omit<OrderSentToKitchenPayload, 'tableId' | 'tableLabel'>),
+        ...(raw as Omit<OrderSentToKitchenPayload, 'tableId' | 'tableLabel' | 'orderType'>),
         tableId: (raw as any).tableId ?? null,
-        tableLabel: (raw as any).tableLabel ?? null
+        tableLabel: (raw as any).tableLabel ?? null,
+        orderType: (raw as any).orderType ?? OrderType.DINE_IN
       } as OrderSentToKitchenPayload,
       params.metadata,
       params.eventId,

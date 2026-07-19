@@ -5,6 +5,7 @@ import {
 } from '@contexts/kitchen-operations/kitchen-board/domain/kitchen-board-item.repository'
 import { KitchenBoardEventEmitter } from '@contexts/kitchen-operations/kitchen-board/application/services/kitchen-board-event-emitter'
 import { OrderSentToKitchenEvent } from '@contexts/orders/order/domain/events/order-sent-to-kitchen.event'
+import { OrderType } from '@contexts/orders/order/domain/order-type'
 import { OrderItemReadyEvent } from '@contexts/orders/order/domain/events/order-item-ready.event'
 import { OrderItemDeliveredEvent } from '@contexts/orders/order/domain/events/order-item-delivered.event'
 import { OrderItemCancelledEvent } from '@contexts/orders/order/domain/events/order-item-cancelled.event'
@@ -75,7 +76,8 @@ describe('KitchenBoardProjector', () => {
         sentBy: 'user-1',
         sentAt,
         tableId: null,
-        tableLabel: null
+        tableLabel: null,
+        orderType: OrderType.DINE_IN
       })
 
       await projector.on(event)
@@ -132,7 +134,8 @@ describe('KitchenBoardProjector', () => {
         sentBy: 'user-1',
         sentAt: new Date(),
         tableId: null,
-        tableLabel: null
+        tableLabel: null,
+        orderType: OrderType.DINE_IN
       })
 
       await projector.on(event)

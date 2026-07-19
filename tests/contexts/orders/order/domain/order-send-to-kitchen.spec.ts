@@ -1,4 +1,5 @@
 import { OrderStatus } from '@contexts/orders/order/domain/order-status'
+import { OrderType } from '@contexts/orders/order/domain/order-type'
 import {
   OrderSentToKitchenEvent,
   SentToKitchenItem
@@ -156,8 +157,8 @@ describe('Order - sendToKitchen', () => {
       ).toThrow(OrderHasNoPendingItems)
     })
 
-    it('should set event VERSION to 3', () => {
-      expect(OrderSentToKitchenEvent.VERSION).toBe(3)
+    it('should set event VERSION to 4', () => {
+      expect(OrderSentToKitchenEvent.VERSION).toBe(4)
     })
 
     it('should include tableId and tableLabel in event payload when provided', () => {
@@ -198,6 +199,56 @@ describe('Order - sendToKitchen', () => {
       const payload = events.find(e => e instanceof OrderSentToKitchenEvent)!.toPrimitives()
       expect(payload.tableId).toBeNull()
       expect(payload.tableLabel).toBeNull()
+    })
+  })
+
+  describe('orderType enrichment', () => {
+    it('should include DINE_IN orderType in event payload', () => {
+      const itemId = UuidMother.random()
+      const order = OrderMother.create({
+        type: OrderType.DINE_IN,
+        items: [OrderItemMother.pending({ id: itemId })]
+      })
+
+      order.pullDomainEvents()
+      order.sendToKitchen(UuidMother.random(), [itemId], UuidMother.random())
+
+      const events = order.pullDomainEvents()
+      const payload = events.find(e => e instanceof OrderSentToKitchenEvent)!.toPrimitives()
+      expect(payload.orderType).toBe(OrderType.DINE_IN)
+    })
+
+    it('should include TAKEOUT orderType in event payload and keep table fields null', () => {
+      const itemId = UuidMother.random()
+      const order = OrderMother.create({
+        type: OrderType.TAKEOUT,
+        tableId: null,
+        items: [OrderItemMother.pending({ id: itemId })]
+      })
+
+      order.pullDomainEvents()
+      order.sendToKitchen(UuidMother.random(), [itemId], UuidMother.random())
+
+      const events = order.pullDomainEvents()
+      const payload = events.find(e => e instanceof OrderSentToKitchenEvent)!.toPrimitives()
+      expect(payload.orderType).toBe(OrderType.TAKEOUT)
+      expect(payload.tableId).toBeNull()
+      expect(payload.tableLabel).toBeNull()
+    })
+
+    it('should include DELIVERY orderType in event payload', () => {
+      const itemId = UuidMother.random()
+      const order = OrderMother.create({
+        type: OrderType.DELIVERY,
+        items: [OrderItemMother.pending({ id: itemId })]
+      })
+
+      order.pullDomainEvents()
+      order.sendToKitchen(UuidMother.random(), [itemId], UuidMother.random())
+
+      const events = order.pullDomainEvents()
+      const payload = events.find(e => e instanceof OrderSentToKitchenEvent)!.toPrimitives()
+      expect(payload.orderType).toBe(OrderType.DELIVERY)
     })
   })
 })
