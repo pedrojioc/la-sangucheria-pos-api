@@ -38,7 +38,9 @@ export class StationController {
       displayOrder: dto.displayOrder,
       color: dto.color ?? null,
       outputDevice: dto.outputDevice,
-      printerAddress: dto.printerAddress ?? null
+      printerAddress: dto.printerAddress ?? null,
+      connectionType: dto.connectionType,
+      usbIdentifier: dto.usbIdentifier ?? null
     })
   }
 
@@ -63,7 +65,9 @@ export class StationController {
       isActive: dto.isActive,
       color: dto.color ?? null,
       outputDevice: dto.outputDevice,
-      printerAddress: dto.printerAddress ?? null
+      printerAddress: dto.printerAddress ?? null,
+      connectionType: dto.connectionType,
+      usbIdentifier: dto.usbIdentifier ?? null
     })
   }
 

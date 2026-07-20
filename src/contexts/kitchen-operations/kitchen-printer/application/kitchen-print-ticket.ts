@@ -4,7 +4,7 @@ export interface KitchenPrintTicket {
   ticketNumber: number
   tableLabel: string
   stationName: string
-  printerAddress: string
+  printerAddress: string | null
   sentAt: Date
   orderType: OrderType
   isReprint: boolean

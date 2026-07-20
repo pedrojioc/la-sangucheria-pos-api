@@ -2,6 +2,8 @@ import { Station } from '@contexts/kitchen-operations/station/domain/station'
 import { StationCreatedEvent } from '@contexts/kitchen-operations/station/domain/events/station-created.event'
 import { StationUpdatedEvent } from '@contexts/kitchen-operations/station/domain/events/station-updated.event'
 import { PrinterAddressRequired } from '@contexts/kitchen-operations/station/domain/exceptions/printer-address-required.exception'
+import { UsbIdentifierRequired } from '@contexts/kitchen-operations/station/domain/exceptions/usb-identifier-required.exception'
+import { StationConnectionTypeEnum } from '@contexts/kitchen-operations/station/domain/station-connection-type'
 import { StationMother } from '../__mothers__/station.mother'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
@@ -157,6 +159,110 @@ describe('Station (aggregate)', () => {
       expect(p.outputDevice).toBe('none')
       expect(p.printerAddress).toBeNull()
     })
+
+    it('should default connectionType to NETWORK when omitted', () => {
+      const station = Station.create({
+        id: UuidMother.random(),
+        name: 'Grill',
+        displayOrder: 0,
+        color: null
+      })
+      const p = station.toPrimitives()
+
+      expect(p.connectionType).toBe(StationConnectionTypeEnum.NETWORK)
+    })
+
+    it('should throw PrinterAddressRequired for PRINTER + NETWORK without printerAddress', () => {
+      expect(() =>
+        Station.create({
+          id: UuidMother.random(),
+          name: 'Receipt',
+          displayOrder: 0,
+          color: null,
+          outputDevice: 'printer',
+          connectionType: 'network'
+        })
+      ).toThrow(PrinterAddressRequired)
+    })
+
+    it('should throw UsbIdentifierRequired for PRINTER + USB without usbIdentifier', () => {
+      expect(() =>
+        Station.create({
+          id: UuidMother.random(),
+          name: 'Receipt',
+          displayOrder: 0,
+          color: null,
+          outputDevice: 'printer',
+          connectionType: 'usb'
+        })
+      ).toThrow(UsbIdentifierRequired)
+    })
+
+    it('should create PRINTER + USB with a valid identifier and null printerAddress', () => {
+      const station = Station.create({
+        id: UuidMother.random(),
+        name: 'Receipt',
+        displayOrder: 0,
+        color: null,
+        outputDevice: 'printer',
+        connectionType: 'usb',
+        usbIdentifier: 'USB001'
+      })
+      const p = station.toPrimitives()
+
+      expect(p.outputDevice).toBe('printer')
+      expect(p.connectionType).toBe(StationConnectionTypeEnum.USB)
+      expect(p.usbIdentifier).toBe('USB001')
+      expect(p.printerAddress).toBeNull()
+    })
+
+    it('should throw PrinterAddressRequired for PRINTER + NETWORK even when a usbIdentifier is supplied', () => {
+      expect(() =>
+        Station.create({
+          id: UuidMother.random(),
+          name: 'Receipt',
+          displayOrder: 0,
+          color: null,
+          outputDevice: 'printer',
+          connectionType: 'network',
+          usbIdentifier: 'USB001'
+        })
+      ).toThrow(PrinterAddressRequired)
+    })
+
+    it('should silently null both printerAddress and usbIdentifier for KDS with USB connectionType', () => {
+      const station = Station.create({
+        id: UuidMother.random(),
+        name: 'Grill',
+        displayOrder: 0,
+        color: null,
+        outputDevice: 'kds',
+        connectionType: 'usb',
+        usbIdentifier: 'USB001'
+      })
+      const p = station.toPrimitives()
+
+      expect(p.outputDevice).toBe('kds')
+      expect(p.printerAddress).toBeNull()
+      expect(p.usbIdentifier).toBeNull()
+    })
+
+    it('should silently null both printerAddress and usbIdentifier for NONE with USB connectionType', () => {
+      const station = Station.create({
+        id: UuidMother.random(),
+        name: 'Archive',
+        displayOrder: 0,
+        color: null,
+        outputDevice: 'none',
+        connectionType: 'usb',
+        usbIdentifier: 'USB001'
+      })
+      const p = station.toPrimitives()
+
+      expect(p.outputDevice).toBe('none')
+      expect(p.printerAddress).toBeNull()
+      expect(p.usbIdentifier).toBeNull()
+    })
   })
 
   describe('update()', () => {
@@ -269,6 +375,22 @@ describe('Station (aggregate)', () => {
 
       expect(p.outputDevice).toBe('printer')
       expect(p.printerAddress).toBe('10.0.0.1:9100')
+    })
+
+    it('should throw UsbIdentifierRequired when switching connectionType to USB without a usbIdentifier', () => {
+      const station = StationMother.withPrinter('10.0.0.1:9100')
+
+      expect(() =>
+        station.update({
+          name: station.getName(),
+          displayOrder: 1,
+          isActive: true,
+          color: null,
+          outputDevice: 'printer',
+          connectionType: 'usb',
+          printerAddress: '10.0.0.1:9100'
+        })
+      ).toThrow(UsbIdentifierRequired)
     })
   })
 
