@@ -47,6 +47,7 @@ import { FloorElementModule } from '@contexts/restaurant/floor-element/floor-ele
 import { StationModule } from '@contexts/kitchen-operations/station/station.module'
 import { KitchenBoardModule } from '@contexts/kitchen-operations/kitchen-board/kitchen-board.module'
 import { KitchenPrinterModule } from '@contexts/kitchen-operations/kitchen-printer/kitchen-printer.module'
+import { AgentGatewayModule } from '@contexts/kitchen-operations/agent-gateway/agent-gateway.module'
 
 // Orders Modules
 import { OrderModule } from '@contexts/orders/order/order.module'
@@ -104,6 +105,7 @@ import { BillingModule } from '@contexts/billing/billing.module'
     StationModule,
     KitchenBoardModule,
     KitchenPrinterModule,
+    AgentGatewayModule,
 
     // =====================================
     // ORDERS
