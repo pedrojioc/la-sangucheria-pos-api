@@ -1,6 +1,8 @@
 import { KitchenPrinterDispatcher } from '@contexts/kitchen-operations/kitchen-printer/application/kitchen-printer-dispatcher'
 import { KitchenPrinterPort } from '@contexts/kitchen-operations/kitchen-printer/application/ports/kitchen-printer.port'
 import { PrinterStationResolverPort } from '@contexts/kitchen-operations/kitchen-printer/application/ports/printer-station-resolver.port'
+import { KitchenAgentNotifierPort } from '@contexts/kitchen-operations/kitchen-printer/application/ports/kitchen-agent-notifier.port'
+import { KitchenTicketPrintJobRepository } from '@contexts/kitchen-operations/kitchen-printer/domain/repositories/kitchen-ticket-print-job.repository'
 import { OrderSentToKitchenEvent } from '@contexts/orders/order/domain/events/order-sent-to-kitchen.event'
 import { OrderType } from '@contexts/orders/order/domain/order-type'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
@@ -9,6 +11,8 @@ describe('KitchenPrinterDispatcher', () => {
   let dispatcher: KitchenPrinterDispatcher
   let printerPort: jest.Mocked<KitchenPrinterPort>
   let stationResolver: jest.Mocked<PrinterStationResolverPort>
+  let agentNotifier: jest.Mocked<KitchenAgentNotifierPort>
+  let printJobRepository: jest.Mocked<KitchenTicketPrintJobRepository>
   let consoleErrorSpy: jest.SpyInstance
 
   beforeEach(() => {
@@ -20,9 +24,24 @@ describe('KitchenPrinterDispatcher', () => {
       resolvePrinterStations: jest.fn().mockResolvedValue([])
     } as jest.Mocked<PrinterStationResolverPort>
 
+    agentNotifier = {
+      notify: jest.fn().mockResolvedValue({ delivered: false })
+    } as jest.Mocked<KitchenAgentNotifierPort>
+
+    printJobRepository = {
+      save: jest.fn().mockResolvedValue(undefined),
+      search: jest.fn().mockResolvedValue(null),
+      searchUnprinted: jest.fn().mockResolvedValue([])
+    } as jest.Mocked<KitchenTicketPrintJobRepository>
+
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined)
 
-    dispatcher = new KitchenPrinterDispatcher(printerPort, stationResolver)
+    dispatcher = new KitchenPrinterDispatcher(
+      printerPort,
+      stationResolver,
+      agentNotifier,
+      printJobRepository
+    )
   })
 
   afterEach(() => {
@@ -350,5 +369,257 @@ describe('KitchenPrinterDispatcher', () => {
 
     const ticket = printerPort.print.mock.calls[0][0]
     expect(ticket.isReprint).toBe(false)
+  })
+
+  it('routes a USB station to the agent notifier instead of printerPort.print', async () => {
+    const stationId = UuidMother.random()
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId,
+        stationName: 'Barra USB',
+        connectionType: 'usb',
+        printerAddress: null,
+        usbIdentifier: 'usb-device-1'
+      }
+    ])
+
+    agentNotifier.notify.mockResolvedValue({ delivered: true })
+
+    await dispatcher.run(event)
+
+    expect(printerPort.print).not.toHaveBeenCalled()
+    expect(agentNotifier.notify).toHaveBeenCalledTimes(1)
+    expect(agentNotifier.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ stationName: 'Barra USB' }),
+      expect.any(String)
+    )
+  })
+
+  it('creates a pending KitchenTicketPrintJob before notifying the USB station', async () => {
+    const stationId = UuidMother.random()
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId,
+        stationName: 'Barra USB',
+        connectionType: 'usb',
+        printerAddress: null,
+        usbIdentifier: 'usb-device-1'
+      }
+    ])
+
+    agentNotifier.notify.mockResolvedValue({ delivered: false })
+
+    await dispatcher.run(event)
+
+    expect(printJobRepository.save).toHaveBeenCalledTimes(1)
+    const savedJob = printJobRepository.save.mock.calls[0][0]
+    expect(savedJob.toPrimitives().status).toBe('pending')
+    expect(savedJob.toPrimitives().stationName).toBe('Barra USB')
+  })
+
+  it('transitions the job to delivered when notify resolves delivered:true', async () => {
+    const stationId = UuidMother.random()
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId,
+        stationName: 'Barra USB',
+        connectionType: 'usb',
+        printerAddress: null,
+        usbIdentifier: 'usb-device-1'
+      }
+    ])
+
+    agentNotifier.notify.mockResolvedValue({ delivered: true })
+
+    await dispatcher.run(event)
+
+    expect(printJobRepository.save).toHaveBeenCalledTimes(2)
+    const finalSavedJob = printJobRepository.save.mock.calls[1][0]
+    expect(finalSavedJob.toPrimitives().status).toBe('delivered')
+  })
+
+  it('leaves the job pending when notify resolves delivered:false (no agent connected)', async () => {
+    const stationId = UuidMother.random()
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId,
+        stationName: 'Barra USB',
+        connectionType: 'usb',
+        printerAddress: null,
+        usbIdentifier: 'usb-device-1'
+      }
+    ])
+
+    agentNotifier.notify.mockResolvedValue({ delivered: false })
+
+    await dispatcher.run(event)
+
+    expect(printJobRepository.save).toHaveBeenCalledTimes(1)
+    const savedJob = printJobRepository.save.mock.calls[0][0]
+    expect(savedJob.toPrimitives().status).toBe('pending')
+  })
+
+  it('runs mixed NETWORK and USB stations independently in the same dispatch', async () => {
+    const networkStationId = UuidMother.random()
+    const usbStationId = UuidMother.random()
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId: networkStationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        },
+        {
+          itemId: UuidMother.random(),
+          stationId: usbStationId,
+          productName: 'Milanesa',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId: networkStationId,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null
+      },
+      {
+        stationId: usbStationId,
+        stationName: 'Barra USB',
+        connectionType: 'usb',
+        printerAddress: null,
+        usbIdentifier: 'usb-device-1'
+      }
+    ])
+
+    agentNotifier.notify.mockResolvedValue({ delivered: true })
+
+    await dispatcher.run(event)
+
+    expect(printerPort.print).toHaveBeenCalledTimes(1)
+    expect(printerPort.print).toHaveBeenCalledWith(
+      expect.objectContaining({ stationName: 'Parrilla' })
+    )
+    expect(agentNotifier.notify).toHaveBeenCalledTimes(1)
+    expect(agentNotifier.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ stationName: 'Barra USB' }),
+      expect.any(String)
+    )
+  })
+
+  it('a NETWORK print failure does not prevent USB delivery to another station', async () => {
+    const networkStationId = UuidMother.random()
+    const usbStationId = UuidMother.random()
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId: networkStationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        },
+        {
+          itemId: UuidMother.random(),
+          stationId: usbStationId,
+          productName: 'Milanesa',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId: networkStationId,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null
+      },
+      {
+        stationId: usbStationId,
+        stationName: 'Barra USB',
+        connectionType: 'usb',
+        printerAddress: null,
+        usbIdentifier: 'usb-device-1'
+      }
+    ])
+
+    printerPort.print.mockRejectedValueOnce(new Error('TCP timeout'))
+    agentNotifier.notify.mockResolvedValue({ delivered: true })
+
+    await expect(dispatcher.run(event)).resolves.toBeUndefined()
+
+    expect(consoleErrorSpy).toHaveBeenCalled()
+    expect(agentNotifier.notify).toHaveBeenCalledTimes(1)
   })
 })

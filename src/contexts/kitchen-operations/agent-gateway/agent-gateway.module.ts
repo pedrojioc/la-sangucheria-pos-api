@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
 
 import { AuthenticationModule } from '@contexts/iam/authentication/authentication.module'
 import { JwtService } from '@contexts/iam/authentication/domain/services/jwt.service'
@@ -13,7 +13,9 @@ import { AcknowledgePrintJob } from '@contexts/kitchen-operations/kitchen-printe
 import { KitchenPrinterModule } from '@contexts/kitchen-operations/kitchen-printer/kitchen-printer.module'
 
 @Module({
-  imports: [AuthenticationModule, KitchenPrinterModule],
+  // KitchenPrinterModule imports AgentGatewayModule (for KitchenAgentNotifierPort),
+  // so this side must use forwardRef to break the circular dependency.
+  imports: [AuthenticationModule, forwardRef(() => KitchenPrinterModule)],
   providers: [
     // REGISTRY
     AgentConnectionRegistry,

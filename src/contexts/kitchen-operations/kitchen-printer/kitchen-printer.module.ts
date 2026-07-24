@@ -1,21 +1,32 @@
-import { Module, OnModuleInit } from '@nestjs/common'
+import { forwardRef, Module, OnModuleInit } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { EventBus } from '@shared/domain/events'
 import { createProvider } from '@core/utils/create-provider'
+import { AgentGatewayModule } from '@contexts/kitchen-operations/agent-gateway/agent-gateway.module'
 
 import { KitchenPrinterPort } from './application/ports/kitchen-printer.port'
 import { PrinterStationResolverPort } from './application/ports/printer-station-resolver.port'
+import { KitchenAgentNotifierPort } from './application/ports/kitchen-agent-notifier.port'
 import { KitchenPrinterDispatcher } from './application/kitchen-printer-dispatcher'
+import { ReprintKitchenTicket } from './application/reprint/reprint-kitchen-ticket'
+import { FindUnprintedPrintJobs } from './application/find-unprinted/find-unprinted-print-jobs'
 import { OnOrderSentPrintKitchenTicket } from './application/subscribers/on-order-sent-print-kitchen-ticket'
 import { EscPosKitchenPrinterAdapter } from './infrastructure/adapters/esc-pos-kitchen-printer.adapter'
 import { TypeOrmPrinterStationResolverAdapter } from './infrastructure/adapters/typeorm-printer-station-resolver.adapter'
 import { KitchenTicketPrintJobRepository } from './domain/repositories/kitchen-ticket-print-job.repository'
 import { KitchenTicketPrintJobEntity } from './infrastructure/persistence/typeorm/kitchen-ticket-print-job.entity'
 import { TypeOrmKitchenTicketPrintJobRepository } from './infrastructure/persistence/typeorm/typeorm-kitchen-ticket-print-job.repository'
+import { KitchenPrintJobController } from './presentation/http/controllers/kitchen-print-job.controller'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([KitchenTicketPrintJobEntity])],
+  imports: [
+    TypeOrmModule.forFeature([KitchenTicketPrintJobEntity]),
+    // AgentGatewayModule imports KitchenPrinterModule (for KitchenTicketPrintJobRepository),
+    // so this side must use forwardRef to break the circular dependency.
+    forwardRef(() => AgentGatewayModule)
+  ],
+  controllers: [KitchenPrintJobController],
   providers: [
     // PORTS → ADAPTERS
     {
@@ -28,17 +39,23 @@ import { TypeOrmKitchenTicketPrintJobRepository } from './infrastructure/persist
     },
 
     // REPOSITORIES
-    // KitchenTicketPrintJob is not yet wired into the dispatcher — that
-    // integration is scoped to a later change (dispatcher branching by
-    // connectionType). This binding only exists so AgentGatewayModule's
-    // AcknowledgePrintJob use case can resolve the repository.
     {
       provide: KitchenTicketPrintJobRepository,
       useClass: TypeOrmKitchenTicketPrintJobRepository
     },
 
-    // USE CASE / DISPATCHER
-    createProvider(KitchenPrinterDispatcher, [KitchenPrinterPort, PrinterStationResolverPort]),
+    // USE CASES / DISPATCHER
+    createProvider(KitchenPrinterDispatcher, [
+      KitchenPrinterPort,
+      PrinterStationResolverPort,
+      KitchenAgentNotifierPort,
+      KitchenTicketPrintJobRepository
+    ]),
+    createProvider(ReprintKitchenTicket, [
+      KitchenTicketPrintJobRepository,
+      KitchenAgentNotifierPort
+    ]),
+    createProvider(FindUnprintedPrintJobs, [KitchenTicketPrintJobRepository]),
 
     // SUBSCRIBER
     {
