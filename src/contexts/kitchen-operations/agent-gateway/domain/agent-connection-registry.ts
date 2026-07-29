@@ -1,10 +1,9 @@
-// v1: a single active printing agent. Keyed by a fixed constant today; the
-// key-derivation function is isolated so a future multi-tenant change can
-// swap it for `establishmentId` without touching the gateway/dispatcher.
-const AGENT_KEY = 'default'
+import { EstablishmentId } from '@contexts/establishment/establishment/domain/establishment-id'
 
-function deriveAgentKey(): string {
-  return AGENT_KEY
+// Keyed by the authenticated connection's EstablishmentId, resolved from the
+// verified AgentCredential at handshake time (no more hardcoded 'default').
+function deriveAgentKey(establishmentId: EstablishmentId): string {
+  return establishmentId.value
 }
 
 // Structural contract for a registered agent connection — a socket.io Socket
@@ -17,18 +16,18 @@ export interface AgentConnection {
 export class AgentConnectionRegistry {
   private readonly connections = new Map<string, AgentConnection>()
 
-  register(connection: AgentConnection): void {
-    this.connections.set(deriveAgentKey(), connection)
+  register(establishmentId: EstablishmentId, connection: AgentConnection): void {
+    this.connections.set(deriveAgentKey(establishmentId), connection)
   }
 
-  unregister(connection: AgentConnection): void {
-    const key = deriveAgentKey()
+  unregister(establishmentId: EstablishmentId, connection: AgentConnection): void {
+    const key = deriveAgentKey(establishmentId)
     if (this.connections.get(key) === connection) {
       this.connections.delete(key)
     }
   }
 
-  current(): AgentConnection | undefined {
-    return this.connections.get(deriveAgentKey())
+  current(establishmentId: EstablishmentId): AgentConnection | undefined {
+    return this.connections.get(deriveAgentKey(establishmentId))
   }
 }

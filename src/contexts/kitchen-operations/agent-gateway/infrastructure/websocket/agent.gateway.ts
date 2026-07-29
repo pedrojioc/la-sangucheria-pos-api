@@ -9,47 +9,94 @@ import {
 import { Socket } from 'socket.io'
 
 import { AgentConnectionRegistry } from '@contexts/kitchen-operations/agent-gateway/domain/agent-connection-registry'
-import { JwtService } from '@contexts/iam/authentication/domain/services/jwt.service'
+import { AgentCredentialVerifierPort } from '@contexts/kitchen-operations/agent-credential/domain/services/agent-credential-verifier.port'
 import { AcknowledgePrintJob } from '@contexts/kitchen-operations/kitchen-printer/application/acknowledge/acknowledge-print-job'
+import { RecordDiscoveredDevice } from '@contexts/kitchen-operations/printer-discovery/application/record/record-discovered-device'
+import { DiscoveredPrinterDeviceConnectionType } from '@contexts/kitchen-operations/printer-discovery/domain/discovered-printer-device'
+import { EstablishmentId } from '@contexts/establishment/establishment/domain/establishment-id'
+
+interface ReportDevicesPayload {
+  devices: Array<{
+    connectionType: DiscoveredPrinterDeviceConnectionType
+    address?: string
+    usbIdentifier?: string
+  }>
+}
+
+// Sockets authenticated on this namespace get their resolved EstablishmentId
+// stashed here for the lifetime of the connection (register/report-devices/
+// disconnect all need it, and socket.io gives us no other typed extension
+// point without augmenting the library's Socket interface).
+const resolvedEstablishmentIds = new WeakMap<Socket, EstablishmentId>()
 
 // The global HTTP JWT guard does NOT cover WebSocket connections — this
 // gateway performs its own handshake authentication and disconnects
-// unauthenticated sockets.
+// unauthenticated sockets. Authentication is now via AgentCredentialVerifierPort
+// (establishment-scoped pairing key), not a human JWT.
 @WebSocketGateway({ namespace: '/agent' })
 export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly registry: AgentConnectionRegistry,
-    private readonly jwtService: JwtService,
-    private readonly acknowledgePrintJob: AcknowledgePrintJob
+    private readonly verifier: AgentCredentialVerifierPort,
+    private readonly acknowledgePrintJob: AcknowledgePrintJob,
+    private readonly recordDiscoveredDevice: RecordDiscoveredDevice
   ) {}
 
   async handleConnection(socket: Socket): Promise<void> {
-    const token = socket.handshake.auth?.token as string | undefined
+    const key = socket.handshake.auth?.key as string | undefined
 
-    if (!token) {
+    if (!key) {
       socket.disconnect(true)
       return
     }
 
-    try {
-      await this.jwtService.verifyAccessToken(token)
-    } catch {
+    const establishmentId = await this.verifier.verify(key)
+
+    if (!establishmentId) {
       socket.disconnect(true)
+      return
     }
+
+    resolvedEstablishmentIds.set(socket, new EstablishmentId(establishmentId))
   }
 
   handleDisconnect(socket: Socket): void {
-    this.registry.unregister(socket)
+    const establishmentId = resolvedEstablishmentIds.get(socket)
+    if (!establishmentId) return
+
+    this.registry.unregister(establishmentId, socket)
+    resolvedEstablishmentIds.delete(socket)
   }
 
   @SubscribeMessage('register-agent')
   handleRegisterAgent(@ConnectedSocket() socket: Socket): { registered: boolean } {
-    this.registry.register(socket)
+    const establishmentId = resolvedEstablishmentIds.get(socket)
+    if (!establishmentId) return { registered: false }
+
+    this.registry.register(establishmentId, socket)
     return { registered: true }
   }
 
   @SubscribeMessage('print-ack')
   async handlePrintAck(@MessageBody() payload: { jobId: string }): Promise<void> {
     await this.acknowledgePrintJob.run(payload.jobId)
+  }
+
+  @SubscribeMessage('report-devices')
+  async handleReportDevices(
+    @MessageBody() payload: ReportDevicesPayload,
+    @ConnectedSocket() socket: Socket
+  ): Promise<void> {
+    const establishmentId = resolvedEstablishmentIds.get(socket)
+    if (!establishmentId) return
+
+    for (const device of payload.devices) {
+      await this.recordDiscoveredDevice.run({
+        establishmentId: establishmentId.value,
+        connectionType: device.connectionType,
+        address: device.address,
+        usbIdentifier: device.usbIdentifier
+      })
+    }
   }
 }
