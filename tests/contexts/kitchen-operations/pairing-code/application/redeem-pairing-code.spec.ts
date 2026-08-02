@@ -58,7 +58,7 @@ describe('RedeemPairingCode', () => {
     expect(issueAgentCredential.run).not.toHaveBeenCalled()
   })
 
-  it('consumes the code, issues a credential for the establishment, and returns the plaintext apiKey', async () => {
+  it('consumes the code, issues a credential for the establishment, and returns no secret in its result', async () => {
     const establishmentId = UuidMother.random()
     const pairingCode = PairingCodeMother.issued()
     const repository = mockRepository(pairingCode)
@@ -70,8 +70,22 @@ describe('RedeemPairingCode', () => {
     expect(pairingCode.getStatus()).toBe('consumed')
     expect(issueAgentCredential.run).toHaveBeenCalledWith(establishmentId)
     expect(pairingCode.getCredentialId()).not.toBeNull()
-    expect(result.apiKey).toBe('lspa_plaintext')
+    expect(result).not.toHaveProperty('apiKey')
     expect(result.code).toBe(pairingCode.code)
     expect(repository.save).toHaveBeenCalledWith(pairingCode)
+  })
+
+  it('attaches the freshly issued plaintext apiKey to the pairing code as its pending secret', async () => {
+    const establishmentId = UuidMother.random()
+    const pairingCode = PairingCodeMother.issued()
+    const repository = mockRepository(pairingCode)
+    const issueAgentCredential = mockIssueAgentCredential(establishmentId, 'lspa_plaintext')
+    const useCase = new RedeemPairingCode(repository, issueAgentCredential)
+
+    await useCase.run(pairingCode.code, establishmentId)
+
+    const savedCode = repository.save.mock.calls[0][0]
+    expect(savedCode.hasPendingSecret(new Date())).toBe(true)
+    expect(savedCode.retrieveAndWipeSecret(new Date())).toBe('lspa_plaintext')
   })
 })

@@ -4,7 +4,6 @@ import { IssueAgentCredential } from '@contexts/kitchen-operations/agent-credent
 
 export interface RedeemPairingCodeResult {
   code: string
-  apiKey: string
 }
 
 export class RedeemPairingCode {
@@ -30,8 +29,12 @@ export class RedeemPairingCode {
     pairingCode.consume(now)
     const { credential, plainSecret } = await this.issueAgentCredential.run(establishmentId)
     pairingCode.attachCredential(credential.id.value, now)
+    // Redeem needs NO pollToken and performs NO crypto — the plaintext
+    // pollToken lives only in the agent. This just persists the freshly
+    // issued apiKey under its own short TTL for `poll` to retrieve.
+    pairingCode.attachPendingSecret(plainSecret, now)
     await this.repository.save(pairingCode)
 
-    return { code: pairingCode.code, apiKey: plainSecret }
+    return { code: pairingCode.code }
   }
 }

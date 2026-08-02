@@ -10,6 +10,7 @@ import { Socket } from 'socket.io'
 
 import { AgentConnectionRegistry } from '@contexts/kitchen-operations/agent-gateway/domain/agent-connection-registry'
 import { AgentCredentialVerifierPort } from '@contexts/kitchen-operations/agent-credential/domain/services/agent-credential-verifier.port'
+import { RotateAgentCredentialIfNeeded } from '@contexts/kitchen-operations/agent-credential/application/rotate/rotate-agent-credential-if-needed'
 import { AcknowledgePrintJob } from '@contexts/kitchen-operations/kitchen-printer/application/acknowledge/acknowledge-print-job'
 import { RecordDiscoveredDevice } from '@contexts/kitchen-operations/printer-discovery/application/record/record-discovered-device'
 import { DiscoveredPrinterDeviceConnectionType } from '@contexts/kitchen-operations/printer-discovery/domain/discovered-printer-device'
@@ -29,6 +30,14 @@ interface ReportDevicesPayload {
 // point without augmenting the library's Socket interface).
 const resolvedEstablishmentIds = new WeakMap<Socket, EstablishmentId>()
 
+// Per-socket "last rotation-checked" throttle so busy print traffic does not
+// hammer RotateAgentCredentialIfNeeded's DB lookup on every message — the
+// vast majority of inbound messages short-circuit on this cheap timestamp
+// comparison. Message-driven-only rotation (design Decision (b)): NO
+// setInterval, NO cron, NO connection/disconnect wiring changes for rotation.
+const lastRotationCheckedAt = new WeakMap<Socket, number>()
+const ROTATION_CHECK_THROTTLE_MS = 60 * 1000
+
 // The global HTTP JWT guard does NOT cover WebSocket connections — this
 // gateway performs its own handshake authentication and disconnects
 // unauthenticated sockets. Authentication is now via AgentCredentialVerifierPort
@@ -39,7 +48,8 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly registry: AgentConnectionRegistry,
     private readonly verifier: AgentCredentialVerifierPort,
     private readonly acknowledgePrintJob: AcknowledgePrintJob,
-    private readonly recordDiscoveredDevice: RecordDiscoveredDevice
+    private readonly recordDiscoveredDevice: RecordDiscoveredDevice,
+    private readonly rotateAgentCredentialIfNeeded: RotateAgentCredentialIfNeeded
   ) {}
 
   async handleConnection(socket: Socket): Promise<void> {
@@ -66,10 +76,13 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.registry.unregister(establishmentId, socket)
     resolvedEstablishmentIds.delete(socket)
+    lastRotationCheckedAt.delete(socket)
   }
 
   @SubscribeMessage('register-agent')
   handleRegisterAgent(@ConnectedSocket() socket: Socket): { registered: boolean } {
+    void this.maybeRotate(socket)
+
     const establishmentId = resolvedEstablishmentIds.get(socket)
     if (!establishmentId) return { registered: false }
 
@@ -78,7 +91,11 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('print-ack')
-  async handlePrintAck(@MessageBody() payload: { jobId: string }): Promise<void> {
+  async handlePrintAck(
+    @MessageBody() payload: { jobId: string },
+    @ConnectedSocket() socket: Socket
+  ): Promise<void> {
+    await this.maybeRotate(socket)
     await this.acknowledgePrintJob.run(payload.jobId)
   }
 
@@ -87,6 +104,8 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() payload: ReportDevicesPayload,
     @ConnectedSocket() socket: Socket
   ): Promise<void> {
+    await this.maybeRotate(socket)
+
     const establishmentId = resolvedEstablishmentIds.get(socket)
     if (!establishmentId) return
 
@@ -97,6 +116,26 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
         address: device.address,
         usbIdentifier: device.usbIdentifier
       })
+    }
+  }
+
+  // Pure side-effecting prefix — never alters the caller's own handler
+  // contract or business behavior. Delivers a rotated credential over the
+  // SAME live socket that triggered the check (no registry lookup needed).
+  private async maybeRotate(socket: Socket): Promise<void> {
+    const establishmentId = resolvedEstablishmentIds.get(socket)
+    if (!establishmentId) return
+
+    const now = Date.now()
+    const lastChecked = lastRotationCheckedAt.get(socket)
+    if (lastChecked !== undefined && now - lastChecked < ROTATION_CHECK_THROTTLE_MS) {
+      return
+    }
+    lastRotationCheckedAt.set(socket, now)
+
+    const rotated = await this.rotateAgentCredentialIfNeeded.run(establishmentId.value)
+    if (rotated) {
+      socket.emit('agent-credential-rotated', { apiKey: rotated.plainSecret })
     }
   }
 }

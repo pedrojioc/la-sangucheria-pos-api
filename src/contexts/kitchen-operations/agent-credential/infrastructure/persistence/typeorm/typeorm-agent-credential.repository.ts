@@ -24,7 +24,8 @@ export class TypeOrmAgentCredentialRepository implements AgentCredentialReposito
       establishmentId: p.establishmentId,
       secretHash: p.secretHash,
       status: p.status,
-      gracePeriodEndsAt: p.gracePeriodEndsAt
+      gracePeriodEndsAt: p.gracePeriodEndsAt,
+      activeExpiresAt: p.activeExpiresAt
     })
   }
 
@@ -67,7 +68,8 @@ export class TypeOrmAgentCredentialRepository implements AgentCredentialReposito
       status: entity.status as AgentCredentialStatus,
       gracePeriodEndsAt: entity.gracePeriodEndsAt,
       createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt
+      updatedAt: entity.updatedAt,
+      activeExpiresAt: entity.activeExpiresAt
     })
   }
 }

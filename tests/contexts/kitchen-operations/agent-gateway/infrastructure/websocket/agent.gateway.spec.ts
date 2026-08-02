@@ -1,6 +1,7 @@
 import { AgentGateway } from '@contexts/kitchen-operations/agent-gateway/infrastructure/websocket/agent.gateway'
 import { AgentConnectionRegistry } from '@contexts/kitchen-operations/agent-gateway/domain/agent-connection-registry'
 import { AgentCredentialVerifierPort } from '@contexts/kitchen-operations/agent-credential/domain/services/agent-credential-verifier.port'
+import { RotateAgentCredentialIfNeeded } from '@contexts/kitchen-operations/agent-credential/application/rotate/rotate-agent-credential-if-needed'
 import { AcknowledgePrintJob } from '@contexts/kitchen-operations/kitchen-printer/application/acknowledge/acknowledge-print-job'
 import { RecordDiscoveredDevice } from '@contexts/kitchen-operations/printer-discovery/application/record/record-discovered-device'
 import { EstablishmentId } from '@contexts/establishment/establishment/domain/establishment-id'
@@ -24,6 +25,7 @@ describe('AgentGateway', () => {
   let verifier: jest.Mocked<AgentCredentialVerifierPort>
   let acknowledgePrintJob: jest.Mocked<AcknowledgePrintJob>
   let recordDiscoveredDevice: jest.Mocked<RecordDiscoveredDevice>
+  let rotateAgentCredentialIfNeeded: jest.Mocked<RotateAgentCredentialIfNeeded>
   let gateway: AgentGateway
   const establishmentId1 = EstablishmentId.random()
 
@@ -32,7 +34,16 @@ describe('AgentGateway', () => {
     verifier = { verify: jest.fn() } as unknown as jest.Mocked<AgentCredentialVerifierPort>
     acknowledgePrintJob = { run: jest.fn() } as unknown as jest.Mocked<AcknowledgePrintJob>
     recordDiscoveredDevice = { run: jest.fn() } as unknown as jest.Mocked<RecordDiscoveredDevice>
-    gateway = new AgentGateway(registry, verifier, acknowledgePrintJob, recordDiscoveredDevice)
+    rotateAgentCredentialIfNeeded = {
+      run: jest.fn().mockResolvedValue(null)
+    } as unknown as jest.Mocked<RotateAgentCredentialIfNeeded>
+    gateway = new AgentGateway(
+      registry,
+      verifier,
+      acknowledgePrintJob,
+      recordDiscoveredDevice,
+      rotateAgentCredentialIfNeeded
+    )
   })
 
   describe('handleConnection', () => {
@@ -109,7 +120,9 @@ describe('AgentGateway', () => {
 
   describe('print-ack', () => {
     it('invokes AcknowledgePrintJob.run with the received jobId', async () => {
-      await gateway.handlePrintAck({ jobId: 'job-1' })
+      const socket = buildSocket(undefined)
+
+      await gateway.handlePrintAck({ jobId: 'job-1' }, socket as any)
 
       expect(acknowledgePrintJob.run).toHaveBeenCalledWith('job-1')
     })
@@ -168,6 +181,86 @@ describe('AgentGateway', () => {
       )
 
       expect(recordDiscoveredDevice.run).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('maybeRotate (message-driven rotation, wired into every inbound handler)', () => {
+    it('checks rotation on the first inbound message after authentication', async () => {
+      verifier.verify.mockResolvedValue(establishmentId1.value)
+      const socket = buildSocket('good-key')
+      await gateway.handleConnection(socket as any)
+
+      gateway.handleRegisterAgent(socket as any)
+
+      expect(rotateAgentCredentialIfNeeded.run).toHaveBeenCalledWith(establishmentId1.value)
+    })
+
+    it('short-circuits within the 60s throttle window on subsequent messages (no repeated DB lookups)', async () => {
+      verifier.verify.mockResolvedValue(establishmentId1.value)
+      const socket = buildSocket('good-key')
+      await gateway.handleConnection(socket as any)
+
+      gateway.handleRegisterAgent(socket as any)
+      gateway.handleRegisterAgent(socket as any)
+      gateway.handleRegisterAgent(socket as any)
+
+      expect(rotateAgentCredentialIfNeeded.run).toHaveBeenCalledTimes(1)
+    })
+
+    it('emits agent-credential-rotated only when a rotation actually occurred', async () => {
+      verifier.verify.mockResolvedValue(establishmentId1.value)
+      rotateAgentCredentialIfNeeded.run.mockResolvedValue({ plainSecret: 'lspa_rotated' })
+      const socket = buildSocket('good-key')
+      await gateway.handleConnection(socket as any)
+
+      gateway.handleRegisterAgent(socket as any)
+      // maybeRotate is fire-and-forget (void) inside handleRegisterAgent —
+      // flush microtasks so the async rotation check resolves.
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(socket.emit).toHaveBeenCalledWith('agent-credential-rotated', {
+        apiKey: 'lspa_rotated'
+      })
+    })
+
+    it('does not emit agent-credential-rotated when no rotation is due', async () => {
+      verifier.verify.mockResolvedValue(establishmentId1.value)
+      rotateAgentCredentialIfNeeded.run.mockResolvedValue(null)
+      const socket = buildSocket('good-key')
+      await gateway.handleConnection(socket as any)
+
+      gateway.handleRegisterAgent(socket as any)
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(socket.emit).not.toHaveBeenCalledWith('agent-credential-rotated', expect.anything())
+    })
+
+    it('does not alter existing handler behavior/assertions (report-devices still delegates correctly)', async () => {
+      verifier.verify.mockResolvedValue(establishmentId1.value)
+      const socket = buildSocket('good-key')
+      await gateway.handleConnection(socket as any)
+
+      await gateway.handleReportDevices(
+        { devices: [{ connectionType: 'network', address: '192.168.1.50' }] },
+        socket as any
+      )
+
+      expect(recordDiscoveredDevice.run).toHaveBeenCalledWith({
+        establishmentId: establishmentId1.value,
+        connectionType: 'network',
+        address: '192.168.1.50',
+        usbIdentifier: undefined
+      })
+    })
+
+    it('does not check rotation for an unauthenticated socket', async () => {
+      const socket = buildSocket(undefined)
+
+      await gateway.handlePrintAck({ jobId: 'job-1' }, socket as any)
+
+      expect(rotateAgentCredentialIfNeeded.run).not.toHaveBeenCalled()
     })
   })
 })

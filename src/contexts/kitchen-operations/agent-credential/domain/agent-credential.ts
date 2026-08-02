@@ -6,6 +6,12 @@ import { AgentCredentialSecretHasher } from './services/agent-credential-secret-
 
 export const AGENT_CREDENTIAL_GRACE_PERIOD_MS = 48 * 60 * 60 * 1000 // 48h
 
+// See design Decision (c): 30 days is >>> the 48h grace period (15x),
+// giving a comfortable rotation window even for stations that only send
+// traffic intermittently.
+export const AGENT_CREDENTIAL_ACTIVE_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
+export const ROTATION_LEAD_MS = 3 * 24 * 60 * 60 * 1000 // 3 days
+
 export type AgentCredentialStatus = 'active' | 'superseded' | 'revoked'
 
 export interface AgentCredentialPrimitives {
@@ -16,6 +22,7 @@ export interface AgentCredentialPrimitives {
   gracePeriodEndsAt: Date | null
   createdAt: Date
   updatedAt: Date
+  activeExpiresAt: Date | null
 }
 
 export interface IssueAgentCredentialParams {
@@ -36,7 +43,8 @@ export class AgentCredential extends AggregateRoot {
     private status: AgentCredentialStatus,
     private gracePeriodEndsAt: Date | null,
     private readonly createdAt: Date,
-    private updatedAt: Date
+    private updatedAt: Date,
+    private activeExpiresAt: Date | null
   ) {
     super()
   }
@@ -56,7 +64,8 @@ export class AgentCredential extends AggregateRoot {
       'active',
       null,
       now,
-      now
+      now,
+      new Date(now.getTime() + AGENT_CREDENTIAL_ACTIVE_TTL_MS)
     )
 
     return { credential, plainSecret }
@@ -70,7 +79,8 @@ export class AgentCredential extends AggregateRoot {
       primitives.status,
       primitives.gracePeriodEndsAt,
       primitives.createdAt,
-      primitives.updatedAt
+      primitives.updatedAt,
+      primitives.activeExpiresAt
     )
   }
 
@@ -104,11 +114,28 @@ export class AgentCredential extends AggregateRoot {
   }
 
   isAuthenticatable(now: Date = new Date()): boolean {
-    if (this.status === 'active') return true
+    if (this.status === 'active') {
+      // Defensive bound: rotation fires ROTATION_LEAD_MS before expiry, so
+      // this should not normally trigger — but if rotation is somehow
+      // missed, a hard-expired active credential still stops authenticating
+      // rather than remaining valid forever.
+      if (this.activeExpiresAt !== null && now >= this.activeExpiresAt) return false
+      return true
+    }
     if (this.status === 'superseded' && this.gracePeriodEndsAt) {
       return now < this.gracePeriodEndsAt
     }
     return false
+  }
+
+  // TTL math stays entirely in the aggregate — no caller duplicates it.
+  needsRotation(now: Date = new Date(), leadTimeMs: number = ROTATION_LEAD_MS): boolean {
+    if (this.status !== 'active' || this.activeExpiresAt === null) return false
+    return now >= new Date(this.activeExpiresAt.getTime() - leadTimeMs)
+  }
+
+  getActiveExpiresAt(): Date | null {
+    return this.activeExpiresAt
   }
 
   async verify(plainSecret: string, hasher: AgentCredentialSecretHasher): Promise<boolean> {
@@ -127,7 +154,8 @@ export class AgentCredential extends AggregateRoot {
       status: this.status,
       gracePeriodEndsAt: this.gracePeriodEndsAt,
       createdAt: this.createdAt,
-      updatedAt: this.updatedAt
+      updatedAt: this.updatedAt,
+      activeExpiresAt: this.activeExpiresAt
     }
   }
 }

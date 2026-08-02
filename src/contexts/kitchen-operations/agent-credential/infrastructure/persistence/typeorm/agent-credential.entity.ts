@@ -23,4 +23,7 @@ export class AgentCredentialEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date
+
+  @Column({ name: 'active_expires_at', type: 'timestamptz', nullable: true })
+  activeExpiresAt: Date | null
 }

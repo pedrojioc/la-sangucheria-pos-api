@@ -1,4 +1,8 @@
-import { AgentCredential } from '@contexts/kitchen-operations/agent-credential/domain/agent-credential'
+import {
+  AgentCredential,
+  AGENT_CREDENTIAL_ACTIVE_TTL_MS,
+  ROTATION_LEAD_MS
+} from '@contexts/kitchen-operations/agent-credential/domain/agent-credential'
 import { Argon2AgentCredentialSecretHasher } from '@contexts/kitchen-operations/agent-credential/infrastructure/services/argon2-agent-credential-secret-hasher.service'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 import { AgentCredentialMother } from '../__mothers__/agent-credential.mother'
@@ -25,6 +29,17 @@ describe('AgentCredential (aggregate)', () => {
       expect(p.secretHash.startsWith('$argon2')).toBe(true)
       expect(plainSecret.startsWith('lspa_')).toBe(true)
       expect(p.gracePeriodEndsAt).toBeNull()
+    })
+
+    it('should set activeExpiresAt to now + AGENT_CREDENTIAL_ACTIVE_TTL_MS', async () => {
+      const id = UuidMother.random()
+      const establishmentId = UuidMother.random()
+      const now = new Date('2026-01-01T00:00:00.000Z')
+
+      const { credential } = await AgentCredential.issue({ id, establishmentId }, hasher, now)
+      const p = credential.toPrimitives()
+
+      expect(p.activeExpiresAt).toEqual(new Date(now.getTime() + AGENT_CREDENTIAL_ACTIVE_TTL_MS))
     })
   })
 
@@ -74,6 +89,56 @@ describe('AgentCredential (aggregate)', () => {
       )
 
       expect(authenticatable).toBe(false)
+    })
+  })
+
+  describe('needsRotation()', () => {
+    it('returns false for an active credential far from its TTL', () => {
+      const now = new Date('2026-01-01T00:00:00.000Z')
+      const credential = AgentCredentialMother.farFromRotation(undefined, now)
+
+      expect(credential.needsRotation(now)).toBe(false)
+    })
+
+    it('returns true exactly at the rotation lead boundary (activeExpiresAt - leadTimeMs)', () => {
+      const now = new Date('2026-01-01T00:00:00.000Z')
+      const activeExpiresAt = new Date(now.getTime() + ROTATION_LEAD_MS)
+      const credential = AgentCredentialMother.create({ status: 'active', activeExpiresAt })
+
+      expect(credential.needsRotation(now)).toBe(true)
+    })
+
+    it('returns false one millisecond before the rotation lead boundary', () => {
+      const now = new Date('2026-01-01T00:00:00.000Z')
+      const activeExpiresAt = new Date(now.getTime() + ROTATION_LEAD_MS + 1)
+      const credential = AgentCredentialMother.create({ status: 'active', activeExpiresAt })
+
+      expect(credential.needsRotation(now)).toBe(false)
+    })
+
+    it('returns false for a non-active credential regardless of TTL', () => {
+      const now = new Date('2026-01-01T00:00:00.000Z')
+      const credential = AgentCredentialMother.supersededInGrace(undefined, now)
+
+      expect(credential.needsRotation(now)).toBe(false)
+    })
+  })
+
+  describe('isAuthenticatable() defensive TTL bound', () => {
+    it('still returns true for an active credential before its activeExpiresAt', () => {
+      const now = new Date('2026-01-01T00:00:00.000Z')
+      const credential = AgentCredentialMother.farFromRotation(undefined, now)
+
+      expect(credential.isAuthenticatable(now)).toBe(true)
+    })
+
+    it('returns false for an active credential whose activeExpiresAt has passed (missed-rotation bound)', () => {
+      const now = new Date('2026-01-01T00:00:00.000Z')
+      const activeExpiresAt = new Date(now.getTime() + 1000)
+      const credential = AgentCredentialMother.create({ status: 'active', activeExpiresAt })
+
+      const afterExpiry = new Date(activeExpiresAt.getTime() + 1)
+      expect(credential.isAuthenticatable(afterExpiry)).toBe(false)
     })
   })
 })

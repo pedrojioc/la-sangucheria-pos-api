@@ -12,6 +12,7 @@ import { Argon2AgentCredentialVerifier } from '@contexts/kitchen-operations/agen
 
 import { IssueAgentCredential } from '@contexts/kitchen-operations/agent-credential/application/issue/issue-agent-credential'
 import { RevokeAgentCredential } from '@contexts/kitchen-operations/agent-credential/application/revoke/revoke-agent-credential'
+import { RotateAgentCredentialIfNeeded } from '@contexts/kitchen-operations/agent-credential/application/rotate/rotate-agent-credential-if-needed'
 
 import { createProvider } from '@core/utils/create-provider'
 
@@ -22,13 +23,15 @@ import { createProvider } from '@core/utils/create-provider'
     { provide: AgentCredentialSecretHasher, useClass: Argon2AgentCredentialSecretHasher },
     { provide: AgentCredentialVerifierPort, useClass: Argon2AgentCredentialVerifier },
     createProvider(IssueAgentCredential, [AgentCredentialRepository, AgentCredentialSecretHasher]),
-    createProvider(RevokeAgentCredential, [AgentCredentialRepository])
+    createProvider(RevokeAgentCredential, [AgentCredentialRepository]),
+    createProvider(RotateAgentCredentialIfNeeded, [AgentCredentialRepository, IssueAgentCredential])
   ],
   exports: [
     AgentCredentialRepository,
     AgentCredentialVerifierPort,
     IssueAgentCredential,
-    RevokeAgentCredential
+    RevokeAgentCredential,
+    RotateAgentCredentialIfNeeded
   ]
 })
 export class AgentCredentialModule {}

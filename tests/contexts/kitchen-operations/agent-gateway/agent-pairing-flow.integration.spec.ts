@@ -1,20 +1,18 @@
-// Full-flow integration test wiring the real PairingGateway, real
-// AgentPairingController, real IssuePairingCode/RedeemPairingCode/
-// IssueAgentCredential use cases, and an in-memory fake PairingCodeRepository
-// + AgentCredentialRepository — no mocks on the domain/application layer.
+// Full-flow integration test wiring the real AgentPairingPublicController
+// (start/poll), real AgentPairingController (admin redeem), real
+// IssuePairingCode/RedeemPairingCode/PollPairingCode/IssueAgentCredential
+// use cases, and in-memory fake PairingCodeRepository +
+// AgentCredentialRepository — no mocks on the domain/application layer.
 //
-// NOTE: this repo has no `socket.io-client` dependency (not even
-// transitively), so a true `supertest` + real socket.io-client E2E spec
-// under tests/e2e/ is not possible without adding a new dependency, which is
-// out of scope for this apply batch. This test exercises the identical
-// call graph a real E2E run would (gateway.handleRequestPairingCode ->
-// controller.redeem -> gateway push) using fake sockets, and lives in the
-// unit test project as the closest available equivalent.
-import { PairingGateway } from '@contexts/kitchen-operations/agent-gateway/infrastructure/websocket/agent-pairing.gateway'
-import { PairingSocketRegistry } from '@contexts/kitchen-operations/agent-gateway/infrastructure/websocket/pairing-socket-registry'
+// Rewritten from the previous WS-gateway-push flow (PairingGateway +
+// PairingSocketRegistry, now removed) to the HTTP start -> redeem -> poll
+// flow (plaintext-with-TTL-and-wipe, design obs #311 rev 6).
+import { NotFoundException } from '@nestjs/common'
+import { AgentPairingPublicController } from '@contexts/kitchen-operations/agent-gateway/presentation/http/agent-pairing-public.controller'
 import { AgentPairingController } from '@contexts/kitchen-operations/agent-gateway/presentation/http/agent-pairing.controller'
 import { IssuePairingCode } from '@contexts/kitchen-operations/pairing-code/application/issue/issue-pairing-code'
 import { RedeemPairingCode } from '@contexts/kitchen-operations/pairing-code/application/redeem/redeem-pairing-code'
+import { PollPairingCode } from '@contexts/kitchen-operations/pairing-code/application/poll/poll-pairing-code'
 import { PairingCodeRepository } from '@contexts/kitchen-operations/pairing-code/domain/repositories/pairing-code.repository'
 import { PairingCode } from '@contexts/kitchen-operations/pairing-code/domain/pairing-code'
 import { IssueAgentCredential } from '@contexts/kitchen-operations/agent-credential/application/issue/issue-agent-credential'
@@ -34,6 +32,23 @@ class InMemoryPairingCodeRepository implements PairingCodeRepository {
 
   findByCode(code: string): Promise<PairingCode | null> {
     return Promise.resolve(this.byCode.get(code) ?? null)
+  }
+
+  // Approximates the atomic conditional UPDATE from the real TypeORM
+  // repository against the in-memory store: only wipes if a live pending
+  // secret is present, mirroring the "WHERE pending_secret IS NOT NULL"
+  // guard's observable behavior for this fake's single-threaded test usage.
+  compareAndWipePendingSecret(id: string, now: Date): Promise<PairingCode | null> {
+    for (const pairingCode of this.byCode.values()) {
+      if (pairingCode.id.value !== id) continue
+      if (!pairingCode.hasPendingSecret(now)) return Promise.resolve(null)
+
+      const primitives = pairingCode.toPrimitives()
+      const wiped = PairingCode.fromPrimitives({ ...primitives, deliveredAt: now })
+      this.byCode.set(wiped.code, wiped)
+      return Promise.resolve(wiped)
+    }
+    return Promise.resolve(null)
   }
 }
 
@@ -63,20 +78,16 @@ class InMemoryAgentCredentialRepository implements AgentCredentialRepository {
   }
 }
 
-type FakeSocket = { id: string; emit: jest.Mock }
-const buildSocket = (id: string): FakeSocket => ({ id, emit: jest.fn() })
-
 describe('Agent pairing flow (integration)', () => {
-  let registry: PairingSocketRegistry
-  let gateway: PairingGateway
-  let controller: AgentPairingController
+  let publicController: AgentPairingPublicController
+  let adminController: AgentPairingController
   const establishmentId = UuidMother.random()
 
   beforeEach(() => {
-    registry = new PairingSocketRegistry()
     const pairingCodeRepository = new InMemoryPairingCodeRepository()
     const issuePairingCode = new IssuePairingCode(pairingCodeRepository)
-    gateway = new PairingGateway(registry, issuePairingCode)
+    const pollPairingCode = new PollPairingCode(pairingCodeRepository)
+    publicController = new AgentPairingPublicController(issuePairingCode, pollPairingCode)
 
     const agentCredentialRepository = new InMemoryAgentCredentialRepository()
     const issueAgentCredential = new IssueAgentCredential(
@@ -89,46 +100,53 @@ describe('Agent pairing flow (integration)', () => {
       save: jest.fn()
     } as unknown as jest.Mocked<EstablishmentRepository>
 
-    controller = new AgentPairingController(redeemPairingCode, registry, establishmentRepository)
+    adminController = new AgentPairingController(redeemPairingCode, establishmentRepository)
   })
 
-  it('happy path: agent connected throughout — requests code, admin redeems, agent receives pushed credential, HTTP response has no secret', async () => {
-    const agentSocket = buildSocket('agent-1')
+  it('happy path: start -> admin redeems -> agent polls and receives the apiKey, HTTP redeem response has no secret', async () => {
+    const { code, pollToken } = await publicController.start()
 
-    await gateway.handleRequestPairingCode(agentSocket as any, {})
-    const [, pairingCodePayload] = agentSocket.emit.mock.calls[0]
-    const { code } = pairingCodePayload as { code: string }
-
-    const httpResponse = await controller.redeem({ code })
-
+    const httpResponse = await adminController.redeem({ code })
     expect(httpResponse).toEqual({ paired: true })
     expect(JSON.stringify(httpResponse)).not.toMatch(/lspa_/)
-    expect(agentSocket.emit).toHaveBeenCalledWith(
-      'agent-credential',
-      expect.objectContaining({ apiKey: expect.stringMatching(/^lspa_/) })
-    )
+
+    const pollResult = await publicController.poll({ code, pollToken })
+    expect(pollResult).toEqual({ status: 'ready', apiKey: expect.stringMatching(/^lspa_/) })
   })
 
-  it('agent disconnects before redemption, reconnects with the same code before expiry and receives the pending credential without re-redeeming', async () => {
-    const agentSocket = buildSocket('agent-1')
-    await gateway.handleRequestPairingCode(agentSocket as any, {})
-    const [, pairingCodePayload] = agentSocket.emit.mock.calls[0]
-    const { code } = pairingCodePayload as { code: string }
+  it('poll-before-redeem yields pending', async () => {
+    const { code, pollToken } = await publicController.start()
 
-    // Agent disconnects: unregister its socket (push to a dead socket must
-    // not error the redemption — see registry.getSocket returning undefined).
-    registry.deleteSocket(code)
+    const pollResult = await publicController.poll({ code, pollToken })
 
-    const httpResponse = await controller.redeem({ code })
-    expect(httpResponse).toEqual({ paired: true })
+    expect(pollResult).toEqual({ status: 'pending' })
+  })
 
-    // Reconnect with the same still-valid code, no new redemption performed.
-    const reconnectedSocket = buildSocket('agent-1-reconnected')
-    await gateway.handleRequestPairingCode(reconnectedSocket as any, { code })
+  it('wrong pollToken never leaks the apiKey (same generic response as pending)', async () => {
+    const { code } = await publicController.start()
+    await adminController.redeem({ code })
 
-    expect(reconnectedSocket.emit).toHaveBeenCalledWith(
-      'agent-credential',
-      expect.objectContaining({ apiKey: expect.stringMatching(/^lspa_/) })
+    const pollResult = await publicController.poll({ code, pollToken: 'wrong-token' })
+
+    expect(pollResult).toEqual({ status: 'pending' })
+  })
+
+  it('re-poll after delivery yields delivered, not a repeated apiKey', async () => {
+    const { code, pollToken } = await publicController.start()
+    await adminController.redeem({ code })
+
+    const firstPoll = await publicController.poll({ code, pollToken })
+    expect(firstPoll).toEqual({ status: 'ready', apiKey: expect.stringMatching(/^lspa_/) })
+
+    const secondPoll = await publicController.poll({ code, pollToken })
+    expect(secondPoll).toEqual({ status: 'delivered' })
+  })
+
+  it('poll on an unknown code rejects with the same 404-equivalent the admin redeem uses for unknown codes', async () => {
+    await expect(publicController.poll({ code: 'ZZZ999', pollToken: 'any' })).rejects.toThrow(
+      NotFoundException
     )
+
+    await expect(adminController.redeem({ code: 'ZZZ999' })).rejects.toThrow(NotFoundException)
   })
 })

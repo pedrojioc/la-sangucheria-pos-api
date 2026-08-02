@@ -26,4 +26,15 @@ export class PairingCodeEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date
+
+  @Column({ name: 'poll_token_hash', type: 'varchar' })
+  pollTokenHash: string
+
+  // Plaintext apiKey, held transiently between redeem and poll (see design
+  // obs #311 rev 6 — TTL + atomic wipe, no encryption). NOT sealed/encrypted.
+  @Column({ name: 'pending_secret', type: 'text', nullable: true })
+  pendingSecret: string | null
+
+  @Column({ name: 'pending_secret_expires_at', type: 'timestamptz', nullable: true })
+  pendingSecretExpiresAt: Date | null
 }
