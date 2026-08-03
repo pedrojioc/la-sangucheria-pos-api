@@ -11,16 +11,19 @@ import { IssuePairingCode } from '@contexts/kitchen-operations/pairing-code/appl
 import { PollPairingCode } from '@contexts/kitchen-operations/pairing-code/application/poll/poll-pairing-code'
 import { PairingCodeNotRedeemable } from '@contexts/kitchen-operations/pairing-code/domain/exceptions/pairing-code-not-redeemable.exception'
 import { PairingCodePendingSecretUnavailable } from '@contexts/kitchen-operations/pairing-code/domain/exceptions/pairing-code-pending-secret-unavailable.exception'
+import { Public } from '@/contexts/iam/shared/decorators/public.decorator'
 import { PairingIpThrottleGuard } from '../../infrastructure/guards/pairing-ip-throttle.guard'
 import { StartPairingResponse } from './dto/start-pairing.response'
 import { PollPairingRequest } from './dto/poll-pairing.request'
 import { PollPairingResponse } from './dto/poll-pairing.response'
 
 // UNAUTHENTICATED by design — Smart-TV-style pairing flow: an agent has no
-// credential yet when it calls these two endpoints. Deliberately isolated
-// from every other /agent capability: this controller exposes ONLY
-// start/poll, nothing else (see spec's "pairing namespace isolation"
-// requirement).
+// credential yet when it calls these two endpoints. @Public() bypasses the
+// global JwtAuthGuard (see main.ts's app.useGlobalGuards), which otherwise
+// rejects any request without a Bearer token. Deliberately isolated from
+// every other /agent capability: this controller exposes ONLY start/poll,
+// nothing else (see spec's "pairing namespace isolation" requirement).
+@Public()
 @UseGuards(PairingIpThrottleGuard)
 @Controller('agent/pairing')
 export class AgentPairingPublicController {
