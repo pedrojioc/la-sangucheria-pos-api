@@ -40,8 +40,11 @@ export class TypeOrmPairingCodeRepository implements PairingCodeRepository {
   async compareAndWipePendingSecret(id: string, now: Date): Promise<PairingCode | null> {
     // Read first to capture the plaintext secret (the conditional UPDATE
     // below wipes it, so it must not be re-read afterwards). The WHERE
-    // clause on the UPDATE is the actual race-closer: only one concurrent
-    // caller's UPDATE affects a row, regardless of what either caller read.
+    // clause on the UPDATE is the actual race-closer AND the TTL-expiry
+    // guard: only one concurrent caller's UPDATE affects a row, and an
+    // expired-but-present secret must never win it either — both properties
+    // live in the same atomic compare-and-wipe (design obs #311; TTL gap
+    // closed per verify-report obs #319 CRITICAL finding).
     const entity = await this.repository.findOne({ where: { id } })
     if (!entity || entity.pendingSecret === null) return null
 
@@ -53,6 +56,7 @@ export class TypeOrmPairingCodeRepository implements PairingCodeRepository {
       .set({ pendingSecret: null, deliveredAt: now })
       .where('id = :id', { id })
       .andWhere('pending_secret IS NOT NULL')
+      .andWhere('pending_secret_expires_at > :now', { now })
       .execute()
 
     const wonRace = (result.affected ?? 0) > 0

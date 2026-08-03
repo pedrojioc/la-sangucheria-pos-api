@@ -80,17 +80,51 @@ describe('TypeOrmPairingCodeRepository', () => {
       expect(result).toBeNull()
     })
 
-    it('issues a conditional UPDATE guarded by pending_secret IS NOT NULL', async () => {
+    it('issues a conditional UPDATE guarded by pending_secret IS NOT NULL and TTL not expired', async () => {
       const entity = buildEntity()
       typeOrmRepo.findOne.mockResolvedValue(entity)
       queryBuilder.execute.mockResolvedValue({ affected: 1 })
+      const now = new Date()
 
-      await repository.compareAndWipePendingSecret(entity.id, new Date())
+      await repository.compareAndWipePendingSecret(entity.id, now)
 
       expect(queryBuilder.set).toHaveBeenCalledWith(
         expect.objectContaining({ pendingSecret: null })
       )
       expect(queryBuilder.andWhere).toHaveBeenCalledWith('pending_secret IS NOT NULL')
+      // TTL-expiry regression (verify-report obs #319 CRITICAL): the WHERE
+      // clause must ALSO exclude a pending secret whose TTL has passed, so an
+      // expired-but-present secret can never win the atomic wipe. Without
+      // this predicate, Postgres would happily UPDATE an expired row (its
+      // affected count would be 1), and the domain-level TTL check in
+      // retrieveAndWipeSecret() would only discover the problem AFTER the
+      // row was already wiped and delivered_at already stamped.
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith('pending_secret_expires_at > :now', {
+        now
+      })
+    })
+
+    it('never wins the race for an expired-but-present pending secret (real Postgres WHERE semantics: affected=0)', async () => {
+      // The repository's findOne() read happens BEFORE the conditional
+      // UPDATE and does not itself filter by TTL — it only checks
+      // `pendingSecret !== null`, matching production code. What must close
+      // the TTL gap is the UPDATE's WHERE clause, enforced by Postgres at
+      // execute time. This test models that DB-level rejection: an entity
+      // read with an already-expired pendingSecretExpiresAt must still
+      // result in the caller receiving null, because the real WHERE clause
+      // (`pending_secret_expires_at > :now`) would make Postgres report
+      // affected=0 for this row.
+      const now = new Date('2026-01-01T00:05:00.000Z')
+      const entity = buildEntity({ pendingSecretExpiresAt: new Date(now.getTime() - 1000) })
+      typeOrmRepo.findOne.mockResolvedValue(entity)
+      queryBuilder.execute.mockResolvedValue({ affected: 0 })
+
+      const result = await repository.compareAndWipePendingSecret(entity.id, now)
+
+      expect(result).toBeNull()
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith('pending_secret_expires_at > :now', {
+        now
+      })
     })
 
     it('returns the captured plaintext secret and delivered code when this caller wins the race (affected=1)', async () => {

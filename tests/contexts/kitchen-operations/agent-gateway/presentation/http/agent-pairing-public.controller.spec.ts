@@ -4,6 +4,7 @@ import { AgentPairingPublicController } from '@contexts/kitchen-operations/agent
 import { IssuePairingCode } from '@contexts/kitchen-operations/pairing-code/application/issue/issue-pairing-code'
 import { PollPairingCode } from '@contexts/kitchen-operations/pairing-code/application/poll/poll-pairing-code'
 import { PairingCodeNotRedeemable } from '@contexts/kitchen-operations/pairing-code/domain/exceptions/pairing-code-not-redeemable.exception'
+import { PairingCodePendingSecretUnavailable } from '@contexts/kitchen-operations/pairing-code/domain/exceptions/pairing-code-pending-secret-unavailable.exception'
 
 describe('AgentPairingPublicController', () => {
   let issuePairingCode: jest.Mocked<IssuePairingCode>
@@ -70,6 +71,19 @@ describe('AgentPairingPublicController', () => {
       await expect(controller.poll({ code: 'ABC234', pollToken: 'x' })).rejects.toThrow(
         ConflictException
       )
+    })
+
+    it('maps PairingCodePendingSecretUnavailable to the generic pending response, never a 500', async () => {
+      // Defense-in-depth: the repository's compare-and-wipe already guards
+      // presence + TTL, so this exception is expected to be unreachable via
+      // the normal poll path (verify-report obs #319 CRITICAL). This test
+      // asserts the controller-level safety net in case any future call
+      // path reaches retrieveAndWipeSecret() without that guard.
+      pollPairingCode.run.mockRejectedValue(new PairingCodePendingSecretUnavailable())
+
+      const result = await controller.poll({ code: 'ABC234', pollToken: 'x' })
+
+      expect(result).toEqual({ status: 'pending' })
     })
   })
 })
