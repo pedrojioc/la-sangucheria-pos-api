@@ -21,11 +21,17 @@ describe('TypeOrmPrinterStationResolverAdapter', () => {
     expect(result).toEqual([])
   })
 
-  it('queries only stations configured as printer and maps the rows to the port shape', async () => {
+  it('queries only stations configured as printer and maps NETWORK rows to the port shape (regression)', async () => {
     const stationId = UuidMother.random()
 
     dataSource.query.mockResolvedValue([
-      { id: stationId, name: 'Parrilla', printer_address: '192.168.1.10' }
+      {
+        id: stationId,
+        name: 'Parrilla',
+        printer_address: '192.168.1.10',
+        connection_type: 'network',
+        usb_identifier: null
+      }
     ])
 
     const result = await adapter.resolvePrinterStations([stationId])
@@ -34,7 +40,43 @@ describe('TypeOrmPrinterStationResolverAdapter', () => {
       expect.stringContaining("output_device = 'printer'"),
       [[stationId]]
     )
-    expect(result).toEqual([{ stationId, stationName: 'Parrilla', printerAddress: '192.168.1.10' }])
+    expect(result).toEqual([
+      {
+        stationId,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null
+      }
+    ])
+  })
+
+  it('does NOT filter on printer_address IS NOT NULL (bug fix) and returns USB-only stations', async () => {
+    const stationId = UuidMother.random()
+
+    dataSource.query.mockResolvedValue([
+      {
+        id: stationId,
+        name: 'Caja USB',
+        printer_address: null,
+        connection_type: 'usb',
+        usb_identifier: 'USB001'
+      }
+    ])
+
+    const result = await adapter.resolvePrinterStations([stationId])
+
+    const [sql] = dataSource.query.mock.calls[0]
+    expect(sql).not.toMatch(/printer_address IS NOT NULL/)
+    expect(result).toEqual([
+      {
+        stationId,
+        stationName: 'Caja USB',
+        connectionType: 'usb',
+        printerAddress: null,
+        usbIdentifier: 'USB001'
+      }
+    ])
   })
 
   it('filters out null station ids before querying', async () => {
@@ -46,7 +88,7 @@ describe('TypeOrmPrinterStationResolverAdapter', () => {
     expect(dataSource.query).toHaveBeenCalledWith(expect.any(String), [[stationId]])
   })
 
-  it('returns an empty array when no rows match', async () => {
+  it('returns an empty array when no rows match (non-PRINTER stations remain excluded)', async () => {
     dataSource.query.mockResolvedValue([])
 
     const result = await adapter.resolvePrinterStations([UuidMother.random()])

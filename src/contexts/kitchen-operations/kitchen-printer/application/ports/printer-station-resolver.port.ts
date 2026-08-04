@@ -1,5 +1,13 @@
+export interface ResolvedPrinterStation {
+  stationId: string
+  stationName: string
+  connectionType: 'network' | 'usb'
+  printerAddress: string | null
+  usbIdentifier: string | null
+}
+
 export abstract class PrinterStationResolverPort {
   abstract resolvePrinterStations(
     stationIds: Array<string | null>
-  ): Promise<Array<{ stationId: string; stationName: string; printerAddress: string }>>
+  ): Promise<Array<ResolvedPrinterStation>>
 }

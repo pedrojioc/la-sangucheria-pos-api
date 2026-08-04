@@ -84,8 +84,20 @@ describe('KitchenPrinterDispatcher', () => {
     })
 
     stationResolver.resolvePrinterStations.mockResolvedValue([
-      { stationId: stationA, stationName: 'Parrilla', printerAddress: '192.168.1.10' },
-      { stationId: stationB, stationName: 'Plancha', printerAddress: '192.168.1.11' }
+      {
+        stationId: stationA,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null
+      },
+      {
+        stationId: stationB,
+        stationName: 'Plancha',
+        connectionType: 'network',
+        printerAddress: '192.168.1.11',
+        usbIdentifier: null
+      }
     ])
 
     await dispatcher.run(event)
@@ -169,7 +181,13 @@ describe('KitchenPrinterDispatcher', () => {
     })
 
     stationResolver.resolvePrinterStations.mockResolvedValue([
-      { stationId, stationName: 'Parrilla', printerAddress: '192.168.1.10' }
+      {
+        stationId,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null
+      }
     ])
 
     await dispatcher.run(event)
@@ -205,8 +223,20 @@ describe('KitchenPrinterDispatcher', () => {
     })
 
     stationResolver.resolvePrinterStations.mockResolvedValue([
-      { stationId: stationA, stationName: 'Parrilla', printerAddress: '192.168.1.10' },
-      { stationId: stationB, stationName: 'Plancha', printerAddress: '192.168.1.11' }
+      {
+        stationId: stationA,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null
+      },
+      {
+        stationId: stationB,
+        stationName: 'Plancha',
+        connectionType: 'network',
+        printerAddress: '192.168.1.11',
+        usbIdentifier: null
+      }
     ])
 
     printerPort.print
@@ -239,7 +269,13 @@ describe('KitchenPrinterDispatcher', () => {
     })
 
     stationResolver.resolvePrinterStations.mockResolvedValue([
-      { stationId, stationName: 'Parrilla', printerAddress: '192.168.1.10' }
+      {
+        stationId,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null
+      }
     ])
 
     await dispatcher.run(event)
@@ -268,7 +304,13 @@ describe('KitchenPrinterDispatcher', () => {
     })
 
     stationResolver.resolvePrinterStations.mockResolvedValue([
-      { stationId, stationName: 'Parrilla', printerAddress: '192.168.1.10' }
+      {
+        stationId,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null
+      }
     ])
 
     await dispatcher.run(event)
@@ -295,7 +337,13 @@ describe('KitchenPrinterDispatcher', () => {
     })
 
     stationResolver.resolvePrinterStations.mockResolvedValue([
-      { stationId, stationName: 'Parrilla', printerAddress: '192.168.1.10' }
+      {
+        stationId,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null
+      }
     ])
 
     await dispatcher.run(event)
