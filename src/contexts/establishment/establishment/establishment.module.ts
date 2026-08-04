@@ -48,6 +48,6 @@ import { createProvider } from '@core/utils/create-provider'
     createProvider(GetEstablishmentSettings, [EstablishmentRepository, StationOutputDevicesPort]),
     createProvider(UpdateEstablishmentSettings, [EstablishmentRepository, EventBus])
   ],
-  exports: [GetEstablishmentSettings]
+  exports: [GetEstablishmentSettings, EstablishmentRepository]
 })
 export class EstablishmentModule {}

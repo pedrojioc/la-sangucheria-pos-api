@@ -1,0 +1,64 @@
+import { Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+
+import {
+  DiscoveredPrinterDevice,
+  DiscoveredPrinterDeviceConnectionType
+} from '@contexts/kitchen-operations/printer-discovery/domain/discovered-printer-device'
+import { DiscoveredPrinterDeviceRepository } from '@contexts/kitchen-operations/printer-discovery/domain/repositories/discovered-printer-device.repository'
+import { DiscoveredPrinterDeviceEntity } from './discovered-printer-device.entity'
+
+@Injectable()
+export class TypeOrmDiscoveredPrinterDeviceRepository implements DiscoveredPrinterDeviceRepository {
+  constructor(
+    @InjectRepository(DiscoveredPrinterDeviceEntity)
+    private readonly repository: Repository<DiscoveredPrinterDeviceEntity>
+  ) {}
+
+  async save(device: DiscoveredPrinterDevice): Promise<void> {
+    const p = device.toPrimitives()
+    await this.repository.save({
+      id: p.id,
+      establishmentId: p.establishmentId,
+      connectionType: p.connectionType,
+      address: p.address,
+      usbIdentifier: p.usbIdentifier,
+      lastSeenAt: p.lastSeenAt
+    })
+  }
+
+  async findByEstablishmentAndIdentity(
+    establishmentId: string,
+    connectionType: string,
+    identity: string
+  ): Promise<DiscoveredPrinterDevice | null> {
+    const where =
+      connectionType === 'usb'
+        ? { establishmentId, connectionType, usbIdentifier: identity }
+        : { establishmentId, connectionType, address: identity }
+
+    const entity = await this.repository.findOne({ where })
+    if (!entity) return null
+    return this.toDomain(entity)
+  }
+
+  async searchAllByEstablishment(establishmentId: string): Promise<DiscoveredPrinterDevice[]> {
+    const entities = await this.repository.find({
+      where: { establishmentId },
+      order: { lastSeenAt: 'DESC' }
+    })
+    return entities.map(e => this.toDomain(e))
+  }
+
+  private toDomain(entity: DiscoveredPrinterDeviceEntity): DiscoveredPrinterDevice {
+    return DiscoveredPrinterDevice.fromPrimitives({
+      id: entity.id,
+      establishmentId: entity.establishmentId,
+      connectionType: entity.connectionType as DiscoveredPrinterDeviceConnectionType,
+      address: entity.address,
+      usbIdentifier: entity.usbIdentifier,
+      lastSeenAt: entity.lastSeenAt
+    })
+  }
+}

@@ -1,12 +1,18 @@
 import { OrderSentToKitchenEvent } from '@contexts/orders/order/domain/events/order-sent-to-kitchen.event'
+import { Uuid } from '@shared/domain/value-objects/uuid'
 import { KitchenPrinterPort } from './ports/kitchen-printer.port'
 import { PrinterStationResolverPort } from './ports/printer-station-resolver.port'
+import { KitchenAgentNotifierPort } from './ports/kitchen-agent-notifier.port'
+import { KitchenTicketPrintJobRepository } from '../domain/repositories/kitchen-ticket-print-job.repository'
+import { KitchenTicketPrintJob } from '../domain/kitchen-ticket-print-job'
 import { KitchenPrintTicket } from './kitchen-print-ticket'
 
 export class KitchenPrinterDispatcher {
   constructor(
     private readonly printerPort: KitchenPrinterPort,
-    private readonly stationResolver: PrinterStationResolverPort
+    private readonly stationResolver: PrinterStationResolverPort,
+    private readonly agentNotifier: KitchenAgentNotifierPort,
+    private readonly printJobRepository: KitchenTicketPrintJobRepository
   ) {}
 
   async run(event: OrderSentToKitchenEvent): Promise<void> {
@@ -44,7 +50,8 @@ export class KitchenPrinterDispatcher {
         printerAddress: station.printerAddress,
         sentAt: payload.sentAt,
         orderType: payload.orderType,
-        // isReprint is hardcoded false until reprint trigger ships — see kitchen-ticket-design follow-up
+        // Original dispatch is never a reprint. Manual reprint re-dispatches
+        // through ReprintKitchenTicket with isReprint: true instead.
         isReprint: false,
         items: stationItems.map(item => ({
           productName: item.productName,
@@ -52,6 +59,11 @@ export class KitchenPrinterDispatcher {
           notes: item.notes,
           modifiers: (item.modifiers ?? []).map(m => m.name)
         }))
+      }
+
+      if (station.connectionType === 'usb') {
+        await this.dispatchToUsbStation(ticket, station.stationId, station.stationName)
+        continue
       }
 
       try {
@@ -62,10 +74,33 @@ export class KitchenPrinterDispatcher {
           printerAddress: station.printerAddress,
           error: err instanceof Error ? err.message : String(err)
         })
-        // Manual reprint flow is out of scope — isReprint is hardcoded false until
-        // the reprint trigger ships (see kitchen-ticket-design follow-up).
         // continue to next station; do not rethrow
       }
     }
+  }
+
+  private async dispatchToUsbStation(
+    ticket: KitchenPrintTicket,
+    stationId: string,
+    stationName: string
+  ): Promise<void> {
+    const job = KitchenTicketPrintJob.create({
+      id: Uuid.random().value,
+      ticketNumber: ticket.ticketNumber,
+      stationId,
+      stationName,
+      payload: ticket
+    })
+
+    await this.printJobRepository.save(job)
+
+    const { delivered } = await this.agentNotifier.notify(ticket, job.id)
+
+    if (delivered) {
+      job.markDelivered()
+      await this.printJobRepository.save(job)
+    }
+    // delivered:false (no agent connected) leaves the job pending — this is the
+    // expected/normal "unprinted, no agent connected" case, not an error path.
   }
 }
