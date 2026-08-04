@@ -14,6 +14,7 @@ import { WebSocketKitchenAgentNotifierAdapter } from './infrastructure/adapters/
 import { KitchenAgentNotifierPort } from '@contexts/kitchen-operations/kitchen-printer/application/ports/kitchen-agent-notifier.port'
 import { KitchenTicketPrintJobRepository } from '@contexts/kitchen-operations/kitchen-printer/domain/repositories/kitchen-ticket-print-job.repository'
 import { AcknowledgePrintJob } from '@contexts/kitchen-operations/kitchen-printer/application/acknowledge/acknowledge-print-job'
+import { ReportPrintJobFailure } from '@contexts/kitchen-operations/kitchen-printer/application/report-print-job-failure/report-print-job-failure'
 import { KitchenPrinterModule } from '@contexts/kitchen-operations/kitchen-printer/kitchen-printer.module'
 
 import { PairingCodeEntity } from '@contexts/kitchen-operations/pairing-code/infrastructure/persistence/typeorm/pairing-code.entity'
@@ -65,6 +66,7 @@ import { RecordDiscoveredDevice } from '@contexts/kitchen-operations/printer-dis
 
     // USE CASES
     createProvider(AcknowledgePrintJob, [KitchenTicketPrintJobRepository]),
+    createProvider(ReportPrintJobFailure, [KitchenTicketPrintJobRepository]),
     createProvider(IssuePairingCode, [PairingCodeRepository]),
     createProvider(RedeemPairingCode, [PairingCodeRepository, IssueAgentCredential]),
     createProvider(PollPairingCode, [PairingCodeRepository]),
@@ -74,6 +76,7 @@ import { RecordDiscoveredDevice } from '@contexts/kitchen-operations/printer-dis
       AgentConnectionRegistry,
       AgentCredentialVerifierPort,
       AcknowledgePrintJob,
+      ReportPrintJobFailure,
       RecordDiscoveredDevice,
       RotateAgentCredentialIfNeeded
     ])

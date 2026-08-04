@@ -34,10 +34,18 @@ export class ReprintKitchenTicket {
     const { delivered } = await this.agentNotifier.notify(reprintTicket, job.id)
 
     if (delivered) {
+      // retryFromFailure() no-ops when the job isn't 'failed' (e.g. a normal
+      // pending/delivered job) and otherwise atomically clears the failure
+      // state — it does NOT replace markDelivered() as a general-purpose
+      // transition, so a non-failed job would stay unmoved by this call alone.
+      // Since every reachable status here (pending/delivered/failed) must end
+      // up 'delivered' on a successful reprint, call both guarded transitions;
+      // exactly one of them applies per job.
       job.markDelivered()
+      job.retryFromFailure()
       await this.repository.save(job)
     }
-    // delivered:false leaves the job in its current (pending/delivered) state —
-    // still unprinted, no additional save needed.
+    // delivered:false leaves the job in its current (pending/delivered/failed)
+    // state — no additional save needed.
   }
 }

@@ -32,6 +32,12 @@ export class KitchenTicketPrintJobEntity {
   @Column({ name: 'printed_at', type: 'timestamp', nullable: true })
   printedAt: Date | null
 
+  @Column({ name: 'failure_reason', type: 'varchar', length: 20, nullable: true })
+  failureReason: string | null
+
+  @Column({ name: 'failed_at', type: 'timestamp', nullable: true })
+  failedAt: Date | null
+
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date
 }

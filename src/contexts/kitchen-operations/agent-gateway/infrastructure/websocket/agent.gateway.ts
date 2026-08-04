@@ -12,6 +12,8 @@ import { AgentConnectionRegistry } from '@contexts/kitchen-operations/agent-gate
 import { AgentCredentialVerifierPort } from '@contexts/kitchen-operations/agent-credential/domain/services/agent-credential-verifier.port'
 import { RotateAgentCredentialIfNeeded } from '@contexts/kitchen-operations/agent-credential/application/rotate/rotate-agent-credential-if-needed'
 import { AcknowledgePrintJob } from '@contexts/kitchen-operations/kitchen-printer/application/acknowledge/acknowledge-print-job'
+import { ReportPrintJobFailure } from '@contexts/kitchen-operations/kitchen-printer/application/report-print-job-failure/report-print-job-failure'
+import { FailureReason } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-ticket-print-job'
 import { RecordDiscoveredDevice } from '@contexts/kitchen-operations/printer-discovery/application/record/record-discovered-device'
 import { DiscoveredPrinterDeviceConnectionType } from '@contexts/kitchen-operations/printer-discovery/domain/discovered-printer-device'
 import { EstablishmentId } from '@contexts/establishment/establishment/domain/establishment-id'
@@ -23,6 +25,12 @@ interface ReportDevicesPayload {
     usbIdentifier?: string
   }>
 }
+
+// Closed set of failure reasons a USB print agent can distinguish. Validated
+// manually here (no class-validator/DTO) to match this gateway's existing
+// no-payload-validation posture for WS messages (cf. print-ack's raw
+// { jobId: string } access).
+const FAILURE_REASONS: FailureReason[] = ['out-of-paper', 'offline', 'jammed', 'unknown']
 
 // Sockets authenticated on this namespace get their resolved EstablishmentId
 // stashed here for the lifetime of the connection (register/report-devices/
@@ -48,6 +56,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly registry: AgentConnectionRegistry,
     private readonly verifier: AgentCredentialVerifierPort,
     private readonly acknowledgePrintJob: AcknowledgePrintJob,
+    private readonly reportPrintJobFailure: ReportPrintJobFailure,
     private readonly recordDiscoveredDevice: RecordDiscoveredDevice,
     private readonly rotateAgentCredentialIfNeeded: RotateAgentCredentialIfNeeded
   ) {}
@@ -97,6 +106,27 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<void> {
     await this.maybeRotate(socket)
     await this.acknowledgePrintJob.run(payload.jobId)
+  }
+
+  @SubscribeMessage('print-nack')
+  async handlePrintNack(
+    @MessageBody() payload: { jobId: string; reason: string },
+    @ConnectedSocket() socket: Socket
+  ): Promise<void> {
+    await this.maybeRotate(socket)
+
+    // Reject-and-stop on an invalid reason: log + return WITHOUT calling the
+    // use case, so the job's status never transitions. 'unknown' is a
+    // legitimate agent-supplied value, not a coercion sink for garbage input.
+    if (!FAILURE_REASONS.includes(payload.reason as FailureReason)) {
+      console.warn('AgentGateway: received print-nack with invalid reason; dropping', {
+        jobId: payload.jobId,
+        reason: payload.reason
+      })
+      return
+    }
+
+    await this.reportPrintJobFailure.run(payload.jobId, payload.reason as FailureReason)
   }
 
   @SubscribeMessage('report-devices')

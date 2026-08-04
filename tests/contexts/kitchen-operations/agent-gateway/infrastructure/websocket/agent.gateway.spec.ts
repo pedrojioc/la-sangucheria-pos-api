@@ -3,6 +3,7 @@ import { AgentConnectionRegistry } from '@contexts/kitchen-operations/agent-gate
 import { AgentCredentialVerifierPort } from '@contexts/kitchen-operations/agent-credential/domain/services/agent-credential-verifier.port'
 import { RotateAgentCredentialIfNeeded } from '@contexts/kitchen-operations/agent-credential/application/rotate/rotate-agent-credential-if-needed'
 import { AcknowledgePrintJob } from '@contexts/kitchen-operations/kitchen-printer/application/acknowledge/acknowledge-print-job'
+import { ReportPrintJobFailure } from '@contexts/kitchen-operations/kitchen-printer/application/report-print-job-failure/report-print-job-failure'
 import { RecordDiscoveredDevice } from '@contexts/kitchen-operations/printer-discovery/application/record/record-discovered-device'
 import { EstablishmentId } from '@contexts/establishment/establishment/domain/establishment-id'
 
@@ -24,6 +25,7 @@ describe('AgentGateway', () => {
   let registry: AgentConnectionRegistry
   let verifier: jest.Mocked<AgentCredentialVerifierPort>
   let acknowledgePrintJob: jest.Mocked<AcknowledgePrintJob>
+  let reportPrintJobFailure: jest.Mocked<ReportPrintJobFailure>
   let recordDiscoveredDevice: jest.Mocked<RecordDiscoveredDevice>
   let rotateAgentCredentialIfNeeded: jest.Mocked<RotateAgentCredentialIfNeeded>
   let gateway: AgentGateway
@@ -33,6 +35,7 @@ describe('AgentGateway', () => {
     registry = new AgentConnectionRegistry()
     verifier = { verify: jest.fn() } as unknown as jest.Mocked<AgentCredentialVerifierPort>
     acknowledgePrintJob = { run: jest.fn() } as unknown as jest.Mocked<AcknowledgePrintJob>
+    reportPrintJobFailure = { run: jest.fn() } as unknown as jest.Mocked<ReportPrintJobFailure>
     recordDiscoveredDevice = { run: jest.fn() } as unknown as jest.Mocked<RecordDiscoveredDevice>
     rotateAgentCredentialIfNeeded = {
       run: jest.fn().mockResolvedValue(null)
@@ -41,6 +44,7 @@ describe('AgentGateway', () => {
       registry,
       verifier,
       acknowledgePrintJob,
+      reportPrintJobFailure,
       recordDiscoveredDevice,
       rotateAgentCredentialIfNeeded
     )
@@ -125,6 +129,28 @@ describe('AgentGateway', () => {
       await gateway.handlePrintAck({ jobId: 'job-1' }, socket as any)
 
       expect(acknowledgePrintJob.run).toHaveBeenCalledWith('job-1')
+    })
+  })
+
+  describe('print-nack', () => {
+    it('invokes ReportPrintJobFailure.run with the jobId and reason for a valid reason', async () => {
+      const socket = buildSocket(undefined)
+
+      await gateway.handlePrintNack({ jobId: 'job-1', reason: 'out-of-paper' }, socket as any)
+
+      expect(reportPrintJobFailure.run).toHaveBeenCalledWith('job-1', 'out-of-paper')
+    })
+
+    it('(defect-1 regression) does NOT invoke ReportPrintJobFailure.run for an invalid reason and logs a warning', async () => {
+      const socket = buildSocket(undefined)
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+      await gateway.handlePrintNack({ jobId: 'job-1', reason: 'garbage-value' }, socket as any)
+
+      expect(reportPrintJobFailure.run).not.toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalled()
+
+      warnSpy.mockRestore()
     })
   })
 
@@ -261,6 +287,16 @@ describe('AgentGateway', () => {
       await gateway.handlePrintAck({ jobId: 'job-1' }, socket as any)
 
       expect(rotateAgentCredentialIfNeeded.run).not.toHaveBeenCalled()
+    })
+
+    it('checks rotation on print-nack as well (maybeRotate prefix, mirroring print-ack)', async () => {
+      verifier.verify.mockResolvedValue(establishmentId1.value)
+      const socket = buildSocket('good-key')
+      await gateway.handleConnection(socket as any)
+
+      await gateway.handlePrintNack({ jobId: 'job-1', reason: 'out-of-paper' }, socket as any)
+
+      expect(rotateAgentCredentialIfNeeded.run).toHaveBeenCalledWith(establishmentId1.value)
     })
   })
 })

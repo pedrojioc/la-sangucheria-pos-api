@@ -28,7 +28,8 @@ describe('ReprintKitchenTicket', () => {
     repository = {
       save: jest.fn().mockResolvedValue(undefined),
       search: jest.fn().mockResolvedValue(null),
-      searchUnprinted: jest.fn().mockResolvedValue([])
+      searchUnprinted: jest.fn().mockResolvedValue([]),
+      searchFailed: jest.fn().mockResolvedValue([])
     } as jest.Mocked<KitchenTicketPrintJobRepository>
 
     agentNotifier = {
@@ -110,6 +111,50 @@ describe('ReprintKitchenTicket', () => {
 
     expect(agentNotifier.notify).not.toHaveBeenCalled()
     expect(repository.save).not.toHaveBeenCalled()
+  })
+
+  it('(defect-2 regression) clears failure state and lands the job at delivered when a failed job is reprinted successfully', async () => {
+    const jobId = UuidMother.random()
+    const stationId = UuidMother.random()
+    const job = KitchenTicketPrintJob.create({
+      id: jobId,
+      ticketNumber: 42,
+      stationId,
+      stationName: 'Barra USB',
+      payload: buildPayload()
+    })
+    job.markFailed('out-of-paper')
+    repository.search.mockResolvedValue(job)
+    agentNotifier.notify.mockResolvedValue({ delivered: true })
+
+    await useCase.run(jobId)
+
+    expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ id: jobId }))
+    const savedJob = repository.save.mock.calls[0][0]
+    const primitives = savedJob.toPrimitives()
+    expect(primitives.status).toBe('delivered')
+    expect(primitives.failureReason).toBeNull()
+    expect(primitives.failedAt).toBeNull()
+  })
+
+  it('leaves a failed job unchanged when the reprint is not delivered', async () => {
+    const jobId = UuidMother.random()
+    const stationId = UuidMother.random()
+    const job = KitchenTicketPrintJob.create({
+      id: jobId,
+      ticketNumber: 42,
+      stationId,
+      stationName: 'Barra USB',
+      payload: buildPayload()
+    })
+    job.markFailed('offline')
+    repository.search.mockResolvedValue(job)
+    agentNotifier.notify.mockResolvedValue({ delivered: false })
+
+    await useCase.run(jobId)
+
+    expect(repository.save).not.toHaveBeenCalled()
+    expect(job.toPrimitives().status).toBe('failed')
   })
 
   it('routes a USB-destined job through notifierPort.notify, same as original dispatch', async () => {

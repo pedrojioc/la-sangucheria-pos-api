@@ -9,4 +9,8 @@ export abstract class KitchenTicketPrintJobRepository {
   // 'delivered' is still observationally unprinted (reached the agent, print not
   // yet confirmed by print-ack). See design DECISION 3.
   abstract searchUnprinted(): Promise<KitchenTicketPrintJob[]>
+
+  // MUST filter status = 'failed' only. Deliberately SEPARATE from searchUnprinted()
+  // so "in flight" and "broken, needs a human" stay distinct signals.
+  abstract searchFailed(): Promise<KitchenTicketPrintJob[]>
 }

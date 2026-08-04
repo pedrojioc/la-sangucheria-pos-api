@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { In, Repository } from 'typeorm'
 
 import {
+  FailureReason,
   KitchenTicketPrintJob,
   KitchenTicketPrintJobStatus
 } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-ticket-print-job'
@@ -42,6 +43,16 @@ export class TypeOrmKitchenTicketPrintJobRepository implements KitchenTicketPrin
     return entities.map(entity => this.toDomain(entity))
   }
 
+  // MUST filter status = 'failed' only.
+  async searchFailed(): Promise<KitchenTicketPrintJob[]> {
+    const entities = await this.repository.find({
+      where: { status: 'failed' },
+      order: { createdAt: 'ASC' }
+    })
+
+    return entities.map(entity => this.toDomain(entity))
+  }
+
   private toDomain(entity: KitchenTicketPrintJobEntity): KitchenTicketPrintJob {
     return KitchenTicketPrintJob.fromPrimitives({
       id: entity.id,
@@ -53,6 +64,8 @@ export class TypeOrmKitchenTicketPrintJobRepository implements KitchenTicketPrin
       createdAt: entity.createdAt,
       deliveredAt: entity.deliveredAt,
       printedAt: entity.printedAt,
+      failureReason: entity.failureReason as FailureReason | null,
+      failedAt: entity.failedAt,
       updatedAt: entity.updatedAt
     })
   }

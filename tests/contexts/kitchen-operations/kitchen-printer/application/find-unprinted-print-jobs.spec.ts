@@ -24,7 +24,8 @@ describe('FindUnprintedPrintJobs', () => {
     repository = {
       save: jest.fn().mockResolvedValue(undefined),
       search: jest.fn().mockResolvedValue(null),
-      searchUnprinted: jest.fn().mockResolvedValue([])
+      searchUnprinted: jest.fn().mockResolvedValue([]),
+      searchFailed: jest.fn().mockResolvedValue([])
     } as jest.Mocked<KitchenTicketPrintJobRepository>
 
     useCase = new FindUnprintedPrintJobs(repository)

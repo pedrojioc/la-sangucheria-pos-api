@@ -31,7 +31,8 @@ describe('KitchenPrinterDispatcher', () => {
     printJobRepository = {
       save: jest.fn().mockResolvedValue(undefined),
       search: jest.fn().mockResolvedValue(null),
-      searchUnprinted: jest.fn().mockResolvedValue([])
+      searchUnprinted: jest.fn().mockResolvedValue([]),
+      searchFailed: jest.fn().mockResolvedValue([])
     } as jest.Mocked<KitchenTicketPrintJobRepository>
 
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined)

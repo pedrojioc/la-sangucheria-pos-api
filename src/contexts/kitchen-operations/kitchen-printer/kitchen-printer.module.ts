@@ -11,6 +11,7 @@ import { KitchenAgentNotifierPort } from './application/ports/kitchen-agent-noti
 import { KitchenPrinterDispatcher } from './application/kitchen-printer-dispatcher'
 import { ReprintKitchenTicket } from './application/reprint/reprint-kitchen-ticket'
 import { FindUnprintedPrintJobs } from './application/find-unprinted/find-unprinted-print-jobs'
+import { FindFailedPrintJobs } from './application/find-failed/find-failed-print-jobs'
 import { OnOrderSentPrintKitchenTicket } from './application/subscribers/on-order-sent-print-kitchen-ticket'
 import { EscPosKitchenPrinterAdapter } from './infrastructure/adapters/esc-pos-kitchen-printer.adapter'
 import { TypeOrmPrinterStationResolverAdapter } from './infrastructure/adapters/typeorm-printer-station-resolver.adapter'
@@ -56,6 +57,7 @@ import { KitchenPrintJobController } from './presentation/http/controllers/kitch
       KitchenAgentNotifierPort
     ]),
     createProvider(FindUnprintedPrintJobs, [KitchenTicketPrintJobRepository]),
+    createProvider(FindFailedPrintJobs, [KitchenTicketPrintJobRepository]),
 
     // SUBSCRIBER
     {

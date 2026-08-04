@@ -96,4 +96,77 @@ describe('KitchenTicketPrintJob', () => {
 
     expect(restored.toPrimitives()).toEqual(job.toPrimitives())
   })
+
+  describe('markFailed', () => {
+    it('transitions a pending job to failed and records the reason', () => {
+      const job = buildJob()
+
+      job.markFailed('out-of-paper')
+      const primitives = job.toPrimitives()
+
+      expect(primitives.status).toBe('failed')
+      expect(primitives.failureReason).toBe('out-of-paper')
+      expect(primitives.failedAt).not.toBeNull()
+    })
+
+    it('transitions a delivered job to failed and records the reason', () => {
+      const job = buildJob()
+      job.markDelivered()
+
+      job.markFailed('jammed')
+      const primitives = job.toPrimitives()
+
+      expect(primitives.status).toBe('failed')
+      expect(primitives.failureReason).toBe('jammed')
+      expect(primitives.failedAt).not.toBeNull()
+    })
+
+    it('is a no-op when markFailed is called on an already printed job (non-regression invariant)', () => {
+      const job = buildJob()
+      job.markPrinted()
+
+      job.markFailed('offline')
+      const primitives = job.toPrimitives()
+
+      expect(primitives.status).toBe('printed')
+      expect(primitives.failureReason).toBeNull()
+      expect(primitives.failedAt).toBeNull()
+    })
+
+    it('is idempotent on a re-nack for an already failed job, updating the reason (last-write-wins)', () => {
+      const job = buildJob()
+      job.markFailed('out-of-paper')
+
+      job.markFailed('unknown')
+      const primitives = job.toPrimitives()
+
+      expect(primitives.status).toBe('failed')
+      expect(primitives.failureReason).toBe('unknown')
+    })
+  })
+
+  describe('retryFromFailure', () => {
+    it('transitions a failed job to delivered and clears the failure state', () => {
+      const job = buildJob()
+      job.markFailed('out-of-paper')
+
+      job.retryFromFailure()
+      const primitives = job.toPrimitives()
+
+      expect(primitives.status).toBe('delivered')
+      expect(primitives.failureReason).toBeNull()
+      expect(primitives.failedAt).toBeNull()
+      expect(primitives.deliveredAt).not.toBeNull()
+    })
+
+    it('is a no-op when the job is not currently failed', () => {
+      const job = buildJob()
+
+      job.retryFromFailure()
+      const primitives = job.toPrimitives()
+
+      expect(primitives.status).toBe('pending')
+      expect(primitives.deliveredAt).toBeNull()
+    })
+  })
 })

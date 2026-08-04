@@ -9,6 +9,7 @@ export class KitchenPrintJobResponse {
   readonly createdAt: Date
   readonly deliveredAt: Date | null
   readonly printedAt: Date | null
+  readonly failureReason: string | null
 
   private constructor(
     id: string,
@@ -18,7 +19,8 @@ export class KitchenPrintJobResponse {
     status: string,
     createdAt: Date,
     deliveredAt: Date | null,
-    printedAt: Date | null
+    printedAt: Date | null,
+    failureReason: string | null
   ) {
     this.id = id
     this.ticketNumber = ticketNumber
@@ -28,6 +30,7 @@ export class KitchenPrintJobResponse {
     this.createdAt = createdAt
     this.deliveredAt = deliveredAt
     this.printedAt = printedAt
+    this.failureReason = failureReason
   }
 
   static fromAggregate(job: KitchenTicketPrintJob): KitchenPrintJobResponse {
@@ -40,7 +43,8 @@ export class KitchenPrintJobResponse {
       p.status,
       p.createdAt,
       p.deliveredAt,
-      p.printedAt
+      p.printedAt,
+      p.failureReason
     )
   }
 }
