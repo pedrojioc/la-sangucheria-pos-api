@@ -23,7 +23,9 @@ export class TypeOrmStationRepository implements StationRepository {
       isActive: p.isActive,
       color: p.color,
       outputDevice: p.outputDevice,
-      printerAddress: p.printerAddress
+      printerAddress: p.printerAddress,
+      connectionType: p.connectionType,
+      usbIdentifier: p.usbIdentifier
     })
   }
 
@@ -58,7 +60,9 @@ export class TypeOrmStationRepository implements StationRepository {
       isActive: entity.isActive,
       color: entity.color,
       outputDevice: entity.outputDevice,
-      printerAddress: entity.printerAddress
+      printerAddress: entity.printerAddress,
+      connectionType: entity.connectionType,
+      usbIdentifier: entity.usbIdentifier
     })
   }
 }

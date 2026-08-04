@@ -24,6 +24,12 @@ export class StationEntity {
   @Column({ name: 'printer_address', type: 'varchar', length: 255, nullable: true })
   printerAddress: string | null
 
+  @Column({ name: 'connection_type', type: 'varchar', length: 10, default: 'network' })
+  connectionType: string
+
+  @Column({ name: 'usb_identifier', type: 'varchar', length: 255, nullable: true })
+  usbIdentifier: string | null
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
 

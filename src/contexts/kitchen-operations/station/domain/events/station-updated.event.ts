@@ -12,6 +12,8 @@ export interface StationUpdatedPayload {
   color: string | null
   outputDevice?: string
   printerAddress?: string | null
+  connectionType?: string
+  usbIdentifier?: string | null
 }
 
 export class StationUpdatedEvent extends DomainEvent {
