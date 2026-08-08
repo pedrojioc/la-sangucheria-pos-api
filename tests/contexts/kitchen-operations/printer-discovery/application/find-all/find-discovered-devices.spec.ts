@@ -56,4 +56,48 @@ describe('FindDiscoveredDevices', () => {
     expect(result).toHaveLength(1)
     expect(result[0].stale).toBe(true)
   })
+
+  it('includes status and statusUpdatedAt sourced directly from stored primitives', async () => {
+    const statusUpdatedAt = new Date(now.getTime() - 2 * 60 * 1000)
+    const device = DiscoveredPrinterDevice.create(
+      {
+        id: Uuid.random().value,
+        establishmentId: establishmentId.value,
+        connectionType: 'network',
+        address: '192.168.1.52',
+        usbIdentifier: null
+      },
+      new Date(now.getTime() - 1 * 60 * 1000) // 1 min ago, within TTL
+    )
+    device.reportStatus('online', statusUpdatedAt)
+    repository.searchAllByEstablishment.mockResolvedValue([device])
+
+    const result = await useCase.run(establishmentId.value, now)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].status).toBe('online')
+    expect(result[0].statusUpdatedAt).toEqual(statusUpdatedAt)
+  })
+
+  it('status is independent of stale — a stale device can still report a recent status', async () => {
+    const statusUpdatedAt = new Date(now.getTime() - 1 * 60 * 1000)
+    const device = DiscoveredPrinterDevice.create(
+      {
+        id: Uuid.random().value,
+        establishmentId: establishmentId.value,
+        connectionType: 'network',
+        address: '192.168.1.53',
+        usbIdentifier: null
+      },
+      new Date(now.getTime() - 20 * 60 * 1000) // stale by lastSeenAt
+    )
+    device.reportStatus('online', statusUpdatedAt) // but status recently pinged
+    repository.searchAllByEstablishment.mockResolvedValue([device])
+
+    const result = await useCase.run(establishmentId.value, now)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].stale).toBe(true)
+    expect(result[0].status).toBe('online')
+  })
 })

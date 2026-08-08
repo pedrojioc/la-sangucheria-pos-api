@@ -4,7 +4,8 @@ import { Repository } from 'typeorm'
 
 import {
   DiscoveredPrinterDevice,
-  DiscoveredPrinterDeviceConnectionType
+  DiscoveredPrinterDeviceConnectionType,
+  DiscoveredPrinterDeviceStatus
 } from '@contexts/kitchen-operations/printer-discovery/domain/discovered-printer-device'
 import { DiscoveredPrinterDeviceRepository } from '@contexts/kitchen-operations/printer-discovery/domain/repositories/discovered-printer-device.repository'
 import { DiscoveredPrinterDeviceEntity } from './discovered-printer-device.entity'
@@ -24,7 +25,10 @@ export class TypeOrmDiscoveredPrinterDeviceRepository implements DiscoveredPrint
       connectionType: p.connectionType,
       address: p.address,
       usbIdentifier: p.usbIdentifier,
-      lastSeenAt: p.lastSeenAt
+      model: p.model,
+      lastSeenAt: p.lastSeenAt,
+      status: p.status,
+      statusUpdatedAt: p.statusUpdatedAt
     })
   }
 
@@ -58,7 +62,10 @@ export class TypeOrmDiscoveredPrinterDeviceRepository implements DiscoveredPrint
       connectionType: entity.connectionType as DiscoveredPrinterDeviceConnectionType,
       address: entity.address,
       usbIdentifier: entity.usbIdentifier,
-      lastSeenAt: entity.lastSeenAt
+      model: entity.model,
+      lastSeenAt: entity.lastSeenAt,
+      status: entity.status as DiscoveredPrinterDeviceStatus,
+      statusUpdatedAt: entity.statusUpdatedAt
     })
   }
 }

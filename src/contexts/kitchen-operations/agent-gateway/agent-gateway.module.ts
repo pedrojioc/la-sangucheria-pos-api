@@ -33,6 +33,7 @@ import { EstablishmentModule } from '@contexts/establishment/establishment/estab
 
 import { PrinterDiscoveryModule } from '@contexts/kitchen-operations/printer-discovery/printer-discovery.module'
 import { RecordDiscoveredDevice } from '@contexts/kitchen-operations/printer-discovery/application/record/record-discovered-device'
+import { RecordDeviceStatus } from '@contexts/kitchen-operations/printer-discovery/application/record-status/record-device-status'
 
 @Module({
   // KitchenPrinterModule imports AgentGatewayModule (for KitchenAgentNotifierPort),
@@ -78,6 +79,7 @@ import { RecordDiscoveredDevice } from '@contexts/kitchen-operations/printer-dis
       AcknowledgePrintJob,
       ReportPrintJobFailure,
       RecordDiscoveredDevice,
+      RecordDeviceStatus,
       RotateAgentCredentialIfNeeded
     ])
   ],

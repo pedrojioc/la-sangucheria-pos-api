@@ -23,6 +23,7 @@ describe('DiscoveredPrinterDevice', () => {
     expect(primitives.connectionType).toBe('network')
     expect(primitives.address).toBe('192.168.1.50')
     expect(primitives.usbIdentifier).toBeNull()
+    expect(primitives.model).toBeNull()
     expect(primitives.lastSeenAt).toEqual(now)
   })
 
@@ -43,7 +44,24 @@ describe('DiscoveredPrinterDevice', () => {
     expect(primitives.connectionType).toBe('usb')
     expect(primitives.address).toBeNull()
     expect(primitives.usbIdentifier).toBe('USB001')
+    expect(primitives.model).toBeNull()
     expect(primitives.lastSeenAt).toEqual(now)
+  })
+
+  it('creates a device with a model when the agent reports it', () => {
+    const device = DiscoveredPrinterDevice.create(
+      {
+        id: DiscoveredPrinterDeviceId.random().value,
+        establishmentId: establishmentId.value,
+        connectionType: 'usb',
+        address: null,
+        usbIdentifier: 'USB001',
+        model: 'EPSON TM-T20'
+      },
+      now
+    )
+
+    expect(device.getModel()).toBe('EPSON TM-T20')
   })
 
   it('updates lastSeenAt on touch()', () => {
@@ -59,8 +77,101 @@ describe('DiscoveredPrinterDevice', () => {
     )
     const later = new Date('2026-07-28T10:20:00Z')
 
-    device.touch(later)
+    device.touch(undefined, later)
 
     expect(device.toPrimitives().lastSeenAt).toEqual(later)
+  })
+
+  it('updates model on touch() when the agent reports a new model', () => {
+    const device = DiscoveredPrinterDevice.create(
+      {
+        id: DiscoveredPrinterDeviceId.random().value,
+        establishmentId: establishmentId.value,
+        connectionType: 'network',
+        address: '192.168.1.50',
+        usbIdentifier: null
+      },
+      now
+    )
+
+    device.touch('EPSON TM-T20', new Date('2026-07-28T10:20:00Z'))
+
+    expect(device.getModel()).toBe('EPSON TM-T20')
+  })
+
+  it('leaves model unchanged on touch() when the agent omits it', () => {
+    const device = DiscoveredPrinterDevice.create(
+      {
+        id: DiscoveredPrinterDeviceId.random().value,
+        establishmentId: establishmentId.value,
+        connectionType: 'network',
+        address: '192.168.1.50',
+        usbIdentifier: null,
+        model: 'EPSON TM-T20'
+      },
+      now
+    )
+
+    device.touch(undefined, new Date('2026-07-28T10:20:00Z'))
+
+    expect(device.getModel()).toBe('EPSON TM-T20')
+  })
+
+  it('defaults status to unknown and statusUpdatedAt to null when not supplied on create()', () => {
+    const device = DiscoveredPrinterDevice.create(
+      {
+        id: DiscoveredPrinterDeviceId.random().value,
+        establishmentId: establishmentId.value,
+        connectionType: 'network',
+        address: '192.168.1.50',
+        usbIdentifier: null
+      },
+      now
+    )
+
+    const primitives = device.toPrimitives()
+    expect(primitives.status).toBe('unknown')
+    expect(primitives.statusUpdatedAt).toBeNull()
+  })
+
+  it('reportStatus() updates status and statusUpdatedAt together (atomically)', () => {
+    const device = DiscoveredPrinterDevice.create(
+      {
+        id: DiscoveredPrinterDeviceId.random().value,
+        establishmentId: establishmentId.value,
+        connectionType: 'network',
+        address: '192.168.1.50',
+        usbIdentifier: null
+      },
+      now
+    )
+    const statusUpdatedAt = new Date('2026-07-28T10:30:00Z')
+
+    device.reportStatus('offline', statusUpdatedAt)
+
+    const primitives = device.toPrimitives()
+    expect(primitives.status).toBe('offline')
+    expect(primitives.statusUpdatedAt).toEqual(statusUpdatedAt)
+  })
+
+  it('touch() does NOT change status or statusUpdatedAt (independent signals)', () => {
+    const device = DiscoveredPrinterDevice.create(
+      {
+        id: DiscoveredPrinterDeviceId.random().value,
+        establishmentId: establishmentId.value,
+        connectionType: 'network',
+        address: '192.168.1.50',
+        usbIdentifier: null
+      },
+      now
+    )
+    const statusUpdatedAt = new Date('2026-07-28T10:30:00Z')
+    device.reportStatus('online', statusUpdatedAt)
+
+    device.touch('EPSON TM-T20', new Date('2026-07-28T10:40:00Z'))
+
+    const primitives = device.toPrimitives()
+    expect(primitives.status).toBe('online')
+    expect(primitives.statusUpdatedAt).toEqual(statusUpdatedAt)
   })
 })

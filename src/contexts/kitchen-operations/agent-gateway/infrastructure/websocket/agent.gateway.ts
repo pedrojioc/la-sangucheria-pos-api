@@ -15,7 +15,11 @@ import { AcknowledgePrintJob } from '@contexts/kitchen-operations/kitchen-printe
 import { ReportPrintJobFailure } from '@contexts/kitchen-operations/kitchen-printer/application/report-print-job-failure/report-print-job-failure'
 import { FailureReason } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-ticket-print-job'
 import { RecordDiscoveredDevice } from '@contexts/kitchen-operations/printer-discovery/application/record/record-discovered-device'
-import { DiscoveredPrinterDeviceConnectionType } from '@contexts/kitchen-operations/printer-discovery/domain/discovered-printer-device'
+import { RecordDeviceStatus } from '@contexts/kitchen-operations/printer-discovery/application/record-status/record-device-status'
+import {
+  DiscoveredPrinterDeviceConnectionType,
+  DiscoveredPrinterDeviceStatus
+} from '@contexts/kitchen-operations/printer-discovery/domain/discovered-printer-device'
 import { EstablishmentId } from '@contexts/establishment/establishment/domain/establishment-id'
 
 interface ReportDevicesPayload {
@@ -23,7 +27,15 @@ interface ReportDevicesPayload {
     connectionType: DiscoveredPrinterDeviceConnectionType
     address?: string
     usbIdentifier?: string
+    model?: string
   }>
+}
+
+interface ReportDeviceStatusPayload {
+  connectionType: DiscoveredPrinterDeviceConnectionType
+  address?: string
+  usbIdentifier?: string
+  status: string
 }
 
 // Closed set of failure reasons a USB print agent can distinguish. Validated
@@ -31,6 +43,11 @@ interface ReportDevicesPayload {
 // no-payload-validation posture for WS messages (cf. print-ack's raw
 // { jobId: string } access).
 const FAILURE_REASONS: FailureReason[] = ['out-of-paper', 'offline', 'jammed', 'unknown']
+
+// Closed set of statuses the AGENT may push. 'unknown' is intentionally
+// excluded — it is a backend-only default/backfill value, never transmitted
+// by the agent itself.
+const STATUS_VALUES: DiscoveredPrinterDeviceStatus[] = ['online', 'offline']
 
 // Sockets authenticated on this namespace get their resolved EstablishmentId
 // stashed here for the lifetime of the connection (register/report-devices/
@@ -58,6 +75,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly acknowledgePrintJob: AcknowledgePrintJob,
     private readonly reportPrintJobFailure: ReportPrintJobFailure,
     private readonly recordDiscoveredDevice: RecordDiscoveredDevice,
+    private readonly recordDeviceStatus: RecordDeviceStatus,
     private readonly rotateAgentCredentialIfNeeded: RotateAgentCredentialIfNeeded
   ) {}
 
@@ -144,9 +162,36 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
         establishmentId: establishmentId.value,
         connectionType: device.connectionType,
         address: device.address,
-        usbIdentifier: device.usbIdentifier
+        usbIdentifier: device.usbIdentifier,
+        model: device.model
       })
     }
+  }
+
+  @SubscribeMessage('report-device-status')
+  async handleReportDeviceStatus(
+    @MessageBody() payload: ReportDeviceStatusPayload,
+    @ConnectedSocket() socket: Socket
+  ): Promise<void> {
+    await this.maybeRotate(socket)
+
+    const establishmentId = resolvedEstablishmentIds.get(socket)
+    if (!establishmentId) return
+
+    if (!STATUS_VALUES.includes(payload.status as DiscoveredPrinterDeviceStatus)) {
+      console.warn('AgentGateway: received report-device-status with invalid status; dropping', {
+        status: payload.status
+      })
+      return
+    }
+
+    await this.recordDeviceStatus.run({
+      establishmentId: establishmentId.value,
+      connectionType: payload.connectionType,
+      address: payload.address,
+      usbIdentifier: payload.usbIdentifier,
+      status: payload.status as DiscoveredPrinterDeviceStatus
+    })
   }
 
   // Pure side-effecting prefix — never alters the caller's own handler

@@ -6,6 +6,7 @@ import { DiscoveredPrinterDeviceRepository } from './domain/repositories/discove
 import { TypeOrmDiscoveredPrinterDeviceRepository } from './infrastructure/persistence/typeorm/typeorm-discovered-printer-device.repository'
 
 import { RecordDiscoveredDevice } from './application/record/record-discovered-device'
+import { RecordDeviceStatus } from './application/record-status/record-device-status'
 import { FindDiscoveredDevices } from './application/find-all/find-discovered-devices'
 
 import { createProvider } from '@core/utils/create-provider'
@@ -18,8 +19,9 @@ import { createProvider } from '@core/utils/create-provider'
       useClass: TypeOrmDiscoveredPrinterDeviceRepository
     },
     createProvider(RecordDiscoveredDevice, [DiscoveredPrinterDeviceRepository]),
+    createProvider(RecordDeviceStatus, [DiscoveredPrinterDeviceRepository]),
     createProvider(FindDiscoveredDevices, [DiscoveredPrinterDeviceRepository])
   ],
-  exports: [RecordDiscoveredDevice, FindDiscoveredDevices]
+  exports: [RecordDiscoveredDevice, RecordDeviceStatus, FindDiscoveredDevices]
 })
 export class PrinterDiscoveryModule {}

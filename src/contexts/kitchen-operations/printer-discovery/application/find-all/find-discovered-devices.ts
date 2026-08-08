@@ -1,5 +1,8 @@
 import { DiscoveredPrinterDeviceRepository } from '../../domain/repositories/discovered-printer-device.repository'
-import { DiscoveredPrinterDeviceConnectionType } from '../../domain/discovered-printer-device'
+import {
+  DiscoveredPrinterDeviceConnectionType,
+  DiscoveredPrinterDeviceStatus
+} from '../../domain/discovered-printer-device'
 
 // Staleness is flagged, never hidden — a stale device stays in the result
 // set and clears the flag on its next report-devices push. No scheduler,
@@ -11,8 +14,11 @@ export interface DiscoveredDeviceView {
   connectionType: DiscoveredPrinterDeviceConnectionType
   address: string | null
   usbIdentifier: string | null
+  model: string | null
   lastSeenAt: Date
   stale: boolean
+  status: DiscoveredPrinterDeviceStatus
+  statusUpdatedAt: Date | null
 }
 
 export class FindDiscoveredDevices {
@@ -30,8 +36,11 @@ export class FindDiscoveredDevices {
         connectionType: primitives.connectionType,
         address: primitives.address,
         usbIdentifier: primitives.usbIdentifier,
+        model: primitives.model,
         lastSeenAt: primitives.lastSeenAt,
-        stale
+        stale,
+        status: primitives.status,
+        statusUpdatedAt: primitives.statusUpdatedAt
       }
     })
   }

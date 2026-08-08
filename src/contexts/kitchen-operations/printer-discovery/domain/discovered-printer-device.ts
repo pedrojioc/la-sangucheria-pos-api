@@ -3,13 +3,18 @@ import { DiscoveredPrinterDeviceId } from './discovered-printer-device-id'
 
 export type DiscoveredPrinterDeviceConnectionType = 'network' | 'usb'
 
+export type DiscoveredPrinterDeviceStatus = 'online' | 'offline' | 'unknown'
+
 export interface DiscoveredPrinterDevicePrimitives {
   id: string
   establishmentId: string
   connectionType: DiscoveredPrinterDeviceConnectionType
   address: string | null
   usbIdentifier: string | null
+  model: string | null
   lastSeenAt: Date
+  status: DiscoveredPrinterDeviceStatus
+  statusUpdatedAt: Date | null
 }
 
 export interface CreateDiscoveredPrinterDeviceParams {
@@ -18,6 +23,9 @@ export interface CreateDiscoveredPrinterDeviceParams {
   connectionType: DiscoveredPrinterDeviceConnectionType
   address: string | null
   usbIdentifier: string | null
+  model?: string | null
+  status?: DiscoveredPrinterDeviceStatus
+  statusUpdatedAt?: Date | null
 }
 
 export class DiscoveredPrinterDevice extends AggregateRoot {
@@ -27,7 +35,10 @@ export class DiscoveredPrinterDevice extends AggregateRoot {
     private readonly connectionType: DiscoveredPrinterDeviceConnectionType,
     private readonly address: string | null,
     private readonly usbIdentifier: string | null,
-    private lastSeenAt: Date
+    private model: string | null,
+    private lastSeenAt: Date,
+    private status: DiscoveredPrinterDeviceStatus,
+    private statusUpdatedAt: Date | null
   ) {
     super()
   }
@@ -42,7 +53,10 @@ export class DiscoveredPrinterDevice extends AggregateRoot {
       params.connectionType,
       params.address,
       params.usbIdentifier,
-      now
+      params.model ?? null,
+      now,
+      params.status ?? 'unknown',
+      params.statusUpdatedAt ?? null
     )
   }
 
@@ -53,7 +67,10 @@ export class DiscoveredPrinterDevice extends AggregateRoot {
       primitives.connectionType,
       primitives.address,
       primitives.usbIdentifier,
-      primitives.lastSeenAt
+      primitives.model,
+      primitives.lastSeenAt,
+      primitives.status,
+      primitives.statusUpdatedAt
     )
   }
 
@@ -73,10 +90,26 @@ export class DiscoveredPrinterDevice extends AggregateRoot {
     return this.usbIdentifier
   }
 
-  // Re-reporting the same device only refreshes lastSeenAt — identity (type +
-  // address/usbIdentifier) never changes after creation.
-  touch(now: Date = new Date()): void {
+  getModel(): string | null {
+    return this.model
+  }
+
+  // Re-reporting the same device refreshes lastSeenAt and model — identity
+  // (type + address/usbIdentifier) never changes after creation, but the
+  // agent may resolve the model after the device was first seen.
+  touch(model: string | null | undefined, now: Date = new Date()): void {
+    if (model !== undefined) {
+      this.model = model
+    }
     this.lastSeenAt = now
+  }
+
+  // Status is a signal independent from discovery/reporting freshness
+  // (touch()/lastSeenAt) — it is only ever set by an explicit agent status
+  // ping, and both fields always change together (never independently).
+  reportStatus(status: DiscoveredPrinterDeviceStatus, now: Date = new Date()): void {
+    this.status = status
+    this.statusUpdatedAt = now
   }
 
   toPrimitives(): DiscoveredPrinterDevicePrimitives {
@@ -86,7 +119,10 @@ export class DiscoveredPrinterDevice extends AggregateRoot {
       connectionType: this.connectionType,
       address: this.address,
       usbIdentifier: this.usbIdentifier,
-      lastSeenAt: this.lastSeenAt
+      model: this.model,
+      lastSeenAt: this.lastSeenAt,
+      status: this.status,
+      statusUpdatedAt: this.statusUpdatedAt
     }
   }
 }
