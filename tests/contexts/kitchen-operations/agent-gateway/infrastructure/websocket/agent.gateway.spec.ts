@@ -5,6 +5,7 @@ import { RotateAgentCredentialIfNeeded } from '@contexts/kitchen-operations/agen
 import { AcknowledgePrintJob } from '@contexts/kitchen-operations/kitchen-printer/application/acknowledge/acknowledge-print-job'
 import { ReportPrintJobFailure } from '@contexts/kitchen-operations/kitchen-printer/application/report-print-job-failure/report-print-job-failure'
 import { RecordDiscoveredDevice } from '@contexts/kitchen-operations/printer-discovery/application/record/record-discovered-device'
+import { RecordDeviceStatus } from '@contexts/kitchen-operations/printer-discovery/application/record-status/record-device-status'
 import { EstablishmentId } from '@contexts/establishment/establishment/domain/establishment-id'
 
 type FakeSocket = {
@@ -27,6 +28,7 @@ describe('AgentGateway', () => {
   let acknowledgePrintJob: jest.Mocked<AcknowledgePrintJob>
   let reportPrintJobFailure: jest.Mocked<ReportPrintJobFailure>
   let recordDiscoveredDevice: jest.Mocked<RecordDiscoveredDevice>
+  let recordDeviceStatus: jest.Mocked<RecordDeviceStatus>
   let rotateAgentCredentialIfNeeded: jest.Mocked<RotateAgentCredentialIfNeeded>
   let gateway: AgentGateway
   const establishmentId1 = EstablishmentId.random()
@@ -37,6 +39,7 @@ describe('AgentGateway', () => {
     acknowledgePrintJob = { run: jest.fn() } as unknown as jest.Mocked<AcknowledgePrintJob>
     reportPrintJobFailure = { run: jest.fn() } as unknown as jest.Mocked<ReportPrintJobFailure>
     recordDiscoveredDevice = { run: jest.fn() } as unknown as jest.Mocked<RecordDiscoveredDevice>
+    recordDeviceStatus = { run: jest.fn() } as unknown as jest.Mocked<RecordDeviceStatus>
     rotateAgentCredentialIfNeeded = {
       run: jest.fn().mockResolvedValue(null)
     } as unknown as jest.Mocked<RotateAgentCredentialIfNeeded>
@@ -46,6 +49,7 @@ describe('AgentGateway', () => {
       acknowledgePrintJob,
       reportPrintJobFailure,
       recordDiscoveredDevice,
+      recordDeviceStatus,
       rotateAgentCredentialIfNeeded
     )
   })
@@ -176,7 +180,7 @@ describe('AgentGateway', () => {
       await gateway.handleReportDevices(
         {
           devices: [
-            { connectionType: 'network', address: '192.168.1.50' },
+            { connectionType: 'network', address: '192.168.1.50', model: 'EPSON TM-T20' },
             { connectionType: 'usb', usbIdentifier: 'USB001' }
           ]
         },
@@ -188,13 +192,15 @@ describe('AgentGateway', () => {
         establishmentId: establishmentId1.value,
         connectionType: 'network',
         address: '192.168.1.50',
-        usbIdentifier: undefined
+        usbIdentifier: undefined,
+        model: 'EPSON TM-T20'
       })
       expect(recordDiscoveredDevice.run).toHaveBeenNthCalledWith(2, {
         establishmentId: establishmentId1.value,
         connectionType: 'usb',
         address: undefined,
-        usbIdentifier: 'USB001'
+        usbIdentifier: 'USB001',
+        model: undefined
       })
     })
 
@@ -207,6 +213,85 @@ describe('AgentGateway', () => {
       )
 
       expect(recordDiscoveredDevice.run).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('report-device-status', () => {
+    it('delegates to RecordDeviceStatus with the resolved EstablishmentId', async () => {
+      verifier.verify.mockResolvedValue(establishmentId1.value)
+      const socket = buildSocket('good-key')
+      await gateway.handleConnection(socket as any)
+
+      await gateway.handleReportDeviceStatus(
+        { connectionType: 'network', address: '192.168.1.50', status: 'offline' },
+        socket as any
+      )
+
+      expect(recordDeviceStatus.run).toHaveBeenCalledTimes(1)
+      expect(recordDeviceStatus.run).toHaveBeenCalledWith({
+        establishmentId: establishmentId1.value,
+        connectionType: 'network',
+        address: '192.168.1.50',
+        usbIdentifier: undefined,
+        status: 'offline'
+      })
+    })
+
+    it('does nothing when the socket has no resolved EstablishmentId (not authenticated)', async () => {
+      const socket = buildSocket(undefined)
+
+      await gateway.handleReportDeviceStatus(
+        { connectionType: 'network', address: '192.168.1.50', status: 'offline' },
+        socket as any
+      )
+
+      expect(recordDeviceStatus.run).not.toHaveBeenCalled()
+    })
+
+    it('drops an invalid status value without calling RecordDeviceStatus, and logs a warning', async () => {
+      verifier.verify.mockResolvedValue(establishmentId1.value)
+      const socket = buildSocket('good-key')
+      await gateway.handleConnection(socket as any)
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+      await gateway.handleReportDeviceStatus(
+        { connectionType: 'network', address: '192.168.1.50', status: 'flashing' },
+        socket as any
+      )
+
+      expect(recordDeviceStatus.run).not.toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
+
+    it('checks rotation on report-device-status as well (maybeRotate prefix)', async () => {
+      verifier.verify.mockResolvedValue(establishmentId1.value)
+      const socket = buildSocket('good-key')
+      await gateway.handleConnection(socket as any)
+
+      await gateway.handleReportDeviceStatus(
+        { connectionType: 'network', address: '192.168.1.50', status: 'offline' },
+        socket as any
+      )
+
+      expect(rotateAgentCredentialIfNeeded.run).toHaveBeenCalledWith(establishmentId1.value)
+    })
+
+    it('does not emit any status-specific ack payload back to the socket', async () => {
+      verifier.verify.mockResolvedValue(establishmentId1.value)
+      const socket = buildSocket('good-key')
+      await gateway.handleConnection(socket as any)
+
+      await gateway.handleReportDeviceStatus(
+        { connectionType: 'network', address: '192.168.1.50', status: 'offline' },
+        socket as any
+      )
+
+      expect(socket.emit).not.toHaveBeenCalledWith(
+        expect.stringContaining('report-device-status'),
+        expect.anything()
+      )
     })
   })
 
@@ -277,7 +362,8 @@ describe('AgentGateway', () => {
         establishmentId: establishmentId1.value,
         connectionType: 'network',
         address: '192.168.1.50',
-        usbIdentifier: undefined
+        usbIdentifier: undefined,
+        model: undefined
       })
     })
 

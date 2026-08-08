@@ -19,8 +19,17 @@ export class DiscoveredPrinterDeviceEntity {
   @Column({ name: 'usb_identifier', type: 'varchar', length: 255, nullable: true })
   usbIdentifier: string | null
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  model: string | null
+
   @Column({ name: 'last_seen_at', type: 'timestamptz' })
   lastSeenAt: Date
+
+  @Column({ type: 'varchar', length: 10, default: 'unknown' })
+  status: string
+
+  @Column({ name: 'status_updated_at', type: 'timestamptz', nullable: true })
+  statusUpdatedAt: Date | null
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date

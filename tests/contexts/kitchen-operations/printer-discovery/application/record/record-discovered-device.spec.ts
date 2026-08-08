@@ -26,7 +26,8 @@ describe('RecordDiscoveredDevice', () => {
       establishmentId: establishmentId1.value,
       connectionType: 'network',
       address: '192.168.1.50',
-      usbIdentifier: undefined
+      usbIdentifier: undefined,
+      model: 'EPSON TM-T20'
     })
 
     expect(repository.save).toHaveBeenCalledTimes(1)
@@ -34,6 +35,7 @@ describe('RecordDiscoveredDevice', () => {
     expect(saved.getEstablishmentId()).toBe(establishmentId1.value)
     expect(saved.getConnectionType()).toBe('network')
     expect(saved.getAddress()).toBe('192.168.1.50')
+    expect(saved.getModel()).toBe('EPSON TM-T20')
   })
 
   it('creates a new record on first report (USB)', async () => {
@@ -76,6 +78,32 @@ describe('RecordDiscoveredDevice', () => {
     expect(repository.save).toHaveBeenCalledTimes(1)
     const saved = repository.save.mock.calls[0][0] as DiscoveredPrinterDevice
     expect(saved.id.value).toBe(existingId)
+  })
+
+  it('re-reporting with a model updates the model on the existing record', async () => {
+    const existingId = Uuid.random().value
+    const existing = DiscoveredPrinterDevice.create(
+      {
+        id: existingId,
+        establishmentId: establishmentId1.value,
+        connectionType: 'network',
+        address: '192.168.1.50',
+        usbIdentifier: null
+      },
+      new Date('2026-07-28T09:00:00Z')
+    )
+    repository.findByEstablishmentAndIdentity.mockResolvedValue(existing)
+
+    await useCase.run({
+      establishmentId: establishmentId1.value,
+      connectionType: 'network',
+      address: '192.168.1.50',
+      usbIdentifier: undefined,
+      model: 'EPSON TM-T20'
+    })
+
+    const saved = repository.save.mock.calls[0][0] as DiscoveredPrinterDevice
+    expect(saved.getModel()).toBe('EPSON TM-T20')
   })
 
   it('the same address under a different establishment creates a distinct record', async () => {

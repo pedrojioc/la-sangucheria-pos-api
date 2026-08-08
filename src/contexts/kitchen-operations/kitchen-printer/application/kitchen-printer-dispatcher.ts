@@ -47,6 +47,7 @@ export class KitchenPrinterDispatcher {
         // "Para llevar" substitution when tableLabel is null
         tableLabel: payload.tableLabel ?? 'Para llevar',
         stationName: station.stationName,
+        connectionType: station.connectionType,
         printerAddress: station.printerAddress,
         sentAt: payload.sentAt,
         orderType: payload.orderType,

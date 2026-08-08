@@ -10,6 +10,7 @@ export interface RecordDiscoveredDeviceParams {
   connectionType: DiscoveredPrinterDeviceConnectionType
   address?: string
   usbIdentifier?: string
+  model?: string
 }
 
 export class RecordDiscoveredDevice {
@@ -26,7 +27,7 @@ export class RecordDiscoveredDevice {
     )
 
     if (existing) {
-      existing.touch(now)
+      existing.touch(params.model, now)
       await this.repository.save(existing)
       return
     }
@@ -37,7 +38,8 @@ export class RecordDiscoveredDevice {
         establishmentId: params.establishmentId,
         connectionType: params.connectionType,
         address: params.connectionType === 'network' ? (params.address ?? null) : null,
-        usbIdentifier: params.connectionType === 'usb' ? (params.usbIdentifier ?? null) : null
+        usbIdentifier: params.connectionType === 'usb' ? (params.usbIdentifier ?? null) : null,
+        model: params.model ?? null
       },
       now
     )

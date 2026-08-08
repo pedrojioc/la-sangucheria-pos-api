@@ -18,6 +18,7 @@ describe('KitchenPrintJobController', () => {
     ticketNumber: 1,
     tableLabel: 'Mesa 1',
     stationName: 'Barra USB',
+    connectionType: 'usb',
     printerAddress: null,
     sentAt: new Date(),
     orderType: OrderType.DINE_IN,

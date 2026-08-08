@@ -8,6 +8,7 @@ export class KitchenPrintTicketMother {
       ticketNumber: params.ticketNumber ?? faker.number.int({ min: 1, max: 999 }),
       tableLabel: params.tableLabel ?? 'Mesa 5',
       stationName: params.stationName ?? 'Parrilla',
+      connectionType: params.connectionType ?? 'network',
       printerAddress: params.printerAddress ?? '192.168.1.50',
       sentAt: params.sentAt ?? new Date(),
       orderType: params.orderType ?? OrderType.DINE_IN,
