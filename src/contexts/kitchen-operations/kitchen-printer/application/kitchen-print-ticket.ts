@@ -4,6 +4,7 @@ export interface KitchenPrintTicket {
   ticketNumber: number
   tableLabel: string
   stationName: string
+  connectionType: 'network' | 'usb'
   printerAddress: string | null
   sentAt: Date
   orderType: OrderType

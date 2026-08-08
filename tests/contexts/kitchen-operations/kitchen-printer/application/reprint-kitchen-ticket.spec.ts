@@ -17,6 +17,7 @@ describe('ReprintKitchenTicket', () => {
     ticketNumber: 42,
     tableLabel: 'Mesa 5',
     stationName: 'Barra USB',
+    connectionType: 'usb',
     printerAddress: null,
     sentAt: new Date('2026-07-18T15:30:00Z'),
     orderType: OrderType.DINE_IN,
