@@ -1,9 +1,6 @@
 import { Controller, Get } from '@nestjs/common'
 
-import {
-  FindDiscoveredDevices,
-  DiscoveredDeviceView
-} from '@contexts/kitchen-operations/printer-discovery/application/find-all/find-discovered-devices'
+import { FindDiscoveredDevices, DiscoveredDeviceView } from '../../application/find-all/find-discovered-devices'
 import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
 
 // Same posture as station.controller.ts — under the existing global JWT

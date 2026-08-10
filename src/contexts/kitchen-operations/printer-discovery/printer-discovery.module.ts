@@ -8,11 +8,14 @@ import { TypeOrmDiscoveredPrinterDeviceRepository } from './infrastructure/persi
 import { RecordDiscoveredDevice } from './application/record/record-discovered-device'
 import { RecordDeviceStatus } from './application/record-status/record-device-status'
 import { FindDiscoveredDevices } from './application/find-all/find-discovered-devices'
+import { DiscoveredPrinterDeviceController } from './presentation/http/discovered-printer-device.controller'
 
 import { createProvider } from '@core/utils/create-provider'
+import { EstablishmentModule } from '@contexts/establishment/establishment/establishment.module'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([DiscoveredPrinterDeviceEntity])],
+  imports: [TypeOrmModule.forFeature([DiscoveredPrinterDeviceEntity]), EstablishmentModule],
+  controllers: [DiscoveredPrinterDeviceController],
   providers: [
     {
       provide: DiscoveredPrinterDeviceRepository,

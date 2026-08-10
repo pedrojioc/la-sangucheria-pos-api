@@ -9,7 +9,6 @@ import { AgentGateway } from './infrastructure/websocket/agent.gateway'
 import { PairingIpThrottleGuard } from './infrastructure/guards/pairing-ip-throttle.guard'
 import { AgentPairingController } from './presentation/http/agent-pairing.controller'
 import { AgentPairingPublicController } from './presentation/http/agent-pairing-public.controller'
-import { DiscoveredPrinterDeviceController } from './presentation/http/discovered-printer-device.controller'
 import { WebSocketKitchenAgentNotifierAdapter } from './infrastructure/adapters/websocket-kitchen-agent-notifier.adapter'
 import { KitchenAgentNotifierPort } from '@contexts/kitchen-operations/kitchen-printer/application/ports/kitchen-agent-notifier.port'
 import { KitchenTicketPrintJobRepository } from '@contexts/kitchen-operations/kitchen-printer/domain/repositories/kitchen-ticket-print-job.repository'
@@ -46,11 +45,7 @@ import { RecordDeviceStatus } from '@contexts/kitchen-operations/printer-discove
     EstablishmentModule,
     PrinterDiscoveryModule
   ],
-  controllers: [
-    AgentPairingController,
-    AgentPairingPublicController,
-    DiscoveredPrinterDeviceController
-  ],
+  controllers: [AgentPairingController, AgentPairingPublicController],
   providers: [
     // REGISTRIES
     AgentConnectionRegistry,

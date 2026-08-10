@@ -1,4 +1,4 @@
-import { DiscoveredPrinterDeviceController } from '@contexts/kitchen-operations/agent-gateway/presentation/http/discovered-printer-device.controller'
+import { DiscoveredPrinterDeviceController } from '@contexts/kitchen-operations/printer-discovery/presentation/http/discovered-printer-device.controller'
 import { FindDiscoveredDevices } from '@contexts/kitchen-operations/printer-discovery/application/find-all/find-discovered-devices'
 import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
 import { EstablishmentMother } from '@test/contexts/establishment/establishment/__mothers__/establishment.mother'
