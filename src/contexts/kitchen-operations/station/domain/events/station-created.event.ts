@@ -10,9 +10,7 @@ export interface StationCreatedPayload {
   displayOrder: number
   color: string | null
   outputDevice?: string
-  printerAddress?: string | null
-  connectionType?: string
-  usbIdentifier?: string | null
+  discoveredPrinterDeviceId?: string | null
 }
 
 export class StationCreatedEvent extends DomainEvent {
