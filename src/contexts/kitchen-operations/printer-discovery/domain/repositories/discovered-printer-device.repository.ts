@@ -2,6 +2,7 @@ import { DiscoveredPrinterDevice } from '../discovered-printer-device'
 
 export abstract class DiscoveredPrinterDeviceRepository {
   abstract save(device: DiscoveredPrinterDevice): Promise<void>
+  abstract findById(id: string): Promise<DiscoveredPrinterDevice | null>
   abstract findByEstablishmentAndIdentity(
     establishmentId: string,
     connectionType: string,
