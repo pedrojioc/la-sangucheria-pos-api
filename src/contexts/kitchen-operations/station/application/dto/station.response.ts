@@ -7,9 +7,7 @@ export class StationResponse {
   readonly isActive: boolean
   readonly color: string | null
   readonly outputDevice: string
-  readonly printerAddress: string | null
-  readonly connectionType: string
-  readonly usbIdentifier: string | null
+  readonly discoveredPrinterDeviceId: string | null
 
   private constructor(
     id: string,
@@ -18,9 +16,7 @@ export class StationResponse {
     isActive: boolean,
     color: string | null,
     outputDevice: string,
-    printerAddress: string | null,
-    connectionType: string,
-    usbIdentifier: string | null
+    discoveredPrinterDeviceId: string | null
   ) {
     this.id = id
     this.name = name
@@ -28,9 +24,7 @@ export class StationResponse {
     this.isActive = isActive
     this.color = color
     this.outputDevice = outputDevice
-    this.printerAddress = printerAddress
-    this.connectionType = connectionType
-    this.usbIdentifier = usbIdentifier
+    this.discoveredPrinterDeviceId = discoveredPrinterDeviceId
   }
 
   static fromAggregate(station: Station): StationResponse {
@@ -42,9 +36,7 @@ export class StationResponse {
       p.isActive,
       p.color,
       p.outputDevice,
-      p.printerAddress,
-      p.connectionType,
-      p.usbIdentifier
+      p.discoveredPrinterDeviceId
     )
   }
 }

@@ -5,13 +5,13 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   MaxLength,
   Min,
   MinLength
 } from 'class-validator'
 import { StationOutputDeviceEnum } from '@contexts/kitchen-operations/station/domain/station-output-device'
-import { StationConnectionTypeEnum } from '@contexts/kitchen-operations/station/domain/station-connection-type'
 
 export class UpdateStationRequest {
   @IsString()
@@ -37,14 +37,6 @@ export class UpdateStationRequest {
   outputDevice?: string
 
   @IsOptional()
-  @IsString()
-  printerAddress?: string | null
-
-  @IsOptional()
-  @IsEnum(StationConnectionTypeEnum, { message: 'Connection type must be one of: network, usb' })
-  connectionType?: string
-
-  @IsOptional()
-  @IsString()
-  usbIdentifier?: string | null
+  @IsUUID('4', { message: 'discoveredPrinterDeviceId must be a valid UUID v4' })
+  discoveredPrinterDeviceId?: string | null
 }
