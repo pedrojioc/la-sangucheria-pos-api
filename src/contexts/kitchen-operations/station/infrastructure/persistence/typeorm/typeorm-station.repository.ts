@@ -14,13 +14,6 @@ export class TypeOrmStationRepository implements StationRepository {
     private readonly repository: Repository<StationEntity>
   ) {}
 
-  // NOTE (PR2, device-identity-mapping chain): StationEntity/the `stations`
-  // table still has the legacy printer_address/connection_type/usb_identifier
-  // columns — dropping them and adding discovered_printer_device_id is PR3
-  // scope (entity + auto-generated migration). This mapping is a minimal,
-  // temporary adjustment so the repository compiles against the Station
-  // aggregate's new shape; discoveredPrinterDeviceId is NOT yet persisted.
-  // PR3 completes this by updating StationEntity and this mapping together.
   async save(station: Station): Promise<void> {
     const p = station.toPrimitives()
     await this.repository.save({
@@ -29,7 +22,8 @@ export class TypeOrmStationRepository implements StationRepository {
       displayOrder: p.displayOrder,
       isActive: p.isActive,
       color: p.color,
-      outputDevice: p.outputDevice
+      outputDevice: p.outputDevice,
+      discoveredPrinterDeviceId: p.discoveredPrinterDeviceId
     })
   }
 
@@ -57,8 +51,6 @@ export class TypeOrmStationRepository implements StationRepository {
   }
 
   private toDomain(entity: StationEntity): Station {
-    // discoveredPrinterDeviceId is not yet persisted (see NOTE above) — PR3
-    // adds the column and wires it through here.
     return Station.fromPrimitives({
       id: entity.id,
       name: entity.name,
@@ -66,7 +58,7 @@ export class TypeOrmStationRepository implements StationRepository {
       isActive: entity.isActive,
       color: entity.color,
       outputDevice: entity.outputDevice,
-      discoveredPrinterDeviceId: null
+      discoveredPrinterDeviceId: entity.discoveredPrinterDeviceId
     })
   }
 }

@@ -1,4 +1,14 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm'
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn
+} from 'typeorm'
+import { DiscoveredPrinterDeviceEntity } from '@contexts/kitchen-operations/printer-discovery/infrastructure/persistence/typeorm/discovered-printer-device.entity'
 
 @Entity('stations')
 @Index(['name'], { unique: true })
@@ -21,14 +31,12 @@ export class StationEntity {
   @Column({ name: 'output_device', type: 'varchar', length: 10, default: 'kds' })
   outputDevice: string
 
-  @Column({ name: 'printer_address', type: 'varchar', length: 255, nullable: true })
-  printerAddress: string | null
+  @Column({ name: 'discovered_printer_device_id', type: 'uuid', nullable: true })
+  discoveredPrinterDeviceId: string | null
 
-  @Column({ name: 'connection_type', type: 'varchar', length: 10, default: 'network' })
-  connectionType: string
-
-  @Column({ name: 'usb_identifier', type: 'varchar', length: 255, nullable: true })
-  usbIdentifier: string | null
+  @ManyToOne(() => DiscoveredPrinterDeviceEntity, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'discovered_printer_device_id' })
+  discoveredPrinterDevice?: DiscoveredPrinterDeviceEntity
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
