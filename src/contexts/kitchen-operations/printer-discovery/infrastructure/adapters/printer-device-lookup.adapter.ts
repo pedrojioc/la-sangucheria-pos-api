@@ -12,8 +12,8 @@ export class PrinterDeviceLookupAdapter extends PrinterDeviceLookupPort {
     super()
   }
 
-  async findById(id: string): Promise<PrinterDeviceLookupResult | null> {
-    const device = await this.repository.findById(id)
+  async findById(id: string, establishmentId: string): Promise<PrinterDeviceLookupResult | null> {
+    const device = await this.repository.findById(id, establishmentId)
     if (!device) return null
 
     return {

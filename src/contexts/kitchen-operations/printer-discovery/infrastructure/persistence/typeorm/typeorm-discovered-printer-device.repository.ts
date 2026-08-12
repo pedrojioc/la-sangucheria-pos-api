@@ -32,8 +32,8 @@ export class TypeOrmDiscoveredPrinterDeviceRepository implements DiscoveredPrint
     })
   }
 
-  async findById(id: string): Promise<DiscoveredPrinterDevice | null> {
-    const entity = await this.repository.findOne({ where: { id } })
+  async findById(id: string, establishmentId: string): Promise<DiscoveredPrinterDevice | null> {
+    const entity = await this.repository.findOne({ where: { id, establishmentId } })
     if (!entity) return null
     return this.toDomain(entity)
   }

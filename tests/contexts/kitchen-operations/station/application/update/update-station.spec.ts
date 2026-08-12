@@ -7,6 +7,9 @@ import { Station } from '@contexts/kitchen-operations/station/domain/station'
 import { StationOutputDeviceEnum } from '@contexts/kitchen-operations/station/domain/station-output-device'
 import { StationMother } from '../../__mothers__/station.mother'
 import { EventBus } from '@shared/domain/events'
+import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
+import { Establishment } from '@contexts/establishment/establishment/domain/establishment'
+import { EstablishmentMother } from '@test/contexts/establishment/establishment/__mothers__/establishment.mother'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('UpdateStation', () => {
@@ -14,9 +17,12 @@ describe('UpdateStation', () => {
   let eventBus: jest.Mocked<EventBus>
   let findStation: FindStation
   let lookupPort: jest.Mocked<PrinterDeviceLookupPort>
+  let establishmentRepository: jest.Mocked<EstablishmentRepository>
   let useCase: UpdateStation
+  let establishment: Establishment
 
   beforeEach(() => {
+    establishment = EstablishmentMother.create()
     repository = {
       save: jest.fn(),
       delete: jest.fn(),
@@ -29,8 +35,18 @@ describe('UpdateStation', () => {
     lookupPort = {
       findById: jest.fn()
     } as unknown as jest.Mocked<PrinterDeviceLookupPort>
+    establishmentRepository = {
+      findSingleton: jest.fn().mockResolvedValue(establishment),
+      save: jest.fn()
+    } as unknown as jest.Mocked<EstablishmentRepository>
 
-    useCase = new UpdateStation(repository, eventBus, findStation, lookupPort)
+    useCase = new UpdateStation(
+      repository,
+      eventBus,
+      findStation,
+      lookupPort,
+      establishmentRepository
+    )
   })
 
   it('rejects reassignment to an unknown device id, stored id unchanged', async () => {
@@ -51,7 +67,7 @@ describe('UpdateStation', () => {
       })
     ).rejects.toThrow(DiscoveredPrinterDeviceNotExist)
 
-    expect(lookupPort.findById).toHaveBeenCalledWith(unknownDeviceId)
+    expect(lookupPort.findById).toHaveBeenCalledWith(unknownDeviceId, establishment.id.value)
     expect(repository.save).not.toHaveBeenCalled()
   })
 
@@ -81,11 +97,22 @@ describe('UpdateStation', () => {
     expect(saved.toPrimitives().discoveredPrinterDeviceId).toBe(newDeviceId)
   })
 
-  it('rejects a device id belonging to a different establishment (lookup port scopes and returns null)', async () => {
+  it('rejects a device id belonging to a different establishment (lookup is establishment-scoped, cross-tenant id treated as nonexistent)', async () => {
+    // Real regression fixture: the device genuinely exists, but only for a
+    // DIFFERENT establishment than the one UpdateStation resolves via
+    // EstablishmentRepository.findSingleton(). A correct implementation
+    // must call findById with the CALLER's establishmentId, and the mock
+    // only resolves for that establishment id — proving establishment
+    // scoping, not just "any not-found id gets rejected".
     const existing = StationMother.withPrinter(UuidMother.random())
     repository.search.mockResolvedValue(existing)
-    lookupPort.findById.mockResolvedValue(null)
     const crossTenantDeviceId = UuidMother.random()
+    lookupPort.findById.mockImplementation((id, establishmentId) => {
+      if (id === crossTenantDeviceId && establishmentId === establishment.id.value) {
+        return Promise.resolve(null)
+      }
+      throw new Error('unexpected lookup call in this test')
+    })
 
     await expect(
       useCase.run(existing.id.value, {
@@ -97,6 +124,8 @@ describe('UpdateStation', () => {
         discoveredPrinterDeviceId: crossTenantDeviceId
       })
     ).rejects.toThrow(DiscoveredPrinterDeviceNotExist)
+
+    expect(lookupPort.findById).toHaveBeenCalledWith(crossTenantDeviceId, establishment.id.value)
     expect(repository.save).not.toHaveBeenCalled()
   })
 })

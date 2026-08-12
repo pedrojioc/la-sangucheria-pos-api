@@ -4,8 +4,9 @@ import {
 } from '@contexts/kitchen-operations/station/domain/ports/printer-device-lookup.port'
 
 class FakePrinterDeviceLookupAdapter extends PrinterDeviceLookupPort {
-  findById(id: string): Promise<PrinterDeviceLookupResult | null> {
+  findById(id: string, establishmentId: string): Promise<PrinterDeviceLookupResult | null> {
     void id
+    void establishmentId
     return Promise.resolve(null)
   }
 }
@@ -28,7 +29,7 @@ describe('PrinterDeviceLookupPort (abstract port)', () => {
   it('should require findById to return a Promise of PrinterDeviceLookupResult | null', async () => {
     const adapter = new FakePrinterDeviceLookupAdapter()
 
-    const result = await adapter.findById('device-1')
+    const result = await adapter.findById('device-1', 'establishment-1')
 
     expect(result).toBeNull()
   })

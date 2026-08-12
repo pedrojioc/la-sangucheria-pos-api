@@ -18,6 +18,8 @@ import { StationController } from '@contexts/kitchen-operations/station/presenta
 import { createProvider } from '@core/utils/create-provider'
 import { PrinterDeviceLookupPort } from '@contexts/kitchen-operations/station/domain/ports/printer-device-lookup.port'
 import { PrinterDiscoveryModule } from '@contexts/kitchen-operations/printer-discovery/printer-discovery.module'
+import { EstablishmentModule } from '@contexts/establishment/establishment/establishment.module'
+import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
 
 @Module({
   imports: [
@@ -26,19 +28,30 @@ import { PrinterDiscoveryModule } from '@contexts/kitchen-operations/printer-dis
     // and PrinterDiscoveryModule imports EstablishmentModule — so this side
     // must use forwardRef to break the circular dependency, mirroring the
     // AgentGatewayModule <-> KitchenPrinterModule precedent.
-    forwardRef(() => PrinterDiscoveryModule)
+    forwardRef(() => PrinterDiscoveryModule),
+    // Needed to resolve the caller's establishmentId (singleton) before
+    // calling PrinterDeviceLookupPort.findById, so cross-tenant device ids
+    // are rejected instead of resolved by id alone. Same forwardRef reason
+    // as PrinterDiscoveryModule above: EstablishmentModule -> StationModule.
+    forwardRef(() => EstablishmentModule)
   ],
   controllers: [StationController],
   providers: [
     { provide: StationRepository, useClass: TypeOrmStationRepository },
     createProvider(FindStation, [StationRepository]),
     createProvider(FindAllStations, [StationRepository]),
-    createProvider(CreateStation, [StationRepository, EventBus, PrinterDeviceLookupPort]),
+    createProvider(CreateStation, [
+      StationRepository,
+      EventBus,
+      PrinterDeviceLookupPort,
+      EstablishmentRepository
+    ]),
     createProvider(UpdateStation, [
       StationRepository,
       EventBus,
       FindStation,
-      PrinterDeviceLookupPort
+      PrinterDeviceLookupPort,
+      EstablishmentRepository
     ]),
     createProvider(DeleteStation, [StationRepository, EventBus])
   ],

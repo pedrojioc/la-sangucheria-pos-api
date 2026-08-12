@@ -51,13 +51,15 @@ describe('TypeOrmDiscoveredPrinterDeviceRepository', () => {
   })
 
   describe('findById', () => {
-    it('returns the device when it exists', async () => {
+    it('returns the device when it exists for the given establishment', async () => {
       const entity = buildEntity()
       typeOrmRepo.findOne.mockResolvedValue(entity)
 
-      const found = await repository.findById(entity.id)
+      const found = await repository.findById(entity.id, entity.establishmentId)
 
-      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({ where: { id: entity.id } })
+      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
+        where: { id: entity.id, establishmentId: entity.establishmentId }
+      })
       expect(found).not.toBeNull()
       expect(found!.toPrimitives()).toEqual({
         id: entity.id,
@@ -75,8 +77,26 @@ describe('TypeOrmDiscoveredPrinterDeviceRepository', () => {
     it('returns null when the device does not exist', async () => {
       typeOrmRepo.findOne.mockResolvedValue(null)
 
-      const found = await repository.findById(Uuid.random().value)
+      const found = await repository.findById(Uuid.random().value, EstablishmentId.random().value)
 
+      expect(found).toBeNull()
+    })
+
+    it('returns null when the device exists but belongs to a different establishment (cross-tenant lookup)', async () => {
+      // The device row itself is never fetched here — the WHERE clause
+      // filters by establishmentId at the query level, so a device that
+      // exists only for a different establishment behaves identically to a
+      // nonexistent device from the caller's perspective (findOne resolves
+      // null because no row matches the combined id+establishmentId filter).
+      typeOrmRepo.findOne.mockResolvedValue(null)
+      const deviceId = Uuid.random().value
+      const callerEstablishmentId = EstablishmentId.random().value
+
+      const found = await repository.findById(deviceId, callerEstablishmentId)
+
+      expect(typeOrmRepo.findOne).toHaveBeenCalledWith({
+        where: { id: deviceId, establishmentId: callerEstablishmentId }
+      })
       expect(found).toBeNull()
     })
   })

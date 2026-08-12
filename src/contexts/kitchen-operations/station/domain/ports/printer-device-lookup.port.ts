@@ -7,5 +7,5 @@ export interface PrinterDeviceLookupResult {
 }
 
 export abstract class PrinterDeviceLookupPort {
-  abstract findById(id: string): Promise<PrinterDeviceLookupResult | null>
+  abstract findById(id: string, establishmentId: string): Promise<PrinterDeviceLookupResult | null>
 }

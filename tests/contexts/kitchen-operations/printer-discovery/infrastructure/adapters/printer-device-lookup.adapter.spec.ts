@@ -20,10 +20,11 @@ describe('PrinterDeviceLookupAdapter', () => {
 
   it('maps a found DiscoveredPrinterDevice to a PrinterDeviceLookupResult DTO, without leaking the aggregate', async () => {
     const lastSeenAt = new Date('2026-08-09T20:00:00Z')
+    const establishmentId = EstablishmentId.random().value
     const device = DiscoveredPrinterDevice.create(
       {
         id: Uuid.random().value,
-        establishmentId: EstablishmentId.random().value,
+        establishmentId,
         connectionType: 'usb',
         address: null,
         usbIdentifier: 'USB001',
@@ -33,9 +34,9 @@ describe('PrinterDeviceLookupAdapter', () => {
     )
     repository.findById.mockResolvedValue(device)
 
-    const result = await adapter.findById(device.id.value)
+    const result = await adapter.findById(device.id.value, establishmentId)
 
-    expect(repository.findById).toHaveBeenCalledWith(device.id.value)
+    expect(repository.findById).toHaveBeenCalledWith(device.id.value, establishmentId)
     expect(result).toEqual({
       connectionType: 'usb',
       address: null,
@@ -49,8 +50,23 @@ describe('PrinterDeviceLookupAdapter', () => {
   it('returns null when the repository finds no matching device', async () => {
     repository.findById.mockResolvedValue(null)
 
-    const result = await adapter.findById(Uuid.random().value)
+    const result = await adapter.findById(Uuid.random().value, EstablishmentId.random().value)
 
+    expect(result).toBeNull()
+  })
+
+  it('returns null (via the repository) when the device exists only for a different establishment', async () => {
+    // The repository itself does the establishment filtering; the adapter
+    // just passes establishmentId through. This asserts the adapter forwards
+    // the caller's establishmentId unchanged, so cross-tenant scoping done
+    // at the repository/query level is not silently dropped by the adapter.
+    repository.findById.mockResolvedValue(null)
+    const deviceId = Uuid.random().value
+    const callerEstablishmentId = EstablishmentId.random().value
+
+    const result = await adapter.findById(deviceId, callerEstablishmentId)
+
+    expect(repository.findById).toHaveBeenCalledWith(deviceId, callerEstablishmentId)
     expect(result).toBeNull()
   })
 })

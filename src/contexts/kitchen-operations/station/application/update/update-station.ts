@@ -5,13 +5,15 @@ import { UpdateStationParams } from '../../domain/station'
 import { StationNameAlreadyExists } from '../../domain/exceptions/station-name-already-exists.exception'
 import { PrinterDeviceLookupPort } from '../../domain/ports/printer-device-lookup.port'
 import { DiscoveredPrinterDeviceNotExist } from '../../domain/exceptions/discovered-printer-device-not-exist.exception'
+import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
 
 export class UpdateStation {
   constructor(
     private readonly repository: StationRepository,
     private readonly eventBus: EventBus,
     private readonly findStation: FindStation,
-    private readonly lookupPort: PrinterDeviceLookupPort
+    private readonly lookupPort: PrinterDeviceLookupPort,
+    private readonly establishmentRepository: EstablishmentRepository
   ) {}
 
   async run(id: string, params: UpdateStationParams): Promise<void> {
@@ -23,7 +25,11 @@ export class UpdateStation {
     }
 
     if (params.discoveredPrinterDeviceId) {
-      const device = await this.lookupPort.findById(params.discoveredPrinterDeviceId)
+      const establishment = await this.establishmentRepository.findSingleton()
+      const device = await this.lookupPort.findById(
+        params.discoveredPrinterDeviceId,
+        establishment.id.value
+      )
       if (!device) throw new DiscoveredPrinterDeviceNotExist(params.discoveredPrinterDeviceId)
     }
 
