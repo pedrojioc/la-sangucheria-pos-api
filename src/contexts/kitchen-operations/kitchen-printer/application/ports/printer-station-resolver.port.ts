@@ -4,6 +4,7 @@ export interface ResolvedPrinterStation {
   connectionType: 'network' | 'usb'
   printerAddress: string | null
   usbIdentifier: string | null
+  lastSeenAt: Date
 }
 
 export abstract class PrinterStationResolverPort {

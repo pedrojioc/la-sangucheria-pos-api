@@ -21,62 +21,77 @@ describe('TypeOrmPrinterStationResolverAdapter', () => {
     expect(result).toEqual([])
   })
 
-  it('queries only stations configured as printer and maps NETWORK rows to the port shape (regression)', async () => {
+  it('queries only stations configured as printer, joined to their device, and maps NETWORK rows to the port shape (regression)', async () => {
     const stationId = UuidMother.random()
+    const lastSeenAt = new Date('2026-08-12T12:00:00Z')
 
     dataSource.query.mockResolvedValue([
       {
         id: stationId,
         name: 'Parrilla',
-        printer_address: '192.168.1.10',
+        address: '192.168.1.10',
         connection_type: 'network',
-        usb_identifier: null
+        usb_identifier: null,
+        last_seen_at: lastSeenAt
       }
     ])
 
     const result = await adapter.resolvePrinterStations([stationId])
 
-    expect(dataSource.query).toHaveBeenCalledWith(
-      expect.stringContaining("output_device = 'printer'"),
-      [[stationId]]
-    )
+    const [sql, params] = dataSource.query.mock.calls[0]
+    expect(sql).toContain("output_device = 'printer'")
+    expect(sql).toContain('JOIN discovered_printer_devices')
+    expect(sql).toContain('stations.discovered_printer_device_id = discovered_printer_devices.id')
+    expect(params).toEqual([[stationId]])
     expect(result).toEqual([
       {
         stationId,
         stationName: 'Parrilla',
         connectionType: 'network',
         printerAddress: '192.168.1.10',
-        usbIdentifier: null
+        usbIdentifier: null,
+        lastSeenAt
       }
     ])
   })
 
-  it('does NOT filter on printer_address IS NOT NULL (bug fix) and returns USB-only stations', async () => {
+  it('does NOT filter on address IS NOT NULL (bug fix) and returns USB-only stations', async () => {
     const stationId = UuidMother.random()
+    const lastSeenAt = new Date('2026-08-12T12:00:00Z')
 
     dataSource.query.mockResolvedValue([
       {
         id: stationId,
         name: 'Caja USB',
-        printer_address: null,
+        address: null,
         connection_type: 'usb',
-        usb_identifier: 'USB001'
+        usb_identifier: 'USB001',
+        last_seen_at: lastSeenAt
       }
     ])
 
     const result = await adapter.resolvePrinterStations([stationId])
 
     const [sql] = dataSource.query.mock.calls[0]
-    expect(sql).not.toMatch(/printer_address IS NOT NULL/)
+    expect(sql).not.toMatch(/address IS NOT NULL/)
     expect(result).toEqual([
       {
         stationId,
         stationName: 'Caja USB',
         connectionType: 'usb',
         printerAddress: null,
-        usbIdentifier: 'USB001'
+        usbIdentifier: 'USB001',
+        lastSeenAt
       }
     ])
+  })
+
+  it('excludes a printer station with no assigned device (inner join naturally excludes it) without crashing', async () => {
+    dataSource.query.mockResolvedValue([])
+
+    const result = await adapter.resolvePrinterStations([UuidMother.random()])
+
+    expect(result).toEqual([])
   })
 
   it('filters out null station ids before querying', async () => {

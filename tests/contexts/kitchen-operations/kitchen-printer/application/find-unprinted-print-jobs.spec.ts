@@ -15,6 +15,7 @@ describe('FindUnprintedPrintJobs', () => {
     stationName: 'Barra USB',
     connectionType: 'usb',
     printerAddress: null,
+    usbIdentifier: 'usb-device-1',
     sentAt: new Date(),
     orderType: OrderType.DINE_IN,
     isReprint: false,

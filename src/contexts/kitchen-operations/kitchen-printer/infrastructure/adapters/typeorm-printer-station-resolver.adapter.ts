@@ -9,9 +9,10 @@ import {
 interface StationRow {
   id: string
   name: string
-  printer_address: string | null
+  address: string | null
   connection_type: 'network' | 'usb'
   usb_identifier: string | null
+  last_seen_at: Date
 }
 
 @Injectable()
@@ -31,10 +32,17 @@ export class TypeOrmPrinterStationResolverAdapter extends PrinterStationResolver
     if (nonNullIds.length === 0) return []
 
     const rows: StationRow[] = await this.dataSource.query(
-      `SELECT id, name, printer_address, connection_type, usb_identifier
+      `SELECT stations.id AS id,
+              stations.name AS name,
+              discovered_printer_devices.connection_type AS connection_type,
+              discovered_printer_devices.address AS address,
+              discovered_printer_devices.usb_identifier AS usb_identifier,
+              discovered_printer_devices.last_seen_at AS last_seen_at
        FROM stations
-       WHERE output_device = 'printer'
-         AND id = ANY($1)`,
+       JOIN discovered_printer_devices
+         ON stations.discovered_printer_device_id = discovered_printer_devices.id
+       WHERE stations.output_device = 'printer'
+         AND stations.id = ANY($1)`,
       [nonNullIds]
     )
 
@@ -42,8 +50,9 @@ export class TypeOrmPrinterStationResolverAdapter extends PrinterStationResolver
       stationId: row.id,
       stationName: row.name,
       connectionType: row.connection_type,
-      printerAddress: row.printer_address,
-      usbIdentifier: row.usb_identifier
+      printerAddress: row.address,
+      usbIdentifier: row.usb_identifier,
+      lastSeenAt: row.last_seen_at
     }))
   }
 }

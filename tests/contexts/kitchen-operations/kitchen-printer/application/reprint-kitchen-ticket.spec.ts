@@ -19,6 +19,7 @@ describe('ReprintKitchenTicket', () => {
     stationName: 'Barra USB',
     connectionType: 'usb',
     printerAddress: null,
+    usbIdentifier: 'LP-1',
     sentAt: new Date('2026-07-18T15:30:00Z'),
     orderType: OrderType.DINE_IN,
     isReprint: false,
@@ -174,5 +175,24 @@ describe('ReprintKitchenTicket', () => {
     await useCase.run(jobId)
 
     expect(agentNotifier.notify).toHaveBeenCalledTimes(1)
+  })
+
+  it('preserves the stored usbIdentifier unchanged on reprint (no re-resolution against a possibly-different device)', async () => {
+    const jobId = UuidMother.random()
+    const stationId = UuidMother.random()
+    const job = KitchenTicketPrintJob.create({
+      id: jobId,
+      ticketNumber: 42,
+      stationId,
+      stationName: 'Barra USB',
+      payload: buildPayload()
+    })
+    repository.search.mockResolvedValue(job)
+    agentNotifier.notify.mockResolvedValue({ delivered: true })
+
+    await useCase.run(jobId)
+
+    const [ticketArg] = agentNotifier.notify.mock.calls[0]
+    expect(ticketArg.usbIdentifier).toBe('LP-1')
   })
 })

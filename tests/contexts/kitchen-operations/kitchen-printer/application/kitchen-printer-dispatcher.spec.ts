@@ -109,14 +109,16 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Parrilla',
         connectionType: 'network',
         printerAddress: '192.168.1.10',
-        usbIdentifier: null
+        usbIdentifier: null,
+        lastSeenAt: new Date()
       },
       {
         stationId: stationB,
         stationName: 'Plancha',
         connectionType: 'network',
         printerAddress: '192.168.1.11',
-        usbIdentifier: null
+        usbIdentifier: null,
+        lastSeenAt: new Date()
       }
     ])
 
@@ -206,7 +208,8 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Parrilla',
         connectionType: 'network',
         printerAddress: '192.168.1.10',
-        usbIdentifier: null
+        usbIdentifier: null,
+        lastSeenAt: new Date()
       }
     ])
 
@@ -248,14 +251,16 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Parrilla',
         connectionType: 'network',
         printerAddress: '192.168.1.10',
-        usbIdentifier: null
+        usbIdentifier: null,
+        lastSeenAt: new Date()
       },
       {
         stationId: stationB,
         stationName: 'Plancha',
         connectionType: 'network',
         printerAddress: '192.168.1.11',
-        usbIdentifier: null
+        usbIdentifier: null,
+        lastSeenAt: new Date()
       }
     ])
 
@@ -294,7 +299,8 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Parrilla',
         connectionType: 'network',
         printerAddress: '192.168.1.10',
-        usbIdentifier: null
+        usbIdentifier: null,
+        lastSeenAt: new Date()
       }
     ])
 
@@ -329,7 +335,8 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Parrilla',
         connectionType: 'network',
         printerAddress: '192.168.1.10',
-        usbIdentifier: null
+        usbIdentifier: null,
+        lastSeenAt: new Date()
       }
     ])
 
@@ -362,7 +369,8 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Parrilla',
         connectionType: 'network',
         printerAddress: '192.168.1.10',
-        usbIdentifier: null
+        usbIdentifier: null,
+        lastSeenAt: new Date()
       }
     ])
 
@@ -394,7 +402,8 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Barra USB',
         connectionType: 'usb',
         printerAddress: null,
-        usbIdentifier: 'usb-device-1'
+        usbIdentifier: 'usb-device-1',
+        lastSeenAt: new Date()
       }
     ])
 
@@ -432,7 +441,8 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Barra USB',
         connectionType: 'usb',
         printerAddress: null,
-        usbIdentifier: 'usb-device-1'
+        usbIdentifier: 'usb-device-1',
+        lastSeenAt: new Date()
       }
     ])
 
@@ -468,7 +478,8 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Barra USB',
         connectionType: 'usb',
         printerAddress: null,
-        usbIdentifier: 'usb-device-1'
+        usbIdentifier: 'usb-device-1',
+        lastSeenAt: new Date()
       }
     ])
 
@@ -503,7 +514,8 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Barra USB',
         connectionType: 'usb',
         printerAddress: null,
-        usbIdentifier: 'usb-device-1'
+        usbIdentifier: 'usb-device-1',
+        lastSeenAt: new Date()
       }
     ])
 
@@ -547,14 +559,16 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Parrilla',
         connectionType: 'network',
         printerAddress: '192.168.1.10',
-        usbIdentifier: null
+        usbIdentifier: null,
+        lastSeenAt: new Date()
       },
       {
         stationId: usbStationId,
         stationName: 'Barra USB',
         connectionType: 'usb',
         printerAddress: null,
-        usbIdentifier: 'usb-device-1'
+        usbIdentifier: 'usb-device-1',
+        lastSeenAt: new Date()
       }
     ])
 
@@ -604,14 +618,16 @@ describe('KitchenPrinterDispatcher', () => {
         stationName: 'Parrilla',
         connectionType: 'network',
         printerAddress: '192.168.1.10',
-        usbIdentifier: null
+        usbIdentifier: null,
+        lastSeenAt: new Date()
       },
       {
         stationId: usbStationId,
         stationName: 'Barra USB',
         connectionType: 'usb',
         printerAddress: null,
-        usbIdentifier: 'usb-device-1'
+        usbIdentifier: 'usb-device-1',
+        lastSeenAt: new Date()
       }
     ])
 
@@ -622,5 +638,241 @@ describe('KitchenPrinterDispatcher', () => {
 
     expect(consoleErrorSpy).toHaveBeenCalled()
     expect(agentNotifier.notify).toHaveBeenCalledTimes(1)
+  })
+
+  it('populates ticket.usbIdentifier from the resolved USB station device', async () => {
+    const stationId = UuidMother.random()
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId,
+        stationName: 'Barra USB',
+        connectionType: 'usb',
+        printerAddress: null,
+        usbIdentifier: 'LP-1',
+        lastSeenAt: new Date()
+      }
+    ])
+
+    agentNotifier.notify.mockResolvedValue({ delivered: true })
+
+    await dispatcher.run(event)
+
+    expect(agentNotifier.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ usbIdentifier: 'LP-1' }),
+      expect.any(String)
+    )
+  })
+
+  it('sets ticket.usbIdentifier to null for a NETWORK station', async () => {
+    const stationId = UuidMother.random()
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null,
+        lastSeenAt: new Date()
+      }
+    ])
+
+    await dispatcher.run(event)
+
+    const ticket = printerPort.print.mock.calls[0][0]
+    expect(ticket.usbIdentifier).toBeNull()
+  })
+
+  it('fails fast for a stale USB station device: creates a failed job, never notifies the agent', async () => {
+    const stationId = UuidMother.random()
+    const staleLastSeenAt = new Date(Date.now() - 20 * 60 * 1000) // 20 min ago, TTL is 15 min
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId,
+        stationName: 'Barra USB',
+        connectionType: 'usb',
+        printerAddress: null,
+        usbIdentifier: 'usb-device-1',
+        lastSeenAt: staleLastSeenAt
+      }
+    ])
+
+    await dispatcher.run(event)
+
+    expect(agentNotifier.notify).not.toHaveBeenCalled()
+    expect(printJobRepository.save).toHaveBeenCalledTimes(1)
+    const savedJob = printJobRepository.save.mock.calls[0][0]
+    expect(savedJob.toPrimitives().status).toBe('failed')
+    expect(savedJob.toPrimitives().failureReason).toBe('offline')
+  })
+
+  it('fails fast for a stale NETWORK station device: creates a failed job, never attempts to print', async () => {
+    const stationId = UuidMother.random()
+    const staleLastSeenAt = new Date(Date.now() - 16 * 60 * 1000) // 16 min ago, TTL is 15 min
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null,
+        lastSeenAt: staleLastSeenAt
+      }
+    ])
+
+    await dispatcher.run(event)
+
+    expect(printerPort.print).not.toHaveBeenCalled()
+    expect(printJobRepository.save).toHaveBeenCalledTimes(1)
+    const savedJob = printJobRepository.save.mock.calls[0][0]
+    expect(savedJob.toPrimitives().status).toBe('failed')
+    expect(savedJob.toPrimitives().failureReason).toBe('offline')
+  })
+
+  it('proceeds normally for a fresh (non-stale) device, exactly as before', async () => {
+    const stationId = UuidMother.random()
+    const freshLastSeenAt = new Date(Date.now() - 5 * 60 * 1000) // 5 min ago, within TTL
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId,
+        stationName: 'Parrilla',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null,
+        lastSeenAt: freshLastSeenAt
+      }
+    ])
+
+    await dispatcher.run(event)
+
+    expect(printerPort.print).toHaveBeenCalledTimes(1)
+    expect(printJobRepository.save).not.toHaveBeenCalled()
+  })
+
+  it('one stale station does not block dispatch to another, non-stale station in the same order', async () => {
+    const staleStationId = UuidMother.random()
+    const freshStationId = UuidMother.random()
+    const staleLastSeenAt = new Date(Date.now() - 20 * 60 * 1000)
+    const freshLastSeenAt = new Date(Date.now() - 5 * 60 * 1000)
+
+    const event = buildEvent({
+      items: [
+        {
+          itemId: UuidMother.random(),
+          stationId: staleStationId,
+          productName: 'Choripan',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        },
+        {
+          itemId: UuidMother.random(),
+          stationId: freshStationId,
+          productName: 'Milanesa',
+          quantity: 1,
+          notes: null,
+          modifiers: []
+        }
+      ]
+    })
+
+    stationResolver.resolvePrinterStations.mockResolvedValue([
+      {
+        stationId: staleStationId,
+        stationName: 'Parrilla (stale)',
+        connectionType: 'network',
+        printerAddress: '192.168.1.10',
+        usbIdentifier: null,
+        lastSeenAt: staleLastSeenAt
+      },
+      {
+        stationId: freshStationId,
+        stationName: 'Plancha',
+        connectionType: 'network',
+        printerAddress: '192.168.1.11',
+        usbIdentifier: null,
+        lastSeenAt: freshLastSeenAt
+      }
+    ])
+
+    await dispatcher.run(event)
+
+    expect(printerPort.print).toHaveBeenCalledTimes(1)
+    expect(printerPort.print).toHaveBeenCalledWith(
+      expect.objectContaining({ stationName: 'Plancha' })
+    )
+    expect(printJobRepository.save).toHaveBeenCalledTimes(1)
+    const savedJob = printJobRepository.save.mock.calls[0][0]
+    expect(savedJob.toPrimitives().stationName).toBe('Parrilla (stale)')
+    expect(savedJob.toPrimitives().status).toBe('failed')
   })
 })

@@ -1,7 +1,11 @@
 import { OrderSentToKitchenEvent } from '@contexts/orders/order/domain/events/order-sent-to-kitchen.event'
+import { DISCOVERED_DEVICE_STALE_TTL_MS } from '@contexts/kitchen-operations/printer-discovery/application/find-all/find-discovered-devices'
 import { Uuid } from '@shared/domain/value-objects/uuid'
 import { KitchenPrinterPort } from './ports/kitchen-printer.port'
-import { PrinterStationResolverPort } from './ports/printer-station-resolver.port'
+import {
+  PrinterStationResolverPort,
+  ResolvedPrinterStation
+} from './ports/printer-station-resolver.port'
 import { KitchenAgentNotifierPort } from './ports/kitchen-agent-notifier.port'
 import { KitchenTicketPrintJobRepository } from '../domain/repositories/kitchen-ticket-print-job.repository'
 import { KitchenTicketPrintJob } from '../domain/kitchen-ticket-print-job'
@@ -49,6 +53,7 @@ export class KitchenPrinterDispatcher {
         stationName: station.stationName,
         connectionType: station.connectionType,
         printerAddress: station.printerAddress,
+        usbIdentifier: station.usbIdentifier,
         sentAt: payload.sentAt,
         orderType: payload.orderType,
         // Original dispatch is never a reprint. Manual reprint re-dispatches
@@ -60,6 +65,11 @@ export class KitchenPrinterDispatcher {
           notes: item.notes,
           modifiers: (item.modifiers ?? []).map(m => m.name)
         }))
+      }
+
+      if (this.isStale(station)) {
+        await this.failStaleDispatch(ticket, station.stationId, station.stationName)
+        continue
       }
 
       if (station.connectionType === 'usb') {
@@ -78,6 +88,36 @@ export class KitchenPrinterDispatcher {
         // continue to next station; do not rethrow
       }
     }
+  }
+
+  // Staleness reflects "we have not heard from any agent about this device
+  // recently" — a pre-flight concern independent of usb/network delivery
+  // path. Computed at dispatch time from lastSeenAt, never stored, using the
+  // same TTL rule as FindDiscoveredDevices.
+  private isStale(station: ResolvedPrinterStation): boolean {
+    return Date.now() - station.lastSeenAt.getTime() > DISCOVERED_DEVICE_STALE_TTL_MS
+  }
+
+  // A stale device's ticket is never sent to the agent nor printed directly.
+  // The job is still created (visible/queryable/reprintable through the same
+  // history as any other failure) and immediately marked failed, reusing the
+  // existing 'offline' FailureReason — no new reason is introduced.
+  private async failStaleDispatch(
+    ticket: KitchenPrintTicket,
+    stationId: string,
+    stationName: string
+  ): Promise<void> {
+    const job = KitchenTicketPrintJob.create({
+      id: Uuid.random().value,
+      ticketNumber: ticket.ticketNumber,
+      stationId,
+      stationName,
+      payload: ticket
+    })
+
+    job.markFailed('offline')
+
+    await this.printJobRepository.save(job)
   }
 
   private async dispatchToUsbStation(

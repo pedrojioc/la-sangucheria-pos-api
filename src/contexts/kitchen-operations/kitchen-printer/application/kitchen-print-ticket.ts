@@ -6,6 +6,7 @@ export interface KitchenPrintTicket {
   stationName: string
   connectionType: 'network' | 'usb'
   printerAddress: string | null
+  usbIdentifier: string | null
   sentAt: Date
   orderType: OrderType
   isReprint: boolean

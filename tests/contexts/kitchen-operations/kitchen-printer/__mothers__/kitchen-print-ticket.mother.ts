@@ -10,6 +10,7 @@ export class KitchenPrintTicketMother {
       stationName: params.stationName ?? 'Parrilla',
       connectionType: params.connectionType ?? 'network',
       printerAddress: params.printerAddress ?? '192.168.1.50',
+      usbIdentifier: params.usbIdentifier ?? null,
       sentAt: params.sentAt ?? new Date(),
       orderType: params.orderType ?? OrderType.DINE_IN,
       isReprint: params.isReprint ?? false,
