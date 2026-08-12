@@ -21,7 +21,7 @@ export class DeleteStation {
       isActive: false,
       color: primitives.color,
       outputDevice: primitives.outputDevice,
-      printerAddress: primitives.printerAddress
+      discoveredPrinterDeviceId: primitives.discoveredPrinterDeviceId
     })
     await this.repository.save(updated)
     await this.eventBus.publish(updated.pullDomainEvents())

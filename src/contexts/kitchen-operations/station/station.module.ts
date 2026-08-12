@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { StationEntity } from '@contexts/kitchen-operations/station/infrastructure/persistence/typeorm/station.entity'
@@ -16,16 +16,30 @@ import { DeleteStation } from '@contexts/kitchen-operations/station/application/
 import { StationController } from '@contexts/kitchen-operations/station/presentation/http/controllers/station.controller'
 
 import { createProvider } from '@core/utils/create-provider'
+import { PrinterDeviceLookupPort } from '@contexts/kitchen-operations/station/domain/ports/printer-device-lookup.port'
+import { PrinterDiscoveryModule } from '@contexts/kitchen-operations/printer-discovery/printer-discovery.module'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([StationEntity])],
+  imports: [
+    TypeOrmModule.forFeature([StationEntity]),
+    // EstablishmentModule imports StationModule (for StationOutputDevicesPort),
+    // and PrinterDiscoveryModule imports EstablishmentModule — so this side
+    // must use forwardRef to break the circular dependency, mirroring the
+    // AgentGatewayModule <-> KitchenPrinterModule precedent.
+    forwardRef(() => PrinterDiscoveryModule)
+  ],
   controllers: [StationController],
   providers: [
     { provide: StationRepository, useClass: TypeOrmStationRepository },
     createProvider(FindStation, [StationRepository]),
     createProvider(FindAllStations, [StationRepository]),
-    createProvider(CreateStation, [StationRepository, EventBus]),
-    createProvider(UpdateStation, [StationRepository, EventBus, FindStation]),
+    createProvider(CreateStation, [StationRepository, EventBus, PrinterDeviceLookupPort]),
+    createProvider(UpdateStation, [
+      StationRepository,
+      EventBus,
+      FindStation,
+      PrinterDeviceLookupPort
+    ]),
     createProvider(DeleteStation, [StationRepository, EventBus])
   ],
   exports: [FindStation, StationRepository]
