@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
 // Entities
@@ -29,7 +29,14 @@ import { StationModule } from '@contexts/kitchen-operations/station/station.modu
 import { createProvider } from '@core/utils/create-provider'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([EstablishmentEntity]), StationModule],
+  imports: [
+    TypeOrmModule.forFeature([EstablishmentEntity]),
+    // StationModule imports EstablishmentModule (to resolve the caller's
+    // establishmentId before validating printer device ownership), so this
+    // side must use forwardRef to break the circular dependency. See the
+    // matching forwardRef(() => EstablishmentModule) in station.module.ts.
+    forwardRef(() => StationModule)
+  ],
   controllers: [EstablishmentController],
   providers: [
     // REPOSITORIES

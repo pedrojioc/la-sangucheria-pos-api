@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { DiscoveredPrinterDeviceEntity } from './infrastructure/persistence/typeorm/discovered-printer-device.entity'
@@ -16,7 +16,14 @@ import { EstablishmentModule } from '@contexts/establishment/establishment/estab
 import { PrinterDeviceLookupPort } from '@contexts/kitchen-operations/station/domain/ports/printer-device-lookup.port'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([DiscoveredPrinterDeviceEntity]), EstablishmentModule],
+  imports: [
+    TypeOrmModule.forFeature([DiscoveredPrinterDeviceEntity]),
+    // EstablishmentModule imports StationModule, which in turn imports
+    // PrinterDiscoveryModule — so this side must use forwardRef to break
+    // the 3-way circular dependency (StationModule -> PrinterDiscoveryModule
+    // -> EstablishmentModule -> StationModule).
+    forwardRef(() => EstablishmentModule)
+  ],
   controllers: [DiscoveredPrinterDeviceController],
   providers: [
     {
