@@ -20,6 +20,7 @@ import { AgentCredentialRepository } from '@contexts/kitchen-operations/agent-cr
 import { AgentCredential } from '@contexts/kitchen-operations/agent-credential/domain/agent-credential'
 import { Argon2AgentCredentialSecretHasher } from '@contexts/kitchen-operations/agent-credential/infrastructure/services/argon2-agent-credential-secret-hasher.service'
 import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
+import { GetAgentPairingStatus } from '@contexts/kitchen-operations/agent-gateway/application/get-status/get-agent-pairing-status'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 class InMemoryPairingCodeRepository implements PairingCodeRepository {
@@ -100,7 +101,18 @@ describe('Agent pairing flow (integration)', () => {
       save: jest.fn()
     } as unknown as jest.Mocked<EstablishmentRepository>
 
-    adminController = new AgentPairingController(redeemPairingCode, establishmentRepository)
+    // Out of scope for this flow (redeem/start/poll only) — a stub is enough
+    // to satisfy the constructor's third parameter added by the pairing
+    // status endpoint; no test in this file exercises status().
+    const getAgentPairingStatus = {
+      run: jest.fn()
+    } as unknown as jest.Mocked<GetAgentPairingStatus>
+
+    adminController = new AgentPairingController(
+      redeemPairingCode,
+      establishmentRepository,
+      getAgentPairingStatus
+    )
   })
 
   it('happy path: start -> admin redeems -> agent polls and receives the apiKey, HTTP redeem response has no secret', async () => {

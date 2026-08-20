@@ -27,6 +27,8 @@ import { AgentCredentialModule } from '@contexts/kitchen-operations/agent-creden
 import { IssueAgentCredential } from '@contexts/kitchen-operations/agent-credential/application/issue/issue-agent-credential'
 import { RotateAgentCredentialIfNeeded } from '@contexts/kitchen-operations/agent-credential/application/rotate/rotate-agent-credential-if-needed'
 import { AgentCredentialVerifierPort } from '@contexts/kitchen-operations/agent-credential/domain/services/agent-credential-verifier.port'
+import { AgentCredentialRepository } from '@contexts/kitchen-operations/agent-credential/domain/repositories/agent-credential.repository'
+import { GetAgentPairingStatus } from './application/get-status/get-agent-pairing-status'
 
 import { EstablishmentModule } from '@contexts/establishment/establishment/establishment.module'
 
@@ -66,6 +68,7 @@ import { RecordDeviceStatus } from '@contexts/kitchen-operations/printer-discove
     createProvider(IssuePairingCode, [PairingCodeRepository]),
     createProvider(RedeemPairingCode, [PairingCodeRepository, IssueAgentCredential]),
     createProvider(PollPairingCode, [PairingCodeRepository]),
+    createProvider(GetAgentPairingStatus, [AgentCredentialRepository, AgentConnectionRegistry]),
 
     // GATEWAYS
     createProvider(AgentGateway, [
