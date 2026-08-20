@@ -2,6 +2,8 @@ import {
   Body,
   ConflictException,
   Controller,
+  HttpCode,
+  HttpStatus,
   NotFoundException,
   Post,
   UseGuards
@@ -39,6 +41,7 @@ export class AgentPairingPublicController {
   }
 
   @Post('poll')
+  @HttpCode(HttpStatus.OK)
   async poll(@Body() dto: PollPairingRequest): Promise<PollPairingResponse> {
     try {
       return await this.pollPairingCode.run(dto.code, dto.pollToken)

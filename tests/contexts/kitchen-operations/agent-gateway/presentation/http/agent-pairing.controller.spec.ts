@@ -4,11 +4,13 @@ import { AgentPairingController } from '@contexts/kitchen-operations/agent-gatew
 import { RedeemPairingCode } from '@contexts/kitchen-operations/pairing-code/application/redeem/redeem-pairing-code'
 import { PairingCodeNotRedeemable } from '@contexts/kitchen-operations/pairing-code/domain/exceptions/pairing-code-not-redeemable.exception'
 import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
+import { GetAgentPairingStatus } from '@contexts/kitchen-operations/agent-gateway/application/get-status/get-agent-pairing-status'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('AgentPairingController', () => {
   let redeemPairingCode: jest.Mocked<RedeemPairingCode>
   let establishmentRepository: jest.Mocked<EstablishmentRepository>
+  let getAgentPairingStatus: jest.Mocked<GetAgentPairingStatus>
   let controller: AgentPairingController
 
   const establishmentId = UuidMother.random()
@@ -19,7 +21,12 @@ describe('AgentPairingController', () => {
       findSingleton: jest.fn().mockResolvedValue({ id: { value: establishmentId } }),
       save: jest.fn()
     } as unknown as jest.Mocked<EstablishmentRepository>
-    controller = new AgentPairingController(redeemPairingCode, establishmentRepository)
+    getAgentPairingStatus = { run: jest.fn() } as unknown as jest.Mocked<GetAgentPairingStatus>
+    controller = new AgentPairingController(
+      redeemPairingCode,
+      establishmentRepository,
+      getAgentPairingStatus
+    )
   })
 
   it('returns { paired: true } with no secret field when redemption succeeds', async () => {
@@ -71,6 +78,27 @@ describe('AgentPairingController', () => {
       redeemPairingCode.run.mockRejectedValue(new PairingCodeNotRedeemable('unknown', 'ZZZ999'))
       // Should not be immediately throttled since the counter reset on success.
       await expect(controller.redeem({ code: 'ZZZ999' })).rejects.toThrow(NotFoundException)
+    })
+  })
+
+  describe('status', () => {
+    it('resolves the establishment via findSingleton and returns the use case result verbatim when paired and connected', async () => {
+      getAgentPairingStatus.run.mockResolvedValue({ paired: true, connected: false })
+
+      const result = await controller.status()
+
+      expect(establishmentRepository.findSingleton).toHaveBeenCalled()
+      expect(getAgentPairingStatus.run).toHaveBeenCalledWith({ value: establishmentId })
+      expect(result).toEqual({ paired: true, connected: false })
+    })
+
+    it('returns the use case result verbatim when never paired, with no extra fields', async () => {
+      getAgentPairingStatus.run.mockResolvedValue({ paired: false, connected: false })
+
+      const result = await controller.status()
+
+      expect(result).toEqual({ paired: false, connected: false })
+      expect(Object.keys(result)).toEqual(['paired', 'connected'])
     })
   })
 })
