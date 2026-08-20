@@ -26,9 +26,11 @@ import { PollPairingCode } from '@contexts/kitchen-operations/pairing-code/appli
 import { AgentCredentialModule } from '@contexts/kitchen-operations/agent-credential/agent-credential.module'
 import { IssueAgentCredential } from '@contexts/kitchen-operations/agent-credential/application/issue/issue-agent-credential'
 import { RotateAgentCredentialIfNeeded } from '@contexts/kitchen-operations/agent-credential/application/rotate/rotate-agent-credential-if-needed'
+import { RevokeAgentCredential } from '@contexts/kitchen-operations/agent-credential/application/revoke/revoke-agent-credential'
 import { AgentCredentialVerifierPort } from '@contexts/kitchen-operations/agent-credential/domain/services/agent-credential-verifier.port'
 import { AgentCredentialRepository } from '@contexts/kitchen-operations/agent-credential/domain/repositories/agent-credential.repository'
 import { GetAgentPairingStatus } from './application/get-status/get-agent-pairing-status'
+import { UnpairAgent } from './application/unpair/unpair-agent'
 
 import { EstablishmentModule } from '@contexts/establishment/establishment/establishment.module'
 
@@ -69,6 +71,7 @@ import { RecordDeviceStatus } from '@contexts/kitchen-operations/printer-discove
     createProvider(RedeemPairingCode, [PairingCodeRepository, IssueAgentCredential]),
     createProvider(PollPairingCode, [PairingCodeRepository]),
     createProvider(GetAgentPairingStatus, [AgentCredentialRepository, AgentConnectionRegistry]),
+    createProvider(UnpairAgent, [RevokeAgentCredential, AgentConnectionRegistry]),
 
     // GATEWAYS
     createProvider(AgentGateway, [

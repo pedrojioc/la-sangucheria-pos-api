@@ -21,6 +21,10 @@ import { AgentCredential } from '@contexts/kitchen-operations/agent-credential/d
 import { Argon2AgentCredentialSecretHasher } from '@contexts/kitchen-operations/agent-credential/infrastructure/services/argon2-agent-credential-secret-hasher.service'
 import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
 import { GetAgentPairingStatus } from '@contexts/kitchen-operations/agent-gateway/application/get-status/get-agent-pairing-status'
+import { UnpairAgent } from '@contexts/kitchen-operations/agent-gateway/application/unpair/unpair-agent'
+import { AgentConnectionRegistry } from '@contexts/kitchen-operations/agent-gateway/domain/agent-connection-registry'
+import { RevokeAgentCredential } from '@contexts/kitchen-operations/agent-credential/application/revoke/revoke-agent-credential'
+import { EstablishmentId } from '@contexts/establishment/establishment/domain/establishment-id'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 class InMemoryPairingCodeRepository implements PairingCodeRepository {
@@ -82,6 +86,7 @@ class InMemoryAgentCredentialRepository implements AgentCredentialRepository {
 describe('Agent pairing flow (integration)', () => {
   let publicController: AgentPairingPublicController
   let adminController: AgentPairingController
+  let agentCredentialRepository: InMemoryAgentCredentialRepository
   const establishmentId = UuidMother.random()
 
   beforeEach(() => {
@@ -90,14 +95,14 @@ describe('Agent pairing flow (integration)', () => {
     const pollPairingCode = new PollPairingCode(pairingCodeRepository)
     publicController = new AgentPairingPublicController(issuePairingCode, pollPairingCode)
 
-    const agentCredentialRepository = new InMemoryAgentCredentialRepository()
+    agentCredentialRepository = new InMemoryAgentCredentialRepository()
     const issueAgentCredential = new IssueAgentCredential(
       agentCredentialRepository,
       new Argon2AgentCredentialSecretHasher()
     )
     const redeemPairingCode = new RedeemPairingCode(pairingCodeRepository, issueAgentCredential)
     const establishmentRepository = {
-      findSingleton: jest.fn().mockResolvedValue({ id: { value: establishmentId } }),
+      findSingleton: jest.fn().mockResolvedValue({ id: new EstablishmentId(establishmentId) }),
       save: jest.fn()
     } as unknown as jest.Mocked<EstablishmentRepository>
 
@@ -108,10 +113,15 @@ describe('Agent pairing flow (integration)', () => {
       run: jest.fn()
     } as unknown as jest.Mocked<GetAgentPairingStatus>
 
+    const registry = new AgentConnectionRegistry()
+    const revokeAgentCredential = new RevokeAgentCredential(agentCredentialRepository)
+    const unpairAgent = new UnpairAgent(revokeAgentCredential, registry)
+
     adminController = new AgentPairingController(
       redeemPairingCode,
       establishmentRepository,
-      getAgentPairingStatus
+      getAgentPairingStatus,
+      unpairAgent
     )
   })
 
@@ -160,5 +170,30 @@ describe('Agent pairing flow (integration)', () => {
     )
 
     await expect(adminController.redeem({ code: 'ZZZ999' })).rejects.toThrow(NotFoundException)
+  })
+
+  it('unpair revokes the active credential, and the establishment can re-pair afterward', async () => {
+    const { code } = await publicController.start()
+    await adminController.redeem({ code })
+
+    expect(
+      await agentCredentialRepository.findActiveByEstablishment(establishmentId)
+    ).not.toBeNull()
+
+    await expect(adminController.unpair()).resolves.toBeUndefined()
+
+    expect(await agentCredentialRepository.findActiveByEstablishment(establishmentId)).toBeNull()
+
+    // Calling unpair again with nothing active must stay a safe no-op.
+    await expect(adminController.unpair()).resolves.toBeUndefined()
+
+    const { code: secondCode, pollToken: secondPollToken } = await publicController.start()
+    await adminController.redeem({ code: secondCode })
+    const pollResult = await publicController.poll({ code: secondCode, pollToken: secondPollToken })
+
+    expect(pollResult).toEqual({ status: 'ready', apiKey: expect.stringMatching(/^lspa_/) })
+    expect(
+      await agentCredentialRepository.findActiveByEstablishment(establishmentId)
+    ).not.toBeNull()
   })
 })

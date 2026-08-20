@@ -1,9 +1,20 @@
-import { Body, ConflictException, Controller, Get, NotFoundException, Post } from '@nestjs/common'
+import {
+  Body,
+  ConflictException,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+  Post
+} from '@nestjs/common'
 
 import { RedeemPairingCode } from '@contexts/kitchen-operations/pairing-code/application/redeem/redeem-pairing-code'
 import { PairingCodeNotRedeemable } from '@contexts/kitchen-operations/pairing-code/domain/exceptions/pairing-code-not-redeemable.exception'
 import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
 import { GetAgentPairingStatus } from '@contexts/kitchen-operations/agent-gateway/application/get-status/get-agent-pairing-status'
+import { UnpairAgent } from '@contexts/kitchen-operations/agent-gateway/application/unpair/unpair-agent'
 import { RedeemPairingCodeRequest } from './dto/redeem-pairing-code.request'
 import { AgentPairingStatusResponse } from './dto/agent-pairing-status.response'
 
@@ -27,13 +38,21 @@ export class AgentPairingController {
   constructor(
     private readonly redeemPairingCode: RedeemPairingCode,
     private readonly establishmentRepository: EstablishmentRepository,
-    private readonly getAgentPairingStatus: GetAgentPairingStatus
+    private readonly getAgentPairingStatus: GetAgentPairingStatus,
+    private readonly unpairAgent: UnpairAgent
   ) {}
 
   @Get('status')
   async status(): Promise<AgentPairingStatusResponse> {
     const establishment = await this.establishmentRepository.findSingleton()
     return this.getAgentPairingStatus.run(establishment.id)
+  }
+
+  @Delete()
+  @HttpCode(HttpStatus.OK)
+  async unpair(): Promise<void> {
+    const establishment = await this.establishmentRepository.findSingleton()
+    await this.unpairAgent.run(establishment.id)
   }
 
   @Post('redeem')

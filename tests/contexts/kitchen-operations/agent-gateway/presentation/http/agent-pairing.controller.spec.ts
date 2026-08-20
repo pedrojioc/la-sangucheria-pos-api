@@ -5,12 +5,14 @@ import { RedeemPairingCode } from '@contexts/kitchen-operations/pairing-code/app
 import { PairingCodeNotRedeemable } from '@contexts/kitchen-operations/pairing-code/domain/exceptions/pairing-code-not-redeemable.exception'
 import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
 import { GetAgentPairingStatus } from '@contexts/kitchen-operations/agent-gateway/application/get-status/get-agent-pairing-status'
+import { UnpairAgent } from '@contexts/kitchen-operations/agent-gateway/application/unpair/unpair-agent'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('AgentPairingController', () => {
   let redeemPairingCode: jest.Mocked<RedeemPairingCode>
   let establishmentRepository: jest.Mocked<EstablishmentRepository>
   let getAgentPairingStatus: jest.Mocked<GetAgentPairingStatus>
+  let unpairAgent: jest.Mocked<UnpairAgent>
   let controller: AgentPairingController
 
   const establishmentId = UuidMother.random()
@@ -22,10 +24,12 @@ describe('AgentPairingController', () => {
       save: jest.fn()
     } as unknown as jest.Mocked<EstablishmentRepository>
     getAgentPairingStatus = { run: jest.fn() } as unknown as jest.Mocked<GetAgentPairingStatus>
+    unpairAgent = { run: jest.fn() } as unknown as jest.Mocked<UnpairAgent>
     controller = new AgentPairingController(
       redeemPairingCode,
       establishmentRepository,
-      getAgentPairingStatus
+      getAgentPairingStatus,
+      unpairAgent
     )
   })
 
@@ -99,6 +103,18 @@ describe('AgentPairingController', () => {
 
       expect(result).toEqual({ paired: false, connected: false })
       expect(Object.keys(result)).toEqual(['paired', 'connected'])
+    })
+  })
+
+  describe('unpair', () => {
+    it('resolves the establishment via findSingleton and forwards its id to UnpairAgent', async () => {
+      unpairAgent.run.mockResolvedValue(undefined)
+
+      const result = await controller.unpair()
+
+      expect(establishmentRepository.findSingleton).toHaveBeenCalled()
+      expect(unpairAgent.run).toHaveBeenCalledWith({ value: establishmentId })
+      expect(result).toBeUndefined()
     })
   })
 })
