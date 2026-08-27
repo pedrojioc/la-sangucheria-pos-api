@@ -19,6 +19,9 @@ export class TypeOrmTableQueryService implements TableQueryService {
     const rows = await this.repository
       .createQueryBuilder('table')
       .leftJoin('orders', 'o', 'o.id = table.current_order_id')
+      .leftJoin('order_items', 'i', 'i.order_id = o.id AND i.status != :cancelledStatus', {
+        cancelledStatus: 'CANCELLED'
+      })
       .select([
         'table.id AS "id"',
         'table.number AS "number"',
@@ -37,8 +40,9 @@ export class TypeOrmTableQueryService implements TableQueryService {
         'o.subtotal AS "orderSubtotal"',
         'o.total AS "orderTotal"',
         'o.opened_at AS "orderOpenedAt"',
-        'o.items AS "orderItems"'
+        'COUNT(i.id) AS "activeItemCount"'
       ])
+      .groupBy('table.id, o.id')
       .orderBy('table.number', 'ASC')
       .getRawMany()
 
@@ -56,11 +60,6 @@ export class TypeOrmTableQueryService implements TableQueryService {
       response.rotation = row.rotation
 
       if (row.orderId) {
-        const items = row.orderItems ?? []
-        const activeItemCount = items.filter(
-          (item: { status: string }) => item.status !== 'CANCELLED'
-        ).length
-
         const order: CurrentOrderSummary = {
           id: row.orderId,
           orderNumber: row.orderNumber,
@@ -69,7 +68,7 @@ export class TypeOrmTableQueryService implements TableQueryService {
           subtotal: Number(row.orderSubtotal),
           total: Number(row.orderTotal),
           openedAt: row.orderOpenedAt,
-          itemCount: activeItemCount
+          itemCount: Number(row.activeItemCount)
         }
         response.currentOrder = order
       } else {
