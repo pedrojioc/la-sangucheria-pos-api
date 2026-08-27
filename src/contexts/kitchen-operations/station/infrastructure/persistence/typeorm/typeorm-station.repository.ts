@@ -5,6 +5,7 @@ import { Repository } from 'typeorm'
 import { Station } from '@contexts/kitchen-operations/station/domain/station'
 import { StationId } from '@contexts/kitchen-operations/station/domain/station-id'
 import { StationRepository } from '@contexts/kitchen-operations/station/domain/repositories/station.repository'
+import { StationWithPrinterDevice } from '@contexts/kitchen-operations/station/domain/station-with-printer-device'
 import { StationEntity } from './station.entity'
 
 @Injectable()
@@ -48,6 +49,26 @@ export class TypeOrmStationRepository implements StationRepository {
       order: { displayOrder: 'ASC', name: 'ASC' }
     })
     return entities.map(e => this.toDomain(e))
+  }
+
+  async searchAllWithPrinterDevice(): Promise<StationWithPrinterDevice[]> {
+    const entities = await this.repository.find({
+      relations: { discoveredPrinterDevice: true },
+      order: { displayOrder: 'ASC', name: 'ASC' }
+    })
+    return entities.map(
+      e =>
+        new StationWithPrinterDevice(
+          this.toDomain(e),
+          e.discoveredPrinterDevice
+            ? {
+                model: e.discoveredPrinterDevice.model,
+                status: e.discoveredPrinterDevice.status,
+                address: e.discoveredPrinterDevice.address
+              }
+            : null
+        )
+    )
   }
 
   private toDomain(entity: StationEntity): Station {

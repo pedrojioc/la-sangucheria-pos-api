@@ -22,6 +22,15 @@ const buildSocket = (key: string | undefined, id = 'socket-1'): FakeSocket => ({
   disconnect: jest.fn()
 })
 
+// Production auth now runs as a namespace.use() middleware (see afterInit),
+// not handleConnection — this drives the same authenticate() method the
+// middleware calls, capturing next() so tests can assert accept/reject.
+const runAuth = async (gateway: AgentGateway, socket: FakeSocket): Promise<{ next: jest.Mock }> => {
+  const next = jest.fn()
+  await gateway.authenticate(socket as any, next)
+  return { next }
+}
+
 describe('AgentGateway', () => {
   let registry: AgentConnectionRegistry
   let verifier: jest.Mocked<AgentCredentialVerifierPort>
@@ -54,49 +63,49 @@ describe('AgentGateway', () => {
     )
   })
 
-  describe('handleConnection', () => {
-    it('disconnects a socket with a missing key', async () => {
+  describe('authenticate (Socket.IO namespace middleware)', () => {
+    it('rejects a socket with a missing key', async () => {
       const socket = buildSocket(undefined)
 
-      await gateway.handleConnection(socket as any)
+      const { next } = await runAuth(gateway, socket)
 
-      expect(socket.disconnect).toHaveBeenCalled()
+      expect(next).toHaveBeenCalledWith(expect.any(Error))
       expect(verifier.verify).not.toHaveBeenCalled()
     })
 
-    it('disconnects a socket whose key matches no credential (invalid key)', async () => {
+    it('rejects a socket whose key matches no credential (invalid key)', async () => {
       verifier.verify.mockResolvedValue(null)
       const socket = buildSocket('bad-key')
 
-      await gateway.handleConnection(socket as any)
+      const { next } = await runAuth(gateway, socket)
 
-      expect(socket.disconnect).toHaveBeenCalled()
+      expect(next).toHaveBeenCalledWith(expect.any(Error))
     })
 
-    it('disconnects a socket whose key belongs to a revoked/non-authenticatable credential (verifier returns no match)', async () => {
+    it('rejects a socket whose key belongs to a revoked/non-authenticatable credential (verifier returns no match)', async () => {
       verifier.verify.mockResolvedValue(null)
       const socket = buildSocket('revoked-key')
 
-      await gateway.handleConnection(socket as any)
+      const { next } = await runAuth(gateway, socket)
 
-      expect(socket.disconnect).toHaveBeenCalled()
+      expect(next).toHaveBeenCalledWith(expect.any(Error))
     })
 
-    it('does not disconnect a socket with a valid active key and resolves the EstablishmentId for subsequent registry ops', async () => {
+    it('accepts a socket with a valid active key and resolves the EstablishmentId for subsequent registry ops', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
 
-      await gateway.handleConnection(socket as any)
+      const { next } = await runAuth(gateway, socket)
 
-      expect(socket.disconnect).not.toHaveBeenCalled()
+      expect(next).toHaveBeenCalledWith()
     })
 
     it('(regression guardrail) /agent still rejects unauthenticated connections despite /agent/pairing now existing', async () => {
       const socket = buildSocket(undefined)
 
-      await gateway.handleConnection(socket as any)
+      const { next } = await runAuth(gateway, socket)
 
-      expect(socket.disconnect).toHaveBeenCalledWith(true)
+      expect(next).toHaveBeenCalledWith(expect.any(Error))
     })
   })
 
@@ -104,7 +113,7 @@ describe('AgentGateway', () => {
     it('stores the connection in the registry keyed by the resolved EstablishmentId and acknowledges registration', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
 
       const result = gateway.handleRegisterAgent(socket as any)
 
@@ -116,8 +125,8 @@ describe('AgentGateway', () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const first = buildSocket('good-key', 'socket-1')
       const second = buildSocket('good-key', 'socket-2')
-      await gateway.handleConnection(first as any)
-      await gateway.handleConnection(second as any)
+      await runAuth(gateway, first)
+      await runAuth(gateway, second)
 
       gateway.handleRegisterAgent(first as any)
       gateway.handleRegisterAgent(second as any)
@@ -162,7 +171,7 @@ describe('AgentGateway', () => {
     it('unregisters the disconnecting socket from the registry using the resolved EstablishmentId', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
       gateway.handleRegisterAgent(socket as any)
 
       gateway.handleDisconnect(socket as any)
@@ -175,7 +184,7 @@ describe('AgentGateway', () => {
     it('delegates each pushed device to RecordDiscoveredDevice with the resolved EstablishmentId', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
 
       await gateway.handleReportDevices(
         {
@@ -220,7 +229,7 @@ describe('AgentGateway', () => {
     it('delegates to RecordDeviceStatus with the resolved EstablishmentId', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
 
       await gateway.handleReportDeviceStatus(
         { connectionType: 'network', address: '192.168.1.50', status: 'offline' },
@@ -251,7 +260,7 @@ describe('AgentGateway', () => {
     it('drops an invalid status value without calling RecordDeviceStatus, and logs a warning', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
       const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
 
       await gateway.handleReportDeviceStatus(
@@ -268,7 +277,7 @@ describe('AgentGateway', () => {
     it('checks rotation on report-device-status as well (maybeRotate prefix)', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
 
       await gateway.handleReportDeviceStatus(
         { connectionType: 'network', address: '192.168.1.50', status: 'offline' },
@@ -281,7 +290,7 @@ describe('AgentGateway', () => {
     it('does not emit any status-specific ack payload back to the socket', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
 
       await gateway.handleReportDeviceStatus(
         { connectionType: 'network', address: '192.168.1.50', status: 'offline' },
@@ -299,7 +308,7 @@ describe('AgentGateway', () => {
     it('checks rotation on the first inbound message after authentication', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
 
       gateway.handleRegisterAgent(socket as any)
 
@@ -309,7 +318,7 @@ describe('AgentGateway', () => {
     it('short-circuits within the 60s throttle window on subsequent messages (no repeated DB lookups)', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
 
       gateway.handleRegisterAgent(socket as any)
       gateway.handleRegisterAgent(socket as any)
@@ -322,7 +331,7 @@ describe('AgentGateway', () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       rotateAgentCredentialIfNeeded.run.mockResolvedValue({ plainSecret: 'lspa_rotated' })
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
 
       gateway.handleRegisterAgent(socket as any)
       // maybeRotate is fire-and-forget (void) inside handleRegisterAgent —
@@ -339,7 +348,7 @@ describe('AgentGateway', () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       rotateAgentCredentialIfNeeded.run.mockResolvedValue(null)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
 
       gateway.handleRegisterAgent(socket as any)
       await Promise.resolve()
@@ -351,7 +360,7 @@ describe('AgentGateway', () => {
     it('does not alter existing handler behavior/assertions (report-devices still delegates correctly)', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
 
       await gateway.handleReportDevices(
         { devices: [{ connectionType: 'network', address: '192.168.1.50' }] },
@@ -378,7 +387,7 @@ describe('AgentGateway', () => {
     it('checks rotation on print-nack as well (maybeRotate prefix, mirroring print-ack)', async () => {
       verifier.verify.mockResolvedValue(establishmentId1.value)
       const socket = buildSocket('good-key')
-      await gateway.handleConnection(socket as any)
+      await runAuth(gateway, socket)
 
       await gateway.handlePrintNack({ jobId: 'job-1', reason: 'out-of-paper' }, socket as any)
 

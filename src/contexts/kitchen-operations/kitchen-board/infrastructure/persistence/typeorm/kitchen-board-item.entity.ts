@@ -13,8 +13,21 @@ export class KitchenBoardItemEntity {
   @Column({ name: 'order_number', type: 'varchar', length: 20 })
   orderNumber: string
 
-  @Column({ name: 'item_id', type: 'uuid', unique: true })
-  itemId: string
+  @Column({ name: 'order_status', type: 'varchar', length: 20, default: 'OPEN' })
+  orderStatus: string
+
+  @Column({ name: 'table_id', type: 'uuid', nullable: true })
+  tableId: string | null
+
+  @Column({ name: 'table_label', type: 'varchar', length: 50, nullable: true })
+  tableLabel: string | null
+
+  /**
+   * Null only for the placeholder row created on OrderOpenedEvent, before any
+   * items are sent to kitchen. Real item rows always carry an itemId.
+   */
+  @Column({ name: 'item_id', type: 'uuid', unique: true, nullable: true })
+  itemId: string | null
 
   @Column({ name: 'item_name', type: 'varchar', length: 100 })
   itemName: string

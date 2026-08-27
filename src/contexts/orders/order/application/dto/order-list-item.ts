@@ -8,6 +8,7 @@ export class OrderListItem {
     public readonly type: OrderType,
     public readonly status: OrderStatus,
     public readonly tableId: string | null,
+    public readonly tableLabel: string | null,
     public readonly customerId: string | null,
     public readonly subtotal: number,
     public readonly total: number,

@@ -19,6 +19,7 @@ export class TypeOrmProductCategoryQueryService implements ProductCategoryQueryS
   async search(criteria: Criteria): Promise<PaginatedResult<ProductCategoryListItem>> {
     const qb = this.repository
       .createQueryBuilder('pc')
+      .leftJoin('stations', 'station', 'station.id = pc.defaultStationId')
       .select([
         'pc.id',
         'pc.name',
@@ -27,7 +28,10 @@ export class TypeOrmProductCategoryQueryService implements ProductCategoryQueryS
         'pc.color',
         'pc.displayOrder',
         'pc.isActive',
-        'pc.defaultStationId'
+        'pc.defaultStationId',
+        'station.id AS station_id',
+        'station.name AS station_name',
+        'station.color AS station_color'
       ])
 
     this.applyFilters(qb, criteria)
@@ -38,9 +42,9 @@ export class TypeOrmProductCategoryQueryService implements ProductCategoryQueryS
     const offset = (criteria.pagination.page - 1) * criteria.pagination.pageSize
     qb.skip(offset).take(criteria.pagination.pageSize)
 
-    const entities = await qb.getMany()
+    const { entities, raw } = await qb.getRawAndEntities()
 
-    const items: ProductCategoryListItem[] = entities.map(entity => ({
+    const items: ProductCategoryListItem[] = entities.map((entity, index) => ({
       id: entity.id,
       name: entity.name,
       description: entity.description,
@@ -48,7 +52,14 @@ export class TypeOrmProductCategoryQueryService implements ProductCategoryQueryS
       color: entity.color,
       displayOrder: entity.displayOrder,
       isActive: entity.isActive,
-      defaultStationId: entity.defaultStationId
+      defaultStationId: entity.defaultStationId,
+      station: raw[index].station_id
+        ? {
+            id: raw[index].station_id,
+            name: raw[index].station_name,
+            color: raw[index].station_color
+          }
+        : null
     }))
 
     return PaginatedResult.create(

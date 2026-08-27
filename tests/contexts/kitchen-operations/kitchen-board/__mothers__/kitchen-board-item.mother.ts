@@ -8,6 +8,10 @@ export class KitchenBoardItemMother {
       id: overrides.id ?? UuidMother.random(),
       orderId: overrides.orderId ?? UuidMother.random(),
       orderNumber: overrides.orderNumber ?? String(faker.number.int({ min: 1, max: 999 })),
+      orderStatus: overrides.orderStatus ?? 'IN_PROGRESS',
+      tableId: overrides.tableId !== undefined ? overrides.tableId : UuidMother.random(),
+      tableLabel:
+        overrides.tableLabel !== undefined ? overrides.tableLabel : faker.string.alphanumeric(2),
       itemId: overrides.itemId ?? UuidMother.random(),
       itemName: overrides.itemName ?? faker.commerce.productName(),
       stationId: overrides.stationId !== undefined ? overrides.stationId : UuidMother.random(),

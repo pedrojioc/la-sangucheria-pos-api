@@ -1,4 +1,8 @@
 import { Station } from '../../domain/station'
+import {
+  PrinterDeviceSummary,
+  StationWithPrinterDevice
+} from '../../domain/station-with-printer-device'
 
 export class StationResponse {
   readonly id: string
@@ -8,6 +12,7 @@ export class StationResponse {
   readonly color: string | null
   readonly outputDevice: string
   readonly discoveredPrinterDeviceId: string | null
+  readonly printer: PrinterDeviceSummary | null
 
   private constructor(
     id: string,
@@ -16,7 +21,8 @@ export class StationResponse {
     isActive: boolean,
     color: string | null,
     outputDevice: string,
-    discoveredPrinterDeviceId: string | null
+    discoveredPrinterDeviceId: string | null,
+    printer: PrinterDeviceSummary | null
   ) {
     this.id = id
     this.name = name
@@ -25,6 +31,7 @@ export class StationResponse {
     this.color = color
     this.outputDevice = outputDevice
     this.discoveredPrinterDeviceId = discoveredPrinterDeviceId
+    this.printer = printer
   }
 
   static fromAggregate(station: Station): StationResponse {
@@ -36,7 +43,22 @@ export class StationResponse {
       p.isActive,
       p.color,
       p.outputDevice,
-      p.discoveredPrinterDeviceId
+      p.discoveredPrinterDeviceId,
+      null
+    )
+  }
+
+  static fromAggregateWithPrinterDevice(entry: StationWithPrinterDevice): StationResponse {
+    const p = entry.station.toPrimitives()
+    return new StationResponse(
+      p.id,
+      p.name,
+      p.displayOrder,
+      p.isActive,
+      p.color,
+      p.outputDevice,
+      p.discoveredPrinterDeviceId,
+      entry.printer
     )
   }
 }

@@ -19,28 +19,34 @@ export class TypeOrmOrderQueryService implements OrderQueryService {
 
   async search(criteria: Criteria): Promise<PaginatedResult<OrderListItem>> {
     const converter = new TypeOrmCriteriaConverter<OrderEntity>()
-    let queryBuilder = this.repository.createQueryBuilder('order')
+    let queryBuilder = this.repository
+      .createQueryBuilder('order')
+      .leftJoin('tables', 'table', 'table.id = order.table_id')
+      .addSelect('table.number', 'table_number')
     queryBuilder = converter.convert(queryBuilder, criteria, 'order')
 
-    const [entities, total] = await queryBuilder.getManyAndCount()
+    const { entities, raw } = await queryBuilder.getRawAndEntities()
+    const total = await queryBuilder.getCount()
 
-    const items = entities.map(
-      e =>
-        new OrderListItem(
-          e.id,
-          e.orderNumber,
-          e.type,
-          e.status,
-          e.tableId,
-          e.customerId,
-          Number(e.subtotal),
-          Number(e.total),
-          e.currency,
-          e.openedBy,
-          e.openedAt,
-          e.closedAt
-        )
-    )
+    const items = entities.map((e, index) => {
+      const tableLabel = (raw[index]?.table_number as string | undefined) ?? null
+
+      return new OrderListItem(
+        e.id,
+        e.orderNumber,
+        e.type,
+        e.status,
+        e.tableId,
+        tableLabel,
+        e.customerId,
+        Number(e.subtotal),
+        Number(e.total),
+        e.currency,
+        e.openedBy,
+        e.openedAt,
+        e.closedAt
+      )
+    })
 
     return PaginatedResult.create(
       items,

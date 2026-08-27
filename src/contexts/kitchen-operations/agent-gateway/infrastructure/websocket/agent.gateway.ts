@@ -1,12 +1,14 @@
+import { Injectable, Logger } from '@nestjs/common'
 import {
   WebSocketGateway,
+  WebSocketServer,
   SubscribeMessage,
   MessageBody,
   ConnectedSocket,
-  OnGatewayConnection,
+  OnGatewayInit,
   OnGatewayDisconnect
 } from '@nestjs/websockets'
-import { Socket } from 'socket.io'
+import { Namespace, Socket } from 'socket.io'
 
 import { AgentConnectionRegistry } from '@contexts/kitchen-operations/agent-gateway/domain/agent-connection-registry'
 import { AgentCredentialVerifierPort } from '@contexts/kitchen-operations/agent-credential/domain/services/agent-credential-verifier.port'
@@ -67,8 +69,14 @@ const ROTATION_CHECK_THROTTLE_MS = 60 * 1000
 // gateway performs its own handshake authentication and disconnects
 // unauthenticated sockets. Authentication is now via AgentCredentialVerifierPort
 // (establishment-scoped pairing key), not a human JWT.
+@Injectable()
 @WebSocketGateway({ namespace: '/agent' })
-export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class AgentGateway implements OnGatewayInit, OnGatewayDisconnect {
+  private readonly logger = new Logger(AgentGateway.name)
+
+  @WebSocketServer()
+  private readonly namespace!: Namespace
+
   constructor(
     private readonly registry: AgentConnectionRegistry,
     private readonly verifier: AgentCredentialVerifierPort,
@@ -79,28 +87,48 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly rotateAgentCredentialIfNeeded: RotateAgentCredentialIfNeeded
   ) {}
 
-  async handleConnection(socket: Socket): Promise<void> {
+  // Authentication runs as a Socket.IO middleware (not handleConnection) so it
+  // completes DURING the handshake, before the client's 'connect' event fires.
+  // handleConnection is async and runs AFTER the handshake — a client that
+  // sends 'register-agent' immediately on connect can race ahead of it and
+  // get rejected with { registered: false }, with no retry. Middleware closes
+  // that race by construction: the client cannot observe 'connect' until
+  // resolvedEstablishmentIds is already populated.
+  afterInit(namespace: Namespace): void {
+    namespace.use((socket: Socket, next: (err?: Error) => void) => {
+      void this.authenticate(socket, next)
+    })
+  }
+
+  // Exposed for testing: production code only reaches this via the
+  // namespace.use() middleware wired in afterInit.
+  async authenticate(socket: Socket, next: (err?: Error) => void): Promise<void> {
     const key = socket.handshake.auth?.key as string | undefined
 
     if (!key) {
-      socket.disconnect(true)
+      this.logger.warn(`Socket ${socket.id} connected without an auth key; disconnecting`)
+      next(new Error('unauthorized'))
       return
     }
 
     const establishmentId = await this.verifier.verify(key)
 
     if (!establishmentId) {
-      socket.disconnect(true)
+      this.logger.warn(`Socket ${socket.id} presented an unauthenticatable key; disconnecting`)
+      next(new Error('unauthorized'))
       return
     }
 
+    this.logger.log(`Socket ${socket.id} authenticated for establishment ${establishmentId}`)
     resolvedEstablishmentIds.set(socket, new EstablishmentId(establishmentId))
+    next()
   }
 
   handleDisconnect(socket: Socket): void {
     const establishmentId = resolvedEstablishmentIds.get(socket)
     if (!establishmentId) return
 
+    this.logger.log(`Socket ${socket.id} disconnected for establishment ${establishmentId.value}`)
     this.registry.unregister(establishmentId, socket)
     resolvedEstablishmentIds.delete(socket)
     lastRotationCheckedAt.delete(socket)
@@ -111,8 +139,12 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
     void this.maybeRotate(socket)
 
     const establishmentId = resolvedEstablishmentIds.get(socket)
-    if (!establishmentId) return { registered: false }
+    if (!establishmentId) {
+      this.logger.warn(`Socket ${socket.id} sent register-agent before/without authentication`)
+      return { registered: false }
+    }
 
+    this.logger.log(`Socket ${socket.id} registered for establishment ${establishmentId.value}`)
     this.registry.register(establishmentId, socket)
     return { registered: true }
   }

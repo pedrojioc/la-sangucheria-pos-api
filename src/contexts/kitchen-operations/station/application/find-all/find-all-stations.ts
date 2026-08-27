@@ -1,10 +1,10 @@
 import { StationRepository } from '../../domain/repositories/station.repository'
-import { Station } from '../../domain/station'
+import { StationWithPrinterDevice } from '../../domain/station-with-printer-device'
 
 export class FindAllStations {
   constructor(private readonly repository: StationRepository) {}
 
-  async run(): Promise<Station[]> {
-    return this.repository.searchAll()
+  async run(): Promise<StationWithPrinterDevice[]> {
+    return this.repository.searchAllWithPrinterDevice()
   }
 }

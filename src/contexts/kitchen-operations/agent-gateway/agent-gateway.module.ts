@@ -74,15 +74,11 @@ import { RecordDeviceStatus } from '@contexts/kitchen-operations/printer-discove
     createProvider(UnpairAgent, [RevokeAgentCredential, AgentConnectionRegistry]),
 
     // GATEWAYS
-    createProvider(AgentGateway, [
-      AgentConnectionRegistry,
-      AgentCredentialVerifierPort,
-      AcknowledgePrintJob,
-      ReportPrintJobFailure,
-      RecordDiscoveredDevice,
-      RecordDeviceStatus,
-      RotateAgentCredentialIfNeeded
-    ])
+    // NOT createProvider: Nest's SocketModule reads @WebSocketGateway metadata
+    // off the provider's metatype to mount the gateway on the HTTP server.
+    // createProvider's useFactory strips the metatype, so the socket.io
+    // engine silently never binds — /socket.io/ 404s with no boot error.
+    AgentGateway
   ],
   exports: [KitchenAgentNotifierPort]
 })

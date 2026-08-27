@@ -16,6 +16,9 @@ export interface KitchenBoardItemResponse {
 export interface KitchenBoardOrderGroup {
   orderId: string
   orderNumber: string
+  orderStatus: string
+  tableId: string | null
+  tableLabel: string | null
   oldestSentAt: Date
   items: KitchenBoardItemResponse[]
 }

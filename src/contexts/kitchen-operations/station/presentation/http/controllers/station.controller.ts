@@ -45,7 +45,7 @@ export class StationController {
   @Get()
   async findAll(): Promise<StationResponse[]> {
     const stations = await this.findAllStations.run()
-    return stations.map(StationResponse.fromAggregate)
+    return stations.map(StationResponse.fromAggregateWithPrinterDevice)
   }
 
   @Get(':id')

@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { IsNull, Repository } from 'typeorm'
 
 import {
   KitchenBoardItemRepository,
-  KitchenBoardItemData
+  KitchenBoardItemData,
+  KitchenBoardPlaceholderData
 } from '../../../domain/kitchen-board-item.repository'
 import { KitchenBoardItemEntity } from './kitchen-board-item.entity'
 
@@ -21,6 +22,9 @@ export class TypeOrmKitchenBoardItemRepository implements KitchenBoardItemReposi
         id: item.id,
         orderId: item.orderId,
         orderNumber: item.orderNumber,
+        orderStatus: item.orderStatus,
+        tableId: item.tableId,
+        tableLabel: item.tableLabel,
         itemId: item.itemId,
         itemName: item.itemName,
         stationId: item.stationId,
@@ -59,5 +63,41 @@ export class TypeOrmKitchenBoardItemRepository implements KitchenBoardItemReposi
       select: ['stationId']
     })
     return entity?.stationId ?? null
+  }
+
+  async insertPlaceholder(placeholder: KitchenBoardPlaceholderData): Promise<void> {
+    const exists = await this.repository.existsBy({
+      orderId: placeholder.orderId,
+      itemId: IsNull()
+    })
+    if (exists) return
+
+    await this.repository.insert({
+      id: placeholder.id,
+      orderId: placeholder.orderId,
+      orderNumber: placeholder.orderNumber,
+      orderStatus: 'OPEN',
+      tableId: placeholder.tableId,
+      tableLabel: null,
+      itemId: null,
+      itemName: '',
+      stationId: null,
+      status: 'PLACEHOLDER',
+      quantity: 0,
+      notes: null,
+      modifiers: [],
+      sentAt: placeholder.sentAt,
+      readyAt: null,
+      deliveredAt: null,
+      cancelledAt: null
+    })
+  }
+
+  async deletePlaceholderByOrderId(orderId: string): Promise<void> {
+    await this.repository.delete({ orderId, itemId: IsNull() })
+  }
+
+  async updateOrderStatusByOrderId(orderId: string, orderStatus: string): Promise<void> {
+    await this.repository.update({ orderId }, { orderStatus })
   }
 }

@@ -1,4 +1,7 @@
-import { ProductCategoryListItem } from './product-category-list-item'
+import {
+  ProductCategoryListItem,
+  ProductCategoryListItemStation
+} from './product-category-list-item'
 
 export class ProductCategoryListItemResponse {
   constructor(
@@ -9,7 +12,8 @@ export class ProductCategoryListItemResponse {
     public readonly color: string | null,
     public readonly displayOrder: number,
     public readonly isActive: boolean,
-    public readonly defaultStationId: string | null
+    public readonly defaultStationId: string | null,
+    public readonly station: ProductCategoryListItemStation | null
   ) {}
 
   static fromReadModel(item: ProductCategoryListItem): ProductCategoryListItemResponse {
@@ -21,7 +25,8 @@ export class ProductCategoryListItemResponse {
       item.color,
       item.displayOrder,
       item.isActive,
-      item.defaultStationId
+      item.defaultStationId,
+      item.station
     )
   }
 }

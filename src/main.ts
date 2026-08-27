@@ -3,11 +3,17 @@ import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common'
 import { AppModule } from './app.module'
 import { DomainExceptionFilter } from './core/filters/domain-exception.filter'
 import { NestExpressApplication } from '@nestjs/platform-express'
+import { IoAdapter } from '@nestjs/platform-socket.io'
 import * as cookieParser from 'cookie-parser'
 import { JwtAuthGuard } from '@/contexts/iam/authentication/infrastructure/guards/jwt-auth.guard'
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule)
+
+  // Without this, @WebSocketGateway providers register in the DI container
+  // but Socket.IO's engine never mounts on the HTTP server — every
+  // /socket.io/ request 404s at the Express layer before reaching Nest.
+  app.useWebSocketAdapter(new IoAdapter(app))
 
   app.set('query parser', 'extended')
 

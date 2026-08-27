@@ -99,4 +99,41 @@ describe('TypeOrmStationRepository', () => {
       expect(found!.toPrimitives().discoveredPrinterDeviceId).toBeNull()
     })
   })
+
+  describe('searchAllWithPrinterDevice', () => {
+    it('joins the discovered printer device and maps it to a printer summary', async () => {
+      const deviceId = UuidMother.random()
+      const entity = buildEntity({
+        outputDevice: StationOutputDeviceEnum.PRINTER,
+        discoveredPrinterDeviceId: deviceId,
+        discoveredPrinterDevice: {
+          id: deviceId,
+          model: 'Epson TM-T20',
+          status: 'online',
+          address: '192.168.1.50'
+        }
+      } as Partial<StationEntity>)
+      typeOrmRepo.find.mockResolvedValue([entity])
+
+      const [result] = await repository.searchAllWithPrinterDevice()
+
+      expect(typeOrmRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ relations: { discoveredPrinterDevice: true } })
+      )
+      expect(result.printer).toEqual({
+        model: 'Epson TM-T20',
+        status: 'online',
+        address: '192.168.1.50'
+      })
+    })
+
+    it('returns a null printer summary when the station has no printer device', async () => {
+      const entity = buildEntity({ discoveredPrinterDeviceId: null })
+      typeOrmRepo.find.mockResolvedValue([entity])
+
+      const [result] = await repository.searchAllWithPrinterDevice()
+
+      expect(result.printer).toBeNull()
+    })
+  })
 })
