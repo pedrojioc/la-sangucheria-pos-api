@@ -4,6 +4,7 @@ import { OrderItemStationUnresolved } from '../../domain/exceptions/order-item-s
 import { FindOrder } from '../find/find-order'
 import { StationRoutingPort } from '../ports/station-routing.port'
 import { TableLabelPort } from '../ports/table-label.port'
+import { KitchenBoardEventEmitter } from '@contexts/kitchen-operations/kitchen-board/application/services/kitchen-board-event-emitter'
 
 export class SendOrderToKitchen {
   constructor(
@@ -11,7 +12,8 @@ export class SendOrderToKitchen {
     private readonly findOrder: FindOrder,
     private readonly eventBus: EventBus,
     private readonly stationRouting: StationRoutingPort,
-    private readonly tableLabelPort: TableLabelPort
+    private readonly tableLabelPort: TableLabelPort,
+    private readonly boardEmitter: KitchenBoardEventEmitter
   ) {}
 
   async run(orderId: string, ticketId: string, itemIds: string[], sentBy: string): Promise<void> {
@@ -36,6 +38,11 @@ export class SendOrderToKitchen {
     order.sendToKitchen(ticketId, itemIds, sentBy, stationAssignments, tableId, tableLabel)
     await this.repository.save(order)
     await this.eventBus.publish(order.pullDomainEvents())
+
+    const distinctStationIds = new Set(stationAssignments.values())
+    for (const stationId of distinctStationIds) {
+      this.boardEmitter.notifyBoardUpdate(stationId ?? null)
+    }
   }
 
   // Station routing is resolved from product_categories.default_station_id. A

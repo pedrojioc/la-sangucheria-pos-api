@@ -1,50 +1,93 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Brackets, Repository } from 'typeorm'
+import { Repository } from 'typeorm'
 
+import { OrderEntity } from '@contexts/orders/order/infrastructure/persistence/typeorm/order.entity'
 import { KitchenBoardQueryService } from '../../application/services/kitchen-board-query.service'
 import {
   KitchenBoardResponse,
   KitchenBoardOrderGroup,
   KitchenBoardItemResponse
 } from '../../application/dto/kitchen-board.response'
-import { KitchenBoardItemEntity } from '../persistence/typeorm/kitchen-board-item.entity'
+
+interface KitchenBoardRawRow {
+  orderId: string
+  orderNumber: string
+  orderStatus: string
+  tableId: string | null
+  tableLabel: string | null
+  openedAt: Date
+  itemId: string | null
+  itemName: string | null
+  stationId: string | null
+  itemStatus: string | null
+  quantity: number | null
+  notes: string | null
+  modifiers: Record<string, unknown>[] | null
+  sentAt: Date | null
+  readyAt: Date | null
+  deliveredAt: Date | null
+  cancelledAt: Date | null
+}
 
 @Injectable()
 export class TypeOrmKitchenBoardQueryService implements KitchenBoardQueryService {
   constructor(
-    @InjectRepository(KitchenBoardItemEntity)
-    private readonly repository: Repository<KitchenBoardItemEntity>
+    @InjectRepository(OrderEntity)
+    private readonly repository: Repository<OrderEntity>
   ) {}
 
   async findActiveByStation(stationId?: string): Promise<KitchenBoardResponse> {
     const query = this.repository
-      .createQueryBuilder('item')
-      .where('item.status IN (:...activeStatuses)', { activeStatuses: ['SENT', 'READY'] })
-
-    // PLACEHOLDER rows have no station yet — always included regardless of
-    // station filter so OPEN orders appear on every station's board.
-    if (stationId !== undefined) {
-      query.andWhere(
-        new Brackets(qb => {
-          qb.where('item.status = :placeholder', { placeholder: 'PLACEHOLDER' })
-          if (stationId === 'UNASSIGNED') {
-            qb.orWhere('item.stationId IS NULL')
-          } else {
-            qb.orWhere('item.stationId = :stationId', { stationId })
-          }
-        })
+      .createQueryBuilder('o')
+      .leftJoin(
+        'order_items',
+        'i',
+        'i.order_id = o.id AND i.status IN (:...activeStatuses)' +
+          this.stationJoinPredicate(stationId),
+        { activeStatuses: ['SENT', 'READY'], stationId }
       )
-    } else {
-      query.orWhere('item.status = :placeholder', { placeholder: 'PLACEHOLDER' })
-    }
+      .leftJoin('tables', 't', 't.id = o.table_id')
+      .where('o.status IN (:...orderStatuses)', {
+        orderStatuses: ['OPEN', 'IN_PROGRESS', 'READY']
+      })
+      .select([
+        'o.id AS "orderId"',
+        'o.order_number AS "orderNumber"',
+        'o.status AS "orderStatus"',
+        'o.table_id AS "tableId"',
+        't.number AS "tableLabel"',
+        'o.opened_at AS "openedAt"',
+        'i.id AS "itemId"',
+        'i.product_name AS "itemName"',
+        'i.station_id AS "stationId"',
+        'i.status AS "itemStatus"',
+        'i.quantity AS "quantity"',
+        'i.notes AS "notes"',
+        'i.modifiers AS "modifiers"',
+        'i.sent_at AS "sentAt"',
+        'i.ready_at AS "readyAt"',
+        'i.delivered_at AS "deliveredAt"',
+        'i.cancelled_at AS "cancelledAt"'
+      ])
+      .orderBy('o.opened_at', 'ASC')
+      .addOrderBy('i.sent_at', 'ASC')
 
-    const items = await query.orderBy('item.sentAt', 'ASC').getMany()
+    const rows: KitchenBoardRawRow[] = await query.getRawMany()
 
-    return this.groupByOrder(items)
+    return this.groupByOrder(rows)
   }
 
-  private groupByOrder(items: KitchenBoardItemEntity[]): KitchenBoardOrderGroup[] {
+  // Station predicate lives in the JOIN's ON clause, not WHERE — this is what
+  // makes an OPEN order with no matching items still yield one row (all i.*
+  // columns NULL), giving items: [] without any synthetic PLACEHOLDER row.
+  private stationJoinPredicate(stationId?: string): string {
+    if (stationId === undefined) return ''
+    if (stationId === 'UNASSIGNED') return ' AND i.station_id IS NULL'
+    return ' AND i.station_id = :stationId'
+  }
+
+  private groupByOrder(rows: KitchenBoardRawRow[]): KitchenBoardOrderGroup[] {
     const orderMap = new Map<
       string,
       {
@@ -52,55 +95,61 @@ export class TypeOrmKitchenBoardQueryService implements KitchenBoardQueryService
         orderStatus: string
         tableId: string | null
         tableLabel: string | null
-        sentAt: Date
+        openedAt: Date
+        sentAts: Date[]
         items: KitchenBoardItemResponse[]
       }
     >()
 
-    for (const item of items) {
-      let group = orderMap.get(item.orderId)
+    for (const row of rows) {
+      let group = orderMap.get(row.orderId)
       if (!group) {
         group = {
-          orderNumber: item.orderNumber,
-          orderStatus: item.orderStatus,
-          tableId: item.tableId,
-          tableLabel: item.tableLabel,
-          sentAt: item.sentAt,
+          orderNumber: row.orderNumber,
+          orderStatus: row.orderStatus,
+          tableId: row.tableId,
+          tableLabel: row.tableLabel,
+          openedAt: row.openedAt,
+          sentAts: [],
           items: []
         }
-        orderMap.set(item.orderId, group)
-      } else if (item.sentAt < group.sentAt) {
-        group.sentAt = item.sentAt
+        orderMap.set(row.orderId, group)
       }
 
-      // Placeholder rows only carry orderStatus — they never surface as a fake item.
-      if (item.itemId === null) continue
+      if (row.itemId === null) continue
 
       group.items.push({
-        id: item.id,
-        itemId: item.itemId,
-        itemName: item.itemName,
-        stationId: item.stationId,
-        status: item.status,
-        quantity: item.quantity,
-        notes: item.notes,
-        modifiers: item.modifiers,
-        sentAt: item.sentAt,
-        readyAt: item.readyAt,
-        deliveredAt: item.deliveredAt,
-        cancelledAt: item.cancelledAt
+        id: row.itemId,
+        itemId: row.itemId,
+        itemName: row.itemName!,
+        stationId: row.stationId,
+        status: row.itemStatus!,
+        quantity: row.quantity!,
+        notes: row.notes,
+        modifiers: row.modifiers ?? [],
+        sentAt: row.sentAt!,
+        readyAt: row.readyAt,
+        deliveredAt: row.deliveredAt,
+        cancelledAt: row.cancelledAt
       })
+
+      if (row.sentAt) group.sentAts.push(row.sentAt)
     }
 
     const groups: KitchenBoardOrderGroup[] = []
     for (const [orderId, group] of orderMap) {
+      const oldestSentAt =
+        group.sentAts.length > 0
+          ? group.sentAts.reduce((oldest, current) => (current < oldest ? current : oldest))
+          : group.openedAt
+
       groups.push({
         orderId,
         orderNumber: group.orderNumber,
         orderStatus: group.orderStatus,
         tableId: group.tableId,
         tableLabel: group.tableLabel,
-        oldestSentAt: group.sentAt,
+        oldestSentAt,
         items: group.items
       })
     }
