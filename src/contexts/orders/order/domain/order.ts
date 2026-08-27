@@ -242,7 +242,10 @@ export class Order extends AggregateRoot {
       throw new OrderHasNoPendingItems()
     }
 
-    pendingItems.forEach(item => item.markSent())
+    pendingItems.forEach(item => {
+      const stationId = stationAssignments?.get(item.toPrimitives().productId) ?? null
+      item.markSent(stationId)
+    })
 
     const ticketNumber = this.kitchenTickets.length + 1
     const ticket = KitchenTicket.create(
@@ -259,7 +262,7 @@ export class Order extends AggregateRoot {
       const primitives = item.toPrimitives()
       return {
         itemId: item.id.value,
-        stationId: stationAssignments?.get(primitives.productId) ?? null,
+        stationId: primitives.stationId,
         productName: primitives.productName,
         quantity: primitives.quantity,
         notes: primitives.notes,

@@ -10,6 +10,7 @@ import { EventBus } from '@shared/domain/events'
 import { OrderSentToKitchenEvent } from '@contexts/orders/order/domain/events/order-sent-to-kitchen.event'
 import { OrderItemStationUnresolved } from '@contexts/orders/order/domain/exceptions/order-item-station-unresolved.exception'
 import { OrderHasNoPendingItems } from '@contexts/orders/order/domain/exceptions/order-has-no-pending-items.exception'
+import { KitchenBoardEventEmitter } from '@contexts/kitchen-operations/kitchen-board/application/services/kitchen-board-event-emitter'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 import { OrderMother } from '../__mothers__/order.mother'
 import { OrderItemMother } from '../__mothers__/order-item.mother'
@@ -21,6 +22,7 @@ describe('SendOrderToKitchen', () => {
   let eventBus: jest.Mocked<EventBus>
   let stationRouting: jest.Mocked<StationRoutingPort>
   let tableLabel: jest.Mocked<TableLabelPort>
+  let boardEmitter: jest.Mocked<KitchenBoardEventEmitter>
 
   beforeEach(() => {
     repository = {
@@ -43,8 +45,20 @@ describe('SendOrderToKitchen', () => {
       findLabelById: jest.fn().mockResolvedValue(null)
     } as jest.Mocked<TableLabelPort>
 
+    boardEmitter = {
+      notifyBoardUpdate: jest.fn(),
+      streamForStation: jest.fn()
+    } as unknown as jest.Mocked<KitchenBoardEventEmitter>
+
     findOrder = new FindOrder(repository)
-    useCase = new SendOrderToKitchen(repository, findOrder, eventBus, stationRouting, tableLabel)
+    useCase = new SendOrderToKitchen(
+      repository,
+      findOrder,
+      eventBus,
+      stationRouting,
+      tableLabel,
+      boardEmitter
+    )
   })
 
   it('should resolve stations before sending to kitchen', async () => {
@@ -353,5 +367,95 @@ describe('SendOrderToKitchen', () => {
     )
 
     consoleErrorSpy.mockRestore()
+  })
+
+  it('should notify the board once per distinct station after save', async () => {
+    const orderId = UuidMother.random()
+    const ticketId = UuidMother.random()
+    const itemId1 = UuidMother.random()
+    const itemId2 = UuidMother.random()
+    const itemId3 = UuidMother.random()
+    const productId1 = UuidMother.random()
+    const productId2 = UuidMother.random()
+    const productId3 = UuidMother.random()
+    const stationId1 = UuidMother.random()
+    const stationId2 = UuidMother.random()
+
+    const order = OrderMother.create({
+      id: orderId,
+      items: [
+        OrderItemMother.pending({ id: itemId1, productId: productId1 }),
+        OrderItemMother.pending({ id: itemId2, productId: productId2 }),
+        OrderItemMother.pending({ id: itemId3, productId: productId3 })
+      ]
+    })
+
+    repository.save.mockImplementation(async () => {})
+    repository.search.mockResolvedValue(order)
+
+    const stationMap = new Map<string, string | null>([
+      [productId1, stationId1],
+      [productId2, stationId1],
+      [productId3, stationId2]
+    ])
+    stationRouting.resolveStations.mockResolvedValue(stationMap)
+
+    await useCase.run(orderId, ticketId, [itemId1, itemId2, itemId3], 'waiter-1')
+
+    expect(boardEmitter.notifyBoardUpdate).toHaveBeenCalledTimes(2)
+    expect(boardEmitter.notifyBoardUpdate).toHaveBeenCalledWith(stationId1)
+    expect(boardEmitter.notifyBoardUpdate).toHaveBeenCalledWith(stationId2)
+  })
+
+  it('should notify the board only after repository.save resolves', async () => {
+    const orderId = UuidMother.random()
+    const ticketId = UuidMother.random()
+    const itemId = UuidMother.random()
+    const productId = UuidMother.random()
+    const stationId = UuidMother.random()
+
+    const order = OrderMother.create({
+      id: orderId,
+      items: [OrderItemMother.pending({ id: itemId, productId })]
+    })
+
+    repository.search.mockResolvedValue(order)
+    stationRouting.resolveStations.mockResolvedValue(
+      new Map<string, string | null>([[productId, stationId]])
+    )
+
+    const callOrder: string[] = []
+    repository.save.mockImplementation(() => {
+      callOrder.push('save')
+      return Promise.resolve()
+    })
+    boardEmitter.notifyBoardUpdate.mockImplementation(() => {
+      callOrder.push('notify')
+    })
+
+    await useCase.run(orderId, ticketId, [itemId], 'waiter-1')
+
+    expect(callOrder).toEqual(['save', 'notify'])
+  })
+
+  it('should not notify the board when sending fails', async () => {
+    const orderId = UuidMother.random()
+    const ticketId = UuidMother.random()
+    const itemId = UuidMother.random()
+    const productId = UuidMother.random()
+
+    const order = OrderMother.create({
+      id: orderId,
+      items: [OrderItemMother.pending({ id: itemId, productId })]
+    })
+
+    repository.search.mockResolvedValue(order)
+    stationRouting.resolveStations.mockResolvedValue(new Map<string, string | null>())
+
+    await expect(useCase.run(orderId, ticketId, [itemId], 'waiter-1')).rejects.toThrow(
+      OrderItemStationUnresolved
+    )
+
+    expect(boardEmitter.notifyBoardUpdate).not.toHaveBeenCalled()
   })
 })

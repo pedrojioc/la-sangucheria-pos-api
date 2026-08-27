@@ -23,6 +23,7 @@ export interface OrderItemPrimitives {
   cancelledAt: Date | null
   cancelledBy: string | null
   cancellationReason: string | null
+  stationId: string | null
 }
 
 export class OrderItem extends Entity {
@@ -42,7 +43,8 @@ export class OrderItem extends Entity {
     private deliveredBy: string | null,
     private cancelledAt: Date | null,
     private cancelledBy: string | null,
-    private cancellationReason: string | null
+    private cancellationReason: string | null,
+    private stationId: string | null
   ) {
     super()
   }
@@ -73,6 +75,7 @@ export class OrderItem extends Entity {
       null,
       null,
       null,
+      null,
       null
     )
   }
@@ -82,9 +85,10 @@ export class OrderItem extends Entity {
     this.notes = notes
   }
 
-  markSent(): void {
+  markSent(stationId: string | null): void {
     this.status = OrderItemStatus.SENT
     this.sentAt = new Date()
+    this.stationId = stationId
   }
 
   markReady(): void {
@@ -158,7 +162,8 @@ export class OrderItem extends Entity {
       deliveredBy: this.deliveredBy,
       cancelledAt: this.cancelledAt,
       cancelledBy: this.cancelledBy,
-      cancellationReason: this.cancellationReason
+      cancellationReason: this.cancellationReason,
+      stationId: this.stationId
     }
   }
 
@@ -179,7 +184,8 @@ export class OrderItem extends Entity {
       primitives.deliveredBy,
       primitives.cancelledAt,
       primitives.cancelledBy,
-      primitives.cancellationReason
+      primitives.cancellationReason,
+      primitives.stationId
     )
   }
 }

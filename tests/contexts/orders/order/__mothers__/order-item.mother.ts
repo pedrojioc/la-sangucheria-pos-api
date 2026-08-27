@@ -23,7 +23,8 @@ export class OrderItemMother {
       deliveredBy: params.deliveredBy ?? null,
       cancelledAt: params.cancelledAt ?? null,
       cancelledBy: params.cancelledBy ?? null,
-      cancellationReason: params.cancellationReason ?? null
+      cancellationReason: params.cancellationReason ?? null,
+      stationId: params.stationId ?? null
     }
   }
 
