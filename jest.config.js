@@ -15,6 +15,7 @@ const transformIgnorePatterns = ['/node_modules/(?!uuid|@faker-js/faker|.*\\.pnp
 const sharedModuleNameMapper = {
   '^@/(.*)$': '<rootDir>/src/$1',
   '^@shared/(.*)$': '<rootDir>/src/shared/$1',
+  '^@shared-kernel/(.*)$': '<rootDir>/src/contexts/shared-kernel/$1',
   '^@contexts/(.*)$': '<rootDir>/src/contexts/$1',
   '^@modules/(.*)$': '<rootDir>/src/modules/$1',
   '^@core/(.*)$': '<rootDir>/src/core/$1',
