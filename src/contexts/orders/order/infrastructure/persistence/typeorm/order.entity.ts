@@ -1,12 +1,20 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm'
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  OneToMany
+} from 'typeorm'
 import { OrderType } from '../../../domain/order-type'
 import { OrderStatus } from '../../../domain/order-status'
-import { OrderItemPrimitives } from '../../../domain/order-item'
 import { KitchenTicketPrimitives } from '../../../domain/kitchen-ticket'
 import { OrderPaymentPrimitives } from '../../../domain/order-payment'
 import { OrderSplitPrimitives } from '../../../domain/order-split'
 import { TaxConfigPrimitives } from '../../../domain/tax-config'
 import { DiscountPrimitives } from '../../../domain/discount'
+import { OrderItemEntity } from './order-item.entity'
 
 @Entity('orders')
 @Index(['status'])
@@ -43,8 +51,8 @@ export class OrderEntity {
   @Column({ type: 'varchar', length: 3, default: 'COP' })
   currency: string
 
-  @Column({ type: 'jsonb', default: '[]' })
-  items: OrderItemPrimitives[]
+  @OneToMany(() => OrderItemEntity, item => item.order, { eager: true })
+  items: OrderItemEntity[]
 
   @Column({ name: 'kitchen_tickets', type: 'jsonb', default: '[]' })
   kitchenTickets: KitchenTicketPrimitives[]

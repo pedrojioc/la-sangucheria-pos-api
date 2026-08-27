@@ -2,6 +2,7 @@ import { Module, OnModuleInit } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { OrderEntity } from '@contexts/orders/order/infrastructure/persistence/typeorm/order.entity'
+import { OrderItemEntity } from '@contexts/orders/order/infrastructure/persistence/typeorm/order-item.entity'
 import { OrderRepository } from '@contexts/orders/order/domain/repositories/order.repository'
 import { TypeOrmOrderRepository } from '@contexts/orders/order/infrastructure/persistence/typeorm/typeorm-order.repository'
 
@@ -51,14 +52,18 @@ import { TypeOrmEstablishmentSettingsAdapter } from '@contexts/orders/order/infr
 
 import { EstablishmentModule } from '@contexts/establishment/establishment/establishment.module'
 
+import { KitchenBoardModule } from '@contexts/kitchen-operations/kitchen-board/kitchen-board.module'
+import { KitchenBoardEventEmitter } from '@contexts/kitchen-operations/kitchen-board/application/services/kitchen-board-event-emitter'
+
 import { createProvider } from '@core/utils/create-provider'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([OrderEntity]),
+    TypeOrmModule.forFeature([OrderEntity, OrderItemEntity]),
     TableModule,
     CustomerModule,
-    EstablishmentModule
+    EstablishmentModule,
+    KitchenBoardModule
   ],
   controllers: [OrderController, KitchenController],
   providers: [
@@ -93,11 +98,27 @@ import { createProvider } from '@core/utils/create-provider'
       FindOrder,
       EventBus,
       StationRoutingPort,
-      TableLabelPort
+      TableLabelPort,
+      KitchenBoardEventEmitter
     ]),
-    createProvider(MarkOrderItemReady, [OrderRepository, FindOrder, EventBus]),
-    createProvider(MarkOrderItemDelivered, [OrderRepository, FindOrder, EventBus]),
-    createProvider(CancelOrderItem, [OrderRepository, FindOrder, EventBus]),
+    createProvider(MarkOrderItemReady, [
+      OrderRepository,
+      FindOrder,
+      EventBus,
+      KitchenBoardEventEmitter
+    ]),
+    createProvider(MarkOrderItemDelivered, [
+      OrderRepository,
+      FindOrder,
+      EventBus,
+      KitchenBoardEventEmitter
+    ]),
+    createProvider(CancelOrderItem, [
+      OrderRepository,
+      FindOrder,
+      EventBus,
+      KitchenBoardEventEmitter
+    ]),
     createProvider(CancelOrder, [OrderRepository, FindOrder, EventBus]),
     createProvider(GetKitchenQueue, [OrderRepository]),
     createProvider(CloseOrder, [OrderRepository, FindOrder, EventBus, EstablishmentSettingsPort]),
