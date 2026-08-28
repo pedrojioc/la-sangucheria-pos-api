@@ -6,17 +6,25 @@ import { Table } from '@contexts/restaurant/table/domain/table'
 import { TableId } from '@contexts/restaurant/table/domain/table-id'
 import { TableRepository } from '@contexts/restaurant/table/domain/repositories/table.repository'
 import { TableEntity } from './table.entity'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmTableRepository implements TableRepository {
+export class TypeOrmTableRepository
+  extends TransactionalRepository<TableEntity>
+  implements TableRepository
+{
   constructor(
     @InjectRepository(TableEntity)
-    private readonly repository: Repository<TableEntity>
-  ) {}
+    repository: Repository<TableEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(table: Table): Promise<void> {
     const p = table.toPrimitives()
-    await this.repository.save({
+    await this.repo.save({
       id: p.id,
       number: p.number,
       capacity: p.capacity,
@@ -31,19 +39,19 @@ export class TypeOrmTableRepository implements TableRepository {
   }
 
   async search(id: TableId): Promise<Table | null> {
-    const entity = await this.repository.findOne({ where: { id: id.value } })
+    const entity = await this.repo.findOne({ where: { id: id.value } })
     if (!entity) return null
     return this.toDomain(entity)
   }
 
   async searchByNumber(number: string): Promise<Table | null> {
-    const entity = await this.repository.findOne({ where: { number } })
+    const entity = await this.repo.findOne({ where: { number } })
     if (!entity) return null
     return this.toDomain(entity)
   }
 
   async searchAll(): Promise<Table[]> {
-    const entities = await this.repository.find({ order: { number: 'ASC' } })
+    const entities = await this.repo.find({ order: { number: 'ASC' } })
     return entities.map(e => this.toDomain(e))
   }
 

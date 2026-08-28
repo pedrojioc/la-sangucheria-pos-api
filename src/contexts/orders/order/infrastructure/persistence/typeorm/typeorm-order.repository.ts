@@ -9,109 +9,125 @@ import { OrderRepository } from '@contexts/orders/order/domain/repositories/orde
 import { OrderItemsNotLoaded } from '@contexts/orders/order/domain/exceptions/order-items-not-loaded.exception'
 import { OrderEntity } from './order.entity'
 import { OrderItemEntity } from './order-item.entity'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmOrderRepository implements OrderRepository {
+export class TypeOrmOrderRepository
+  extends TransactionalRepository<OrderEntity>
+  implements OrderRepository
+{
   constructor(
     @InjectRepository(OrderEntity)
-    private readonly repository: Repository<OrderEntity>,
+    repository: Repository<OrderEntity>,
     @InjectRepository(OrderItemEntity)
     private readonly itemRepository: Repository<OrderItemEntity>,
     @InjectDataSource()
-    private readonly dataSource: DataSource
-  ) {}
+    private readonly dataSource: DataSource,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
+  /**
+   * Per design D2: composes with the ambient UnitOfWork transaction instead
+   * of opening its own — uses `this.manager`, which resolves to the ambient
+   * EntityManager when a TransactionInterceptor-scoped request is active, or
+   * falls back to the default (non-transactional) manager otherwise. This is
+   * DIFFERENT from nextOrderNumber() below, which is a sequence allocator
+   * that deliberately keeps its own independent dataSource.transaction() and
+   * must NOT join the ambient transaction (see that method's doc comment).
+   */
   async save(order: Order): Promise<void> {
     const p = order.toPrimitives()
+    const manager = this.manager
 
-    await this.dataSource.transaction(async manager => {
-      await manager.save(OrderEntity, {
-        id: p.id,
-        orderNumber: p.orderNumber,
-        type: p.type,
-        status: p.status,
-        tableId: p.tableId,
-        customerId: p.customerId,
-        addressId: p.addressId,
-        deliveryFee: p.deliveryFee,
-        currency: p.currency,
-        kitchenTickets: p.kitchenTickets,
-        payments: p.payments,
-        splits: p.splits,
-        taxConfig: p.taxConfig,
-        orderDiscount: p.orderDiscount,
-        subtotal: p.subtotal,
-        discountTotal: p.discountTotal,
-        taxBase: p.taxBase,
-        taxAmount: p.taxAmount,
-        total: p.total,
-        tip: p.tip,
-        notes: p.notes,
-        openedBy: p.openedBy,
-        openedAt: p.openedAt,
-        closedBy: p.closedBy,
-        closedAt: p.closedAt,
-        cancelledBy: p.cancelledBy,
-        cancelledAt: p.cancelledAt,
-        cancelledReason: p.cancelledReason
-      })
-
-      const currentItemIds = p.items.map(item => item.id)
-
-      if (currentItemIds.length === 0) {
-        await manager
-          .createQueryBuilder()
-          .delete()
-          .from(OrderItemEntity)
-          .where('order_id = :orderId', { orderId: p.id })
-          .execute()
-      } else {
-        await manager
-          .createQueryBuilder()
-          .delete()
-          .from(OrderItemEntity)
-          .where('order_id = :orderId', { orderId: p.id })
-          .andWhere('id NOT IN (:...currentItemIds)', { currentItemIds })
-          .execute()
-      }
-
-      if (p.items.length > 0) {
-        const items = p.items.map(item =>
-          manager.create(OrderItemEntity, {
-            id: item.id,
-            orderId: p.id,
-            productId: item.productId,
-            productName: item.productName,
-            unitPrice: item.unitPrice,
-            currency: item.currency,
-            quantity: item.quantity,
-            modifiers: item.modifiers,
-            notes: item.notes,
-            discount: item.discount,
-            status: item.status,
-            stationId: item.stationId,
-            sentAt: item.sentAt,
-            readyAt: item.readyAt,
-            deliveredAt: item.deliveredAt,
-            deliveredBy: item.deliveredBy,
-            cancelledAt: item.cancelledAt,
-            cancelledBy: item.cancelledBy,
-            cancellationReason: item.cancellationReason
-          })
-        )
-        await manager.save(OrderItemEntity, items)
-      }
+    await manager.save(OrderEntity, {
+      id: p.id,
+      orderNumber: p.orderNumber,
+      type: p.type,
+      status: p.status,
+      tableId: p.tableId,
+      customerId: p.customerId,
+      addressId: p.addressId,
+      deliveryFee: p.deliveryFee,
+      currency: p.currency,
+      kitchenTickets: p.kitchenTickets,
+      payments: p.payments,
+      splits: p.splits,
+      taxConfig: p.taxConfig,
+      orderDiscount: p.orderDiscount,
+      subtotal: p.subtotal,
+      discountTotal: p.discountTotal,
+      taxBase: p.taxBase,
+      taxAmount: p.taxAmount,
+      total: p.total,
+      tip: p.tip,
+      notes: p.notes,
+      openedBy: p.openedBy,
+      openedAt: p.openedAt,
+      closedBy: p.closedBy,
+      closedAt: p.closedAt,
+      cancelledBy: p.cancelledBy,
+      cancelledAt: p.cancelledAt,
+      cancelledReason: p.cancelledReason
     })
+
+    const currentItemIds = p.items.map(item => item.id)
+
+    if (currentItemIds.length === 0) {
+      await manager
+        .createQueryBuilder()
+        .delete()
+        .from(OrderItemEntity)
+        .where('order_id = :orderId', { orderId: p.id })
+        .execute()
+    } else {
+      await manager
+        .createQueryBuilder()
+        .delete()
+        .from(OrderItemEntity)
+        .where('order_id = :orderId', { orderId: p.id })
+        .andWhere('id NOT IN (:...currentItemIds)', { currentItemIds })
+        .execute()
+    }
+
+    if (p.items.length > 0) {
+      const items = p.items.map(item =>
+        manager.create(OrderItemEntity, {
+          id: item.id,
+          orderId: p.id,
+          productId: item.productId,
+          productName: item.productName,
+          unitPrice: item.unitPrice,
+          currency: item.currency,
+          quantity: item.quantity,
+          modifiers: item.modifiers,
+          notes: item.notes,
+          discount: item.discount,
+          status: item.status,
+          stationId: item.stationId,
+          sentAt: item.sentAt,
+          readyAt: item.readyAt,
+          deliveredAt: item.deliveredAt,
+          deliveredBy: item.deliveredBy,
+          cancelledAt: item.cancelledAt,
+          cancelledBy: item.cancelledBy,
+          cancellationReason: item.cancellationReason
+        })
+      )
+      await manager.save(OrderItemEntity, items)
+    }
   }
 
   async search(id: OrderId): Promise<Order | null> {
-    const entity = await this.repository.findOne({ where: { id: id.value } })
+    const entity = await this.repo.findOne({ where: { id: id.value } })
     if (!entity) return null
     return this.toDomain(entity)
   }
 
   async searchWithActiveKitchenItems(): Promise<Order[]> {
-    const entities = await this.repository
+    const entities = await this.repo
       .createQueryBuilder('o')
       .leftJoinAndSelect('o.items', 'i')
       .where(`o.status IN (:...statuses)`, {

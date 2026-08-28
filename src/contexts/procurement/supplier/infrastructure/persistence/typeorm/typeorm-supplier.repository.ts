@@ -9,22 +9,30 @@ import { Criteria } from '@/shared/domain/criteria/criteria'
 import { PaginatedResult } from '@/shared/domain/criteria/paginated-result'
 import { TypeOrmCriteriaConverter } from '@/shared/infrastructure/persistence/typeorm/typeorm-criteria-converter'
 import { SupplierStatistics } from '../../../domain/supplier-statistics'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmSupplierRepository implements SupplierRepository {
+export class TypeOrmSupplierRepository
+  extends TransactionalRepository<SupplierEntity>
+  implements SupplierRepository
+{
   constructor(
     @InjectRepository(SupplierEntity)
-    private readonly repository: Repository<SupplierEntity>
-  ) {}
+    repository: Repository<SupplierEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(supplier: Supplier): Promise<void> {
     const primitives = supplier.toPrimitives()
-    const entity = this.repository.create(primitives)
-    await this.repository.save(entity)
+    const entity = this.repo.create(primitives)
+    await this.repo.save(entity)
   }
 
   async search(id: SupplierId): Promise<Supplier | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { id: id.value }
     })
 
@@ -36,7 +44,7 @@ export class TypeOrmSupplierRepository implements SupplierRepository {
   }
 
   async searchAll(): Promise<Supplier[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       order: { name: 'ASC' }
     })
 
@@ -44,7 +52,7 @@ export class TypeOrmSupplierRepository implements SupplierRepository {
   }
 
   async matching(criteria: Criteria): Promise<PaginatedResult<Supplier>> {
-    const queryBuilder = this.repository.createQueryBuilder('supplier')
+    const queryBuilder = this.repo.createQueryBuilder('supplier')
 
     const converter = new TypeOrmCriteriaConverter()
     converter.convert(queryBuilder, criteria, 'supplier')
@@ -62,7 +70,7 @@ export class TypeOrmSupplierRepository implements SupplierRepository {
   }
 
   async getStatistics(): Promise<SupplierStatistics> {
-    const result = await this.repository
+    const result = await this.repo
       .createQueryBuilder('supplier')
       .select([
         'COUNT(supplier.id) AS "totalSuppliers"',

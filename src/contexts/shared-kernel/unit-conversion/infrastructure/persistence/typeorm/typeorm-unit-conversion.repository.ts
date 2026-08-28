@@ -4,39 +4,45 @@ import { Repository } from 'typeorm'
 import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
 import { UnitConversion } from '@/contexts/shared-kernel/unit-conversion/domain/unit-conversion'
 import { UnitConversionId } from '@/contexts/shared-kernel/unit-conversion/domain/unit-conversion-id'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { UnitConversionEntity } from './unit-conversion.entity'
 
 @Injectable()
-export class TypeOrmUnitConversionRepository extends UnitConversionRepository {
+export class TypeOrmUnitConversionRepository
+  extends TransactionalRepository<UnitConversionEntity>
+  implements UnitConversionRepository
+{
   constructor(
     @InjectRepository(UnitConversionEntity)
-    private readonly repository: Repository<UnitConversionEntity>
+    repository: Repository<UnitConversionEntity>,
+    uow: UnitOfWorkContextHolder
   ) {
-    super()
+    super(repository, uow)
   }
 
   async save(conversion: UnitConversion): Promise<void> {
     const primitives = conversion.toPrimitives()
-    const entity = this.repository.create(primitives)
-    await this.repository.save(entity)
+    const entity = this.repo.create(primitives)
+    await this.repo.save(entity)
   }
 
   async search(id: UnitConversionId): Promise<UnitConversion | null> {
-    const entity = await this.repository.findOne({ where: { id: id.value } })
+    const entity = await this.repo.findOne({ where: { id: id.value } })
     if (!entity) return null
     return UnitConversion.fromPrimitives(entity)
   }
 
   async findByUnits(fromUnitId: string, toUnitId: string): Promise<UnitConversion | null> {
     // Buscar conversión directa: from → to
-    const direct = await this.repository.findOne({
+    const direct = await this.repo.findOne({
       where: { fromUnitId, toUnitId }
     })
 
     if (direct) return UnitConversion.fromPrimitives(direct)
 
     // Buscar conversión inversa: to → from, e invertir el factor
-    const inverse = await this.repository.findOne({
+    const inverse = await this.repo.findOne({
       where: { fromUnitId: toUnitId, toUnitId: fromUnitId }
     })
 
@@ -51,7 +57,7 @@ export class TypeOrmUnitConversionRepository extends UnitConversionRepository {
   }
 
   async findByUnit(unitId: string): Promise<UnitConversion[]> {
-    const entities = await this.repository
+    const entities = await this.repo
       .createQueryBuilder('uc')
       .where('uc.fromUnitId = :unitId OR uc.toUnitId = :unitId', { unitId })
       .orderBy('uc.fromUnitId', 'ASC')
@@ -61,7 +67,7 @@ export class TypeOrmUnitConversionRepository extends UnitConversionRepository {
   }
 
   async findByFromUnit(fromUnitId: string): Promise<UnitConversion[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { fromUnitId },
       order: { toUnitId: 'ASC' }
     })
@@ -70,7 +76,7 @@ export class TypeOrmUnitConversionRepository extends UnitConversionRepository {
   }
 
   async findByToUnit(toUnitId: string): Promise<UnitConversion[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { toUnitId },
       order: { fromUnitId: 'ASC' }
     })
@@ -79,7 +85,7 @@ export class TypeOrmUnitConversionRepository extends UnitConversionRepository {
   }
 
   async searchAll(): Promise<UnitConversion[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       order: { fromUnitId: 'ASC', toUnitId: 'ASC' }
     })
 

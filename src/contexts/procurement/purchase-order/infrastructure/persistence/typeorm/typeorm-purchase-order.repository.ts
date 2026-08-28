@@ -7,6 +7,8 @@ import { PurchaseOrder, PurchaseOrderPrimitives } from '../../../domain/purchase
 import { PurchaseOrderId } from '../../../domain/purchase-order-id'
 import { PurchaseOrderStatus } from '../../../domain/purchase-order-status'
 import { PurchaseOrderItemEntity } from './purchase-order-item.entity'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 /**
  * TypeOrmPurchaseOrderRepository - Infrastructure Implementation (WRITE Operations)
@@ -26,19 +28,25 @@ import { PurchaseOrderItemEntity } from './purchase-order-item.entity'
  * - Generar números de secuencia para orderNumber
  */
 @Injectable()
-export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
+export class TypeOrmPurchaseOrderRepository
+  extends TransactionalRepository<PurchaseOrderEntity>
+  implements PurchaseOrderRepository
+{
   constructor(
     @InjectRepository(PurchaseOrderEntity)
-    private readonly repository: Repository<PurchaseOrderEntity>,
+    repository: Repository<PurchaseOrderEntity>,
     @InjectRepository(PurchaseOrderItemEntity)
-    private readonly itemRepository: Repository<PurchaseOrderItemEntity>
-  ) {}
+    private readonly itemRepository: Repository<PurchaseOrderItemEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(purchaseOrder: PurchaseOrder): Promise<void> {
     const primitives = purchaseOrder.toPrimitives()
 
     // 1. Guardar entidad principal
-    const entity = this.repository.create({
+    const entity = this.repo.create({
       id: primitives.id,
       orderNumber: primitives.orderNumber,
       supplierId: primitives.supplierId,
@@ -68,7 +76,7 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
       itemCount: primitives.itemCount
     })
 
-    await this.repository.save(entity)
+    await this.repo.save(entity)
 
     // 2. Eliminar items huérfanos (que ya no están en el dominio)
     const currentItemIds = primitives.items.map(i => i.id)
@@ -127,7 +135,7 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
    * Carga items con datos de ingredientes para lógica de negocio
    */
   async findById(id: PurchaseOrderId): Promise<PurchaseOrder | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { id: id.value },
       relations: {
         items: {
@@ -149,7 +157,7 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
    * Busca una orden por su número (para validación de unicidad)
    */
   async findByOrderNumber(orderNumber: string): Promise<PurchaseOrder | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { orderNumber },
       relations: {
         items: {
@@ -171,7 +179,7 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
    * Busca órdenes por estado (para procesos batch/background)
    */
   async findByStatus(status: PurchaseOrderStatus): Promise<PurchaseOrder[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { status },
       relations: {
         items: {
@@ -191,7 +199,7 @@ export class TypeOrmPurchaseOrderRepository implements PurchaseOrderRepository {
    * Implementación simple: cuenta órdenes + 1
    */
   async getNextSequenceNumber(): Promise<number> {
-    const count = await this.repository.count()
+    const count = await this.repo.count()
     return count + 1
   }
 

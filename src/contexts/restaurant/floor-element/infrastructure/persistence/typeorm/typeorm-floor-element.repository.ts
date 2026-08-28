@@ -5,18 +5,26 @@ import { Repository } from 'typeorm'
 import { FloorElement } from '@contexts/restaurant/floor-element/domain/floor-element'
 import { FloorElementId } from '@contexts/restaurant/floor-element/domain/floor-element-id'
 import { FloorElementRepository } from '@contexts/restaurant/floor-element/domain/repositories/floor-element.repository'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { FloorElementEntity } from './floor-element.entity'
 
 @Injectable()
-export class TypeOrmFloorElementRepository implements FloorElementRepository {
+export class TypeOrmFloorElementRepository
+  extends TransactionalRepository<FloorElementEntity>
+  implements FloorElementRepository
+{
   constructor(
     @InjectRepository(FloorElementEntity)
-    private readonly repository: Repository<FloorElementEntity>
-  ) {}
+    repository: Repository<FloorElementEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(element: FloorElement): Promise<void> {
     const p = element.toPrimitives()
-    await this.repository.save({
+    await this.repo.save({
       id: p.id,
       zoneId: p.zoneId,
       type: p.type,
@@ -32,18 +40,18 @@ export class TypeOrmFloorElementRepository implements FloorElementRepository {
   }
 
   async search(id: FloorElementId): Promise<FloorElement | null> {
-    const entity = await this.repository.findOne({ where: { id: id.value } })
+    const entity = await this.repo.findOne({ where: { id: id.value } })
     if (!entity) return null
     return this.toDomain(entity)
   }
 
   async searchAll(): Promise<FloorElement[]> {
-    const entities = await this.repository.find({ order: { zoneId: 'ASC', createdAt: 'ASC' } })
+    const entities = await this.repo.find({ order: { zoneId: 'ASC', createdAt: 'ASC' } })
     return entities.map(e => this.toDomain(e))
   }
 
   async searchAllByZone(zoneId: string): Promise<FloorElement[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { zoneId },
       order: { createdAt: 'ASC' }
     })
@@ -51,7 +59,7 @@ export class TypeOrmFloorElementRepository implements FloorElementRepository {
   }
 
   async delete(id: FloorElementId): Promise<void> {
-    await this.repository.delete({ id: id.value })
+    await this.repo.delete({ id: id.value })
   }
 
   private toDomain(entity: FloorElementEntity): FloorElement {

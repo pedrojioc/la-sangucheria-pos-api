@@ -5,22 +5,30 @@ import { UnitEntity } from './unit.entity'
 import { UnitRepository } from '../../../domain/repositories/unit.repository'
 import { Unit } from '../../../domain/unit'
 import { UnitId } from '../../../domain/unit-id'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmUnitRepository implements UnitRepository {
+export class TypeOrmUnitRepository
+  extends TransactionalRepository<UnitEntity>
+  implements UnitRepository
+{
   constructor(
     @InjectRepository(UnitEntity)
-    private readonly repository: Repository<UnitEntity>
-  ) {}
+    repository: Repository<UnitEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(unit: Unit): Promise<void> {
     const primitives = unit.toPrimitives()
-    const entity = this.repository.create(primitives)
-    await this.repository.save(entity)
+    const entity = this.repo.create(primitives)
+    await this.repo.save(entity)
   }
 
   async findById(id: UnitId): Promise<Unit | null> {
-    const entity = await this.repository.findOne({ where: { id: id.value } })
+    const entity = await this.repo.findOne({ where: { id: id.value } })
 
     if (!entity) {
       return null
@@ -36,7 +44,7 @@ export class TypeOrmUnitRepository implements UnitRepository {
   }
 
   async findAll(): Promise<Unit[]> {
-    const entities = await this.repository.find({ order: { name: 'ASC' } })
+    const entities = await this.repo.find({ order: { name: 'ASC' } })
 
     return entities.map(entity =>
       Unit.fromPrimitives({
@@ -50,6 +58,6 @@ export class TypeOrmUnitRepository implements UnitRepository {
   }
 
   async delete(id: UnitId): Promise<void> {
-    await this.repository.delete({ id: id.value })
+    await this.repo.delete({ id: id.value })
   }
 }

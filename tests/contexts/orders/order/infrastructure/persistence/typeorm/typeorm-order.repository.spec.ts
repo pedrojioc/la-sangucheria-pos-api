@@ -5,6 +5,7 @@ import { OrderItemsNotLoaded } from '@contexts/orders/order/domain/exceptions/or
 import { OrderStatus } from '@contexts/orders/order/domain/order-status'
 import { OrderType } from '@contexts/orders/order/domain/order-type'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 /**
  * TypeOrmOrderRepository mapping unit tests
@@ -58,7 +59,8 @@ describe('TypeOrmOrderRepository', () => {
     return new TypeOrmOrderRepository(
       repositoryMock as never,
       itemRepositoryMock as never,
-      dataSourceMock as never
+      dataSourceMock as never,
+      new UnitOfWorkContextHolder()
     )
   }
 
