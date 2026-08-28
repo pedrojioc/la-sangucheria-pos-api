@@ -5,6 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { TypeOrmPairingCodeRepository } from '@contexts/kitchen-operations/pairing-code/infrastructure/persistence/typeorm/typeorm-pairing-code.repository'
 import { PairingCodeEntity } from '@contexts/kitchen-operations/pairing-code/infrastructure/persistence/typeorm/pairing-code.entity'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 describe('TypeOrmPairingCodeRepository', () => {
   let repository: TypeOrmPairingCodeRepository
@@ -47,6 +48,7 @@ describe('TypeOrmPairingCodeRepository', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmPairingCodeRepository,
+        UnitOfWorkContextHolder,
         {
           provide: getRepositoryToken(PairingCodeEntity),
           useValue: {

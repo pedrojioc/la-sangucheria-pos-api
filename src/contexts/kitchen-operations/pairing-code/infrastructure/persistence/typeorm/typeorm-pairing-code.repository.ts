@@ -8,17 +8,25 @@ import {
 } from '@contexts/kitchen-operations/pairing-code/domain/pairing-code'
 import { PairingCodeRepository } from '@contexts/kitchen-operations/pairing-code/domain/repositories/pairing-code.repository'
 import { PairingCodeEntity } from './pairing-code.entity'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmPairingCodeRepository implements PairingCodeRepository {
+export class TypeOrmPairingCodeRepository
+  extends TransactionalRepository<PairingCodeEntity>
+  implements PairingCodeRepository
+{
   constructor(
     @InjectRepository(PairingCodeEntity)
-    private readonly repository: Repository<PairingCodeEntity>
-  ) {}
+    repository: Repository<PairingCodeEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(pairingCode: PairingCode): Promise<void> {
     const p = pairingCode.toPrimitives()
-    await this.repository.save({
+    await this.repo.save({
       id: p.id,
       code: p.code,
       status: p.status,
@@ -32,7 +40,7 @@ export class TypeOrmPairingCodeRepository implements PairingCodeRepository {
   }
 
   async findByCode(code: string): Promise<PairingCode | null> {
-    const entity = await this.repository.findOne({ where: { code } })
+    const entity = await this.repo.findOne({ where: { code } })
     if (!entity) return null
     return this.toDomain(entity)
   }
@@ -45,12 +53,12 @@ export class TypeOrmPairingCodeRepository implements PairingCodeRepository {
     // expired-but-present secret must never win it either — both properties
     // live in the same atomic compare-and-wipe (design obs #311; TTL gap
     // closed per verify-report obs #319 CRITICAL finding).
-    const entity = await this.repository.findOne({ where: { id } })
+    const entity = await this.repo.findOne({ where: { id } })
     if (!entity || entity.pendingSecret === null) return null
 
     const capturedSecret = entity.pendingSecret
 
-    const result = await this.repository
+    const result = await this.repo
       .createQueryBuilder()
       .update(PairingCodeEntity)
       .set({ pendingSecret: null, deliveredAt: now })

@@ -6,18 +6,26 @@ import { Station } from '@contexts/kitchen-operations/station/domain/station'
 import { StationId } from '@contexts/kitchen-operations/station/domain/station-id'
 import { StationRepository } from '@contexts/kitchen-operations/station/domain/repositories/station.repository'
 import { StationWithPrinterDevice } from '@contexts/kitchen-operations/station/domain/station-with-printer-device'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { StationEntity } from './station.entity'
 
 @Injectable()
-export class TypeOrmStationRepository implements StationRepository {
+export class TypeOrmStationRepository
+  extends TransactionalRepository<StationEntity>
+  implements StationRepository
+{
   constructor(
     @InjectRepository(StationEntity)
-    private readonly repository: Repository<StationEntity>
-  ) {}
+    repository: Repository<StationEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(station: Station): Promise<void> {
     const p = station.toPrimitives()
-    await this.repository.save({
+    await this.repo.save({
       id: p.id,
       name: p.name,
       displayOrder: p.displayOrder,
@@ -29,30 +37,30 @@ export class TypeOrmStationRepository implements StationRepository {
   }
 
   async delete(id: StationId): Promise<void> {
-    await this.repository.delete(id.value)
+    await this.repo.delete(id.value)
   }
 
   async search(id: StationId): Promise<Station | null> {
-    const entity = await this.repository.findOne({ where: { id: id.value } })
+    const entity = await this.repo.findOne({ where: { id: id.value } })
     if (!entity) return null
     return this.toDomain(entity)
   }
 
   async searchByName(name: string): Promise<Station | null> {
-    const entity = await this.repository.findOne({ where: { name } })
+    const entity = await this.repo.findOne({ where: { name } })
     if (!entity) return null
     return this.toDomain(entity)
   }
 
   async searchAll(): Promise<Station[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       order: { displayOrder: 'ASC', name: 'ASC' }
     })
     return entities.map(e => this.toDomain(e))
   }
 
   async searchAllWithPrinterDevice(): Promise<StationWithPrinterDevice[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       relations: { discoveredPrinterDevice: true },
       order: { displayOrder: 'ASC', name: 'ASC' }
     })

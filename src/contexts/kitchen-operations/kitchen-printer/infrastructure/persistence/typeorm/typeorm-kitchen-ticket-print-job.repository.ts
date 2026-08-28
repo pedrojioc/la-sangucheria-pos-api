@@ -9,22 +9,30 @@ import {
 } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-ticket-print-job'
 import { KitchenTicketPrintJobRepository } from '@contexts/kitchen-operations/kitchen-printer/domain/repositories/kitchen-ticket-print-job.repository'
 import { KitchenTicketPrintJobEntity } from './kitchen-ticket-print-job.entity'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmKitchenTicketPrintJobRepository implements KitchenTicketPrintJobRepository {
+export class TypeOrmKitchenTicketPrintJobRepository
+  extends TransactionalRepository<KitchenTicketPrintJobEntity>
+  implements KitchenTicketPrintJobRepository
+{
   constructor(
     @InjectRepository(KitchenTicketPrintJobEntity)
-    private readonly repository: Repository<KitchenTicketPrintJobEntity>
-  ) {}
+    repository: Repository<KitchenTicketPrintJobEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(job: KitchenTicketPrintJob): Promise<void> {
     const primitives = job.toPrimitives()
-    const entity = this.repository.create(primitives)
-    await this.repository.save(entity)
+    const entity = this.repo.create(primitives)
+    await this.repo.save(entity)
   }
 
   async search(id: string): Promise<KitchenTicketPrintJob | null> {
-    const entity = await this.repository.findOne({ where: { id } })
+    const entity = await this.repo.findOne({ where: { id } })
 
     if (!entity) {
       return null
@@ -35,7 +43,7 @@ export class TypeOrmKitchenTicketPrintJobRepository implements KitchenTicketPrin
 
   // MUST filter status IN ('pending', 'delivered') — NEVER status = 'pending' alone.
   async searchUnprinted(): Promise<KitchenTicketPrintJob[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { status: In(['pending', 'delivered']) },
       order: { createdAt: 'ASC' }
     })
@@ -45,7 +53,7 @@ export class TypeOrmKitchenTicketPrintJobRepository implements KitchenTicketPrin
 
   // MUST filter status = 'failed' only.
   async searchFailed(): Promise<KitchenTicketPrintJob[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { status: 'failed' },
       order: { createdAt: 'ASC' }
     })

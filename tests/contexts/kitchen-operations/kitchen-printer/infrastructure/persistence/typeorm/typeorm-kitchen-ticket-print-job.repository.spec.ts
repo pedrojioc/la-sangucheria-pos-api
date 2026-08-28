@@ -5,6 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { TypeOrmKitchenTicketPrintJobRepository } from '@contexts/kitchen-operations/kitchen-printer/infrastructure/persistence/typeorm/typeorm-kitchen-ticket-print-job.repository'
 import { KitchenTicketPrintJobEntity } from '@contexts/kitchen-operations/kitchen-printer/infrastructure/persistence/typeorm/kitchen-ticket-print-job.entity'
 import { KitchenTicketPrintJobMother } from '../../../__mothers__/kitchen-ticket-print-job.mother'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 describe('TypeOrmKitchenTicketPrintJobRepository', () => {
   let repository: TypeOrmKitchenTicketPrintJobRepository
@@ -14,6 +15,7 @@ describe('TypeOrmKitchenTicketPrintJobRepository', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmKitchenTicketPrintJobRepository,
+        UnitOfWorkContextHolder,
         {
           provide: getRepositoryToken(KitchenTicketPrintJobEntity),
           useValue: {

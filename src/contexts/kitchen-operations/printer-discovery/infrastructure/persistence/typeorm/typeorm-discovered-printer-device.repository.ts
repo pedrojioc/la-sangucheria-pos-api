@@ -9,17 +9,25 @@ import {
 } from '@contexts/kitchen-operations/printer-discovery/domain/discovered-printer-device'
 import { DiscoveredPrinterDeviceRepository } from '@contexts/kitchen-operations/printer-discovery/domain/repositories/discovered-printer-device.repository'
 import { DiscoveredPrinterDeviceEntity } from './discovered-printer-device.entity'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmDiscoveredPrinterDeviceRepository implements DiscoveredPrinterDeviceRepository {
+export class TypeOrmDiscoveredPrinterDeviceRepository
+  extends TransactionalRepository<DiscoveredPrinterDeviceEntity>
+  implements DiscoveredPrinterDeviceRepository
+{
   constructor(
     @InjectRepository(DiscoveredPrinterDeviceEntity)
-    private readonly repository: Repository<DiscoveredPrinterDeviceEntity>
-  ) {}
+    repository: Repository<DiscoveredPrinterDeviceEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(device: DiscoveredPrinterDevice): Promise<void> {
     const p = device.toPrimitives()
-    await this.repository.save({
+    await this.repo.save({
       id: p.id,
       establishmentId: p.establishmentId,
       connectionType: p.connectionType,
@@ -33,7 +41,7 @@ export class TypeOrmDiscoveredPrinterDeviceRepository implements DiscoveredPrint
   }
 
   async findById(id: string, establishmentId: string): Promise<DiscoveredPrinterDevice | null> {
-    const entity = await this.repository.findOne({ where: { id, establishmentId } })
+    const entity = await this.repo.findOne({ where: { id, establishmentId } })
     if (!entity) return null
     return this.toDomain(entity)
   }
@@ -48,13 +56,13 @@ export class TypeOrmDiscoveredPrinterDeviceRepository implements DiscoveredPrint
         ? { establishmentId, connectionType, usbIdentifier: identity }
         : { establishmentId, connectionType, address: identity }
 
-    const entity = await this.repository.findOne({ where })
+    const entity = await this.repo.findOne({ where })
     if (!entity) return null
     return this.toDomain(entity)
   }
 
   async searchAllByEstablishment(establishmentId: string): Promise<DiscoveredPrinterDevice[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { establishmentId },
       order: { lastSeenAt: 'DESC' }
     })

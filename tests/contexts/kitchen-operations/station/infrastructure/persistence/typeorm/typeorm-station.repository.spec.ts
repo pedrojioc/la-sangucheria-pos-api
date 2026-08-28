@@ -8,6 +8,7 @@ import { StationId } from '@contexts/kitchen-operations/station/domain/station-i
 import { StationOutputDeviceEnum } from '@contexts/kitchen-operations/station/domain/station-output-device'
 import { StationMother } from '@test/contexts/kitchen-operations/station/__mothers__/station.mother'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 describe('TypeOrmStationRepository', () => {
   let repository: TypeOrmStationRepository
@@ -33,6 +34,7 @@ describe('TypeOrmStationRepository', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmStationRepository,
+        UnitOfWorkContextHolder,
         {
           provide: getRepositoryToken(StationEntity),
           useValue: {

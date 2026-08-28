@@ -6,6 +6,7 @@ import { TypeOrmDiscoveredPrinterDeviceRepository } from '@contexts/kitchen-oper
 import { DiscoveredPrinterDeviceEntity } from '@contexts/kitchen-operations/printer-discovery/infrastructure/persistence/typeorm/discovered-printer-device.entity'
 import { EstablishmentId } from '@contexts/establishment/establishment/domain/establishment-id'
 import { Uuid } from '@shared/domain/value-objects/uuid'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 describe('TypeOrmDiscoveredPrinterDeviceRepository', () => {
   let repository: TypeOrmDiscoveredPrinterDeviceRepository
@@ -35,6 +36,7 @@ describe('TypeOrmDiscoveredPrinterDeviceRepository', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmDiscoveredPrinterDeviceRepository,
+        UnitOfWorkContextHolder,
         {
           provide: getRepositoryToken(DiscoveredPrinterDeviceEntity),
           useValue: {

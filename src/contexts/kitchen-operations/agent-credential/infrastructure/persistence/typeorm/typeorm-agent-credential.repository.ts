@@ -8,18 +8,26 @@ import {
 } from '@contexts/kitchen-operations/agent-credential/domain/agent-credential'
 import { AgentCredentialId } from '@contexts/kitchen-operations/agent-credential/domain/agent-credential-id'
 import { AgentCredentialRepository } from '@contexts/kitchen-operations/agent-credential/domain/repositories/agent-credential.repository'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { AgentCredentialEntity } from './agent-credential.entity'
 
 @Injectable()
-export class TypeOrmAgentCredentialRepository implements AgentCredentialRepository {
+export class TypeOrmAgentCredentialRepository
+  extends TransactionalRepository<AgentCredentialEntity>
+  implements AgentCredentialRepository
+{
   constructor(
     @InjectRepository(AgentCredentialEntity)
-    private readonly repository: Repository<AgentCredentialEntity>
-  ) {}
+    repository: Repository<AgentCredentialEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(credential: AgentCredential): Promise<void> {
     const p = credential.toPrimitives()
-    await this.repository.save({
+    await this.repo.save({
       id: p.id,
       establishmentId: p.establishmentId,
       secretHash: p.secretHash,
@@ -30,13 +38,13 @@ export class TypeOrmAgentCredentialRepository implements AgentCredentialReposito
   }
 
   async search(id: AgentCredentialId): Promise<AgentCredential | null> {
-    const entity = await this.repository.findOne({ where: { id: id.value } })
+    const entity = await this.repo.findOne({ where: { id: id.value } })
     if (!entity) return null
     return this.toDomain(entity)
   }
 
   async findActiveByEstablishment(establishmentId: string): Promise<AgentCredential | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { establishmentId, status: 'active' }
     })
     if (!entity) return null
@@ -44,7 +52,7 @@ export class TypeOrmAgentCredentialRepository implements AgentCredentialReposito
   }
 
   async findCandidatesByEstablishment(establishmentId: string): Promise<AgentCredential[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: [
         { establishmentId, status: 'active' },
         { establishmentId, status: 'superseded' }
@@ -54,7 +62,7 @@ export class TypeOrmAgentCredentialRepository implements AgentCredentialReposito
   }
 
   async findAllAuthenticatableCandidates(now: Date): Promise<AgentCredential[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: [{ status: 'active' }, { status: 'superseded', gracePeriodEndsAt: MoreThan(now) }]
     })
     return entities.map(e => this.toDomain(e))
