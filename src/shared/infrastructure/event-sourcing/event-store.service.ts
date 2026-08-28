@@ -1,8 +1,28 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { EntityManager, Repository } from 'typeorm'
 import { EventStoreEntity } from './persistence/event-store.entity'
 import { DomainEventMetadata } from '@/shared/domain/events'
+
+/**
+ * OutboxRow
+ *
+ * Shape of a single event_store insert used by EventBusRouter (D8) — both
+ * dual-path branches append rows through appendInTransaction, passing an
+ * explicit EntityManager rather than relying on the injected default one.
+ */
+export interface OutboxRow {
+  aggregateId: string
+  aggregateType: string
+  eventType: string
+  version: number
+  eventSchemaVersion?: number
+  payload: Record<string, unknown>
+  metadata?: DomainEventMetadata | null
+  correlationId?: string | null
+  occurredAt: Date
+  dispatchedAt: Date | null
+}
 
 /**
  * StoredEvent
@@ -96,17 +116,68 @@ export class EventStoreService {
       })
     )
 
-    try {
-      await this.eventStoreRepository.save(entities)
-    } catch (error: any) {
-      // Detectar conflicto de versión (unique constraint violation)
-      if (error.code === '23505' && error.constraint === 'uq_event_store_aggregate_version') {
-        throw new Error(
-          `Concurrency conflict: Version already exists for aggregate ${events[0].aggregateId}`
-        )
-      }
-      throw error
-    }
+    await this.eventStoreRepository.save(entities)
+  }
+
+  /**
+   * Inserta filas en event_store usando un EntityManager explícito (no el
+   * inyectado por defecto).
+   *
+   * Usado por EventBusRouter (design D8) en ambos paths de publish():
+   * - Path A: se le pasa el EntityManager ambiental de la transacción del
+   *   request (el insert se compromete/revierte junto con todo lo demás).
+   * - Path B: se le pasa el manager de la transacción corta que el propio
+   *   router abre cuando no hay contexto ambiental.
+   *
+   * dispatchedAt viene decidido por el caller: `now()` para filas de
+   * auditoría de subscribers categoría 1 (ya despachados sincrónicamente),
+   * `null` para filas categoría 2 pendientes de que el poller las despache.
+   */
+  async appendInTransaction(manager: EntityManager, rows: OutboxRow[]): Promise<void> {
+    const repository = manager.getRepository(EventStoreEntity)
+    const entities = rows.map(row =>
+      repository.create({
+        aggregateId: row.aggregateId,
+        aggregateType: row.aggregateType,
+        eventType: row.eventType,
+        version: row.version,
+        eventSchemaVersion: row.eventSchemaVersion ?? 1,
+        payload: row.payload,
+        metadata: row.metadata ?? null,
+        correlationId: row.correlationId ?? null,
+        occurredAt: row.occurredAt,
+        dispatchedAt: row.dispatchedAt
+      })
+    )
+
+    await repository.save(entities)
+  }
+
+  /**
+   * Reclama hasta `limit` filas pendientes de despacho (dispatchedAt IS
+   * NULL), bloqueándolas con FOR UPDATE SKIP LOCKED para que múltiples
+   * instancias del poller (design D3) no despachen la misma fila dos veces.
+   *
+   * La query FOR UPDATE SKIP LOCKED en sí es integration-only (Slice 9) — el
+   * unit test de este método (Slice 3) solo cubre call-shape/delegación.
+   */
+  async claimUndispatched(manager: EntityManager, limit: number): Promise<EventStoreEntity[]> {
+    return manager
+      .createQueryBuilder(EventStoreEntity, 'event')
+      .where('event.dispatchedAt IS NULL')
+      .orderBy('event.createdAt', 'ASC')
+      .take(limit)
+      .setLock('pessimistic_write')
+      .setOnLocked('skip_locked')
+      .getMany()
+  }
+
+  /**
+   * Marca las filas dadas como despachadas (dispatchedAt = now()) usando el
+   * EntityManager explícito de la transacción del poller.
+   */
+  async markDispatched(manager: EntityManager, ids: string[]): Promise<void> {
+    await manager.update(EventStoreEntity, ids, { dispatchedAt: new Date() })
   }
 
   /**
