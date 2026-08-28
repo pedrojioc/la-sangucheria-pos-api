@@ -32,16 +32,23 @@ import { SetTableOccupiedOnOrderOpened } from '@contexts/orders/order/applicatio
 import { ReleaseTableOnOrderClosed } from '@contexts/orders/order/application/subscribers/release-table-on-order-closed'
 import { ReleaseTableOnOrderCancelled } from '@contexts/orders/order/application/subscribers/release-table-on-order-cancelled'
 import { UpdateLifetimeValueOnOrderClosed } from '@contexts/orders/order/application/subscribers/update-lifetime-value-on-order-closed'
+import { DeductIngredientsOnOrderClosed } from '@contexts/orders/order/application/subscribers/deduct-ingredients-on-order-closed'
 
 import { OrderController } from '@contexts/orders/order/presentation/http/controllers/order.controller'
 import { KitchenController } from '@contexts/orders/order/presentation/http/controllers/kitchen.controller'
 
 import { TableModule } from '@contexts/restaurant/table/table.module'
 import { CustomerModule } from '@contexts/crm/customer/customer.module'
+import { ProductModule } from '@contexts/menu/product/product.module'
+import { ProductRecipeModule } from '@contexts/menu/product-recipe/product-recipe.module'
+import { StockLevelModule } from '@contexts/inventory/stock-level/stock-level.module'
 
 import { OccupyTable } from '@contexts/restaurant/table/application/occupy/occupy-table'
 import { ReleaseTable } from '@contexts/restaurant/table/application/release/release-table'
 import { CustomerRepository } from '@contexts/crm/customer/domain/repositories/customer.repository'
+import { ProductRepository } from '@contexts/menu/product/domain/repositories/product.repository'
+import { ProductRecipeRepository } from '@contexts/menu/product-recipe/domain/repositories/product-recipe.repository'
+import { DeductIngredient } from '@contexts/inventory/stock-level/application/deduct/deduct-ingredient'
 
 import { StationRoutingPort } from '@contexts/orders/order/application/ports/station-routing.port'
 import { TypeOrmStationRoutingAdapter } from '@contexts/orders/order/infrastructure/adapters/typeorm-station-routing.adapter'
@@ -63,7 +70,10 @@ import { createProvider } from '@core/utils/create-provider'
     TableModule,
     CustomerModule,
     EstablishmentModule,
-    KitchenBoardModule
+    KitchenBoardModule,
+    ProductModule,
+    ProductRecipeModule,
+    StockLevelModule
   ],
   controllers: [OrderController, KitchenController],
   providers: [
@@ -155,6 +165,20 @@ import { createProvider } from '@core/utils/create-provider'
       useFactory: (customerRepository: CustomerRepository) =>
         new UpdateLifetimeValueOnOrderClosed(customerRepository),
       inject: [CustomerRepository]
+    },
+    {
+      provide: DeductIngredientsOnOrderClosed,
+      useFactory: (
+        productRepository: ProductRepository,
+        productRecipeRepository: ProductRecipeRepository,
+        deductIngredient: DeductIngredient
+      ) =>
+        new DeductIngredientsOnOrderClosed(
+          productRepository,
+          productRecipeRepository,
+          deductIngredient
+        ),
+      inject: [ProductRepository, ProductRecipeRepository, DeductIngredient]
     }
   ],
   exports: [FindOrder, OrderRepository]
@@ -165,7 +189,8 @@ export class OrderModule implements OnModuleInit {
     private readonly setTableOccupiedOnOrderOpened: SetTableOccupiedOnOrderOpened,
     private readonly releaseTableOnOrderClosed: ReleaseTableOnOrderClosed,
     private readonly releaseTableOnOrderCancelled: ReleaseTableOnOrderCancelled,
-    private readonly updateLifetimeValueOnOrderClosed: UpdateLifetimeValueOnOrderClosed
+    private readonly updateLifetimeValueOnOrderClosed: UpdateLifetimeValueOnOrderClosed,
+    private readonly deductIngredientsOnOrderClosed: DeductIngredientsOnOrderClosed
   ) {}
 
   onModuleInit(): void {
@@ -173,7 +198,8 @@ export class OrderModule implements OnModuleInit {
       this.setTableOccupiedOnOrderOpened,
       this.releaseTableOnOrderClosed,
       this.releaseTableOnOrderCancelled,
-      this.updateLifetimeValueOnOrderClosed
+      this.updateLifetimeValueOnOrderClosed,
+      this.deductIngredientsOnOrderClosed
     ])
   }
 }
