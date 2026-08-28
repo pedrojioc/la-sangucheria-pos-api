@@ -8,6 +8,8 @@ import { EmployeeEntity } from './employee.entity'
 import { Criteria } from '@/shared/domain/criteria/criteria'
 import { PaginatedResult } from '@/shared/domain/criteria/paginated-result'
 import { TypeOrmCriteriaConverter } from '@/shared/infrastructure/persistence/typeorm/typeorm-criteria-converter'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 function toDomain(entity: EmployeeEntity): Employee {
   return Employee.fromPrimitives({
@@ -55,18 +57,24 @@ function toEntity(primitives: EmployeePrimitives): Partial<EmployeeEntity> {
 }
 
 @Injectable()
-export class TypeOrmEmployeeRepository implements EmployeeRepository {
+export class TypeOrmEmployeeRepository
+  extends TransactionalRepository<EmployeeEntity>
+  implements EmployeeRepository
+{
   constructor(
     @InjectRepository(EmployeeEntity)
-    private readonly repository: Repository<EmployeeEntity>
-  ) {}
+    repository: Repository<EmployeeEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(employee: Employee): Promise<void> {
-    await this.repository.save(toEntity(employee.toPrimitives()))
+    await this.repo.save(toEntity(employee.toPrimitives()))
   }
 
   async search(id: EmployeeId): Promise<Employee | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { id: id.value },
       relations: { position: true }
     })
@@ -74,11 +82,11 @@ export class TypeOrmEmployeeRepository implements EmployeeRepository {
   }
 
   async delete(id: EmployeeId): Promise<void> {
-    await this.repository.delete({ id: id.value })
+    await this.repo.delete({ id: id.value })
   }
 
   async matching(criteria: Criteria): Promise<PaginatedResult<Employee>> {
-    const queryBuilder = this.repository.createQueryBuilder('employee')
+    const queryBuilder = this.repo.createQueryBuilder('employee')
 
     const converter = new TypeOrmCriteriaConverter()
     converter.convert(queryBuilder, criteria, 'employee')

@@ -5,23 +5,31 @@ import { RefreshTokenRepository } from '../../../domain/repositories/refresh-tok
 import { RefreshToken } from '../../../domain/refresh-token'
 import { RefreshTokenJti } from '../../../domain/refresh-token-jti'
 import { UserId } from '@/contexts/iam/user/domain/user-id'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { RefreshTokenEntity } from './refresh-token.entity'
 
 @Injectable()
-export class TypeOrmRefreshTokenRepository implements RefreshTokenRepository {
+export class TypeOrmRefreshTokenRepository
+  extends TransactionalRepository<RefreshTokenEntity>
+  implements RefreshTokenRepository
+{
   constructor(
     @InjectRepository(RefreshTokenEntity)
-    private readonly repository: Repository<RefreshTokenEntity>
-  ) {}
+    repository: Repository<RefreshTokenEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(token: RefreshToken): Promise<void> {
     const primitives = token.toPrimitives()
-    const entity = this.repository.create(primitives)
-    await this.repository.save(entity)
+    const entity = this.repo.create(primitives)
+    await this.repo.save(entity)
   }
 
   async search(jti: RefreshTokenJti): Promise<RefreshToken | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { jti: jti.value }
     })
 
@@ -33,7 +41,7 @@ export class TypeOrmRefreshTokenRepository implements RefreshTokenRepository {
   }
 
   async revokeAllForUser(userId: UserId): Promise<void> {
-    await this.repository.update(
+    await this.repo.update(
       { userId: userId.value, isRevoked: false },
       {
         isRevoked: true,
