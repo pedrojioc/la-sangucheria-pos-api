@@ -5,23 +5,31 @@ import { Repository } from 'typeorm'
 import { IngredientCategory } from '@contexts/inventory/ingredient-category/domain/ingredient-category'
 import { IngredientCategoryId } from '@contexts/inventory/ingredient-category/domain/ingredient-category-id'
 import { IngredientCategoryRepository } from '@contexts/inventory/ingredient-category/domain/repositories/ingredient-category.repository'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { IngredientCategoryEntity } from './ingredient-category.entity'
 
 @Injectable()
-export class TypeOrmIngredientCategoryRepository implements IngredientCategoryRepository {
+export class TypeOrmIngredientCategoryRepository
+  extends TransactionalRepository<IngredientCategoryEntity>
+  implements IngredientCategoryRepository
+{
   constructor(
     @InjectRepository(IngredientCategoryEntity)
-    private readonly repository: Repository<IngredientCategoryEntity>
-  ) {}
+    repository: Repository<IngredientCategoryEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(ingredientCategory: IngredientCategory): Promise<void> {
     const primitives = ingredientCategory.toPrimitives()
-    const entity = this.repository.create(primitives)
-    await this.repository.save(entity)
+    const entity = this.repo.create(primitives)
+    await this.repo.save(entity)
   }
 
   async search(id: IngredientCategoryId): Promise<IngredientCategory | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { id: id.value }
     })
 
@@ -41,7 +49,7 @@ export class TypeOrmIngredientCategoryRepository implements IngredientCategoryRe
   }
 
   async searchAll(): Promise<IngredientCategory[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       order: { sortOrder: 'ASC' },
       where: { isActive: true }
     })

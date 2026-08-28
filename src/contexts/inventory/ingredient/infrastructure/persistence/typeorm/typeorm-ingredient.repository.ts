@@ -9,22 +9,30 @@ import { IngredientEntity } from './ingredient.entity'
 import { Criteria } from '@/shared/domain/criteria/criteria'
 import { PaginatedResult } from '@/shared/domain/criteria/paginated-result'
 import { TypeOrmCriteriaConverter } from '@/shared/infrastructure/persistence/typeorm/typeorm-criteria-converter'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmIngredientRepository implements IngredientRepository {
+export class TypeOrmIngredientRepository
+  extends TransactionalRepository<IngredientEntity>
+  implements IngredientRepository
+{
   constructor(
     @InjectRepository(IngredientEntity)
-    private readonly repository: Repository<IngredientEntity>
-  ) {}
+    repository: Repository<IngredientEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(ingredient: Ingredient): Promise<void> {
     const primitives = ingredient.toPrimitives()
-    const entity = this.repository.create(primitives)
-    await this.repository.save(entity)
+    const entity = this.repo.create(primitives)
+    await this.repo.save(entity)
   }
 
   async search(id: IngredientId): Promise<Ingredient | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { id: id.value }
     })
 
@@ -49,7 +57,7 @@ export class TypeOrmIngredientRepository implements IngredientRepository {
   }
 
   async searchAll(): Promise<Ingredient[]> {
-    const entities = await this.repository.find()
+    const entities = await this.repo.find()
     return entities.map(entity => {
       return Ingredient.fromPrimitives({
         id: entity.id,
@@ -69,7 +77,7 @@ export class TypeOrmIngredientRepository implements IngredientRepository {
   }
 
   async hasTransactions(id: IngredientId): Promise<boolean> {
-    const batchCount = await this.repository.manager
+    const batchCount = await this.repo.manager
       .createQueryBuilder()
       .select('1')
       .from('inventory_batches', 'b')
@@ -79,7 +87,7 @@ export class TypeOrmIngredientRepository implements IngredientRepository {
 
     if (batchCount > 0) return true
 
-    const levelCount = await this.repository.manager
+    const levelCount = await this.repo.manager
       .createQueryBuilder()
       .select('1')
       .from('inventory_levels', 'l')
@@ -92,7 +100,7 @@ export class TypeOrmIngredientRepository implements IngredientRepository {
 
   async matching(criteria: Criteria): Promise<PaginatedResult<Ingredient>> {
     const converter = new TypeOrmCriteriaConverter<IngredientEntity>()
-    let qb = this.repository.createQueryBuilder('ingredient')
+    let qb = this.repo.createQueryBuilder('ingredient')
     qb.leftJoinAndSelect('ingredient.ingredientCategory', 'category')
     qb.leftJoinAndSelect('ingredient.unit', 'unit')
     qb.leftJoinAndSelect('ingredient.preferredSupplier', 'supplier')

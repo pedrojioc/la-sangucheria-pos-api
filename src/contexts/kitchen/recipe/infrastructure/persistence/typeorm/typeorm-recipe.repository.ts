@@ -9,21 +9,29 @@ import { RecipeEntity } from './recipe.entity'
 import { RecipeItemEntity } from './recipe-item.entity'
 import { RecipeItem } from '@contexts/kitchen/recipe/domain/recipe-item'
 import { RecipeYield } from '@contexts/kitchen/recipe/domain/recipe-yield'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmRecipeRepository implements RecipeRepository {
+export class TypeOrmRecipeRepository
+  extends TransactionalRepository<RecipeEntity>
+  implements RecipeRepository
+{
   constructor(
     @InjectRepository(RecipeEntity)
-    private readonly repository: Repository<RecipeEntity>,
+    repository: Repository<RecipeEntity>,
     @InjectRepository(RecipeItemEntity)
-    private readonly itemRepository: Repository<RecipeItemEntity>
-  ) {}
+    private readonly itemRepository: Repository<RecipeItemEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(recipe: Recipe): Promise<void> {
     const primitives = recipe.toPrimitives()
 
     // Save recipe
-    const entity = this.repository.create({
+    const entity = this.repo.create({
       id: primitives.id,
       name: primitives.name,
       description: primitives.description,
@@ -35,7 +43,7 @@ export class TypeOrmRecipeRepository implements RecipeRepository {
       updatedAt: primitives.updatedAt
     })
 
-    await this.repository.save(entity)
+    await this.repo.save(entity)
 
     // Delete existing items
     await this.itemRepository.delete({ recipeId: primitives.id })
@@ -57,7 +65,7 @@ export class TypeOrmRecipeRepository implements RecipeRepository {
   }
 
   async search(id: RecipeId): Promise<Recipe | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { id: id.value },
       relations: ['items']
     })
@@ -70,7 +78,7 @@ export class TypeOrmRecipeRepository implements RecipeRepository {
   }
 
   async searchAll(): Promise<Recipe[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       relations: ['items'],
       where: { isActive: true },
       order: { createdAt: 'DESC' }
@@ -80,7 +88,7 @@ export class TypeOrmRecipeRepository implements RecipeRepository {
   }
 
   async delete(id: RecipeId): Promise<void> {
-    await this.repository.delete({ id: id.value })
+    await this.repo.delete({ id: id.value })
   }
 
   private toDomain(entity: RecipeEntity): Recipe {

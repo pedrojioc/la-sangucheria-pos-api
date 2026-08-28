@@ -8,30 +8,36 @@ import { InventoryMovementId } from '../../../domain/inventory-movement-id'
 import { IngredientId } from '@/contexts/inventory/ingredient/domain/ingredient-id'
 import { MovementType } from '../../../domain/movement-type'
 import { InventoryMovementEntity } from './inventory-movement.entity'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmInventoryMovementRepository extends InventoryMovementRepository {
+export class TypeOrmInventoryMovementRepository
+  extends TransactionalRepository<InventoryMovementEntity>
+  implements InventoryMovementRepository
+{
   constructor(
     @InjectRepository(InventoryMovementEntity)
-    private readonly repository: Repository<InventoryMovementEntity>
+    repository: Repository<InventoryMovementEntity>,
+    uow: UnitOfWorkContextHolder
   ) {
-    super()
+    super(repository, uow)
   }
 
   async save(movement: InventoryMovement): Promise<void> {
     const primitives = movement.toPrimitives()
-    const entity = this.repository.create(primitives)
-    await this.repository.save(entity)
+    const entity = this.repo.create(primitives)
+    await this.repo.save(entity)
   }
 
   async search(id: InventoryMovementId): Promise<InventoryMovement | null> {
-    const entity = await this.repository.findOne({ where: { id: id.value } })
+    const entity = await this.repo.findOne({ where: { id: id.value } })
     if (!entity) return null
     return InventoryMovement.fromPrimitives(this.mapEntityToPrimitives(entity))
   }
 
   async findByIngredient(ingredientId: IngredientId): Promise<InventoryMovement[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { ingredientId: ingredientId.value },
       order: { performedAt: 'DESC' }
     })
@@ -41,7 +47,7 @@ export class TypeOrmInventoryMovementRepository extends InventoryMovementReposit
   }
 
   async findByType(type: MovementType): Promise<InventoryMovement[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { type },
       order: { performedAt: 'DESC' }
     })
@@ -51,7 +57,7 @@ export class TypeOrmInventoryMovementRepository extends InventoryMovementReposit
   }
 
   async findByReference(referenceId: string): Promise<InventoryMovement[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { referenceId },
       order: { performedAt: 'DESC' }
     })
@@ -61,7 +67,7 @@ export class TypeOrmInventoryMovementRepository extends InventoryMovementReposit
   }
 
   async searchAll(): Promise<InventoryMovement[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       order: { performedAt: 'DESC' }
     })
     return entities.map(entity =>

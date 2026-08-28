@@ -10,22 +10,28 @@ import { PreparationRecipeIngredientEntity } from './preparation-recipe-ingredie
 import { Criteria } from '@/shared/domain/criteria/criteria'
 import { PaginatedResult } from '@/shared/domain/criteria/paginated-result'
 import { TypeOrmCriteriaConverter } from '@/shared/infrastructure/persistence/typeorm/typeorm-criteria-converter'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmPreparationRecipeRepository extends PreparationRecipeRepository {
+export class TypeOrmPreparationRecipeRepository
+  extends TransactionalRepository<PreparationRecipeEntity>
+  implements PreparationRecipeRepository
+{
   constructor(
     @InjectRepository(PreparationRecipeEntity)
-    private readonly repository: Repository<PreparationRecipeEntity>,
+    repository: Repository<PreparationRecipeEntity>,
     @InjectRepository(PreparationRecipeIngredientEntity)
-    private readonly ingredientRepository: Repository<PreparationRecipeIngredientEntity>
+    private readonly ingredientRepository: Repository<PreparationRecipeIngredientEntity>,
+    uow: UnitOfWorkContextHolder
   ) {
-    super()
+    super(repository, uow)
   }
 
   async save(recipe: PreparationRecipe): Promise<void> {
     const primitives = recipe.toPrimitives()
 
-    await this.repository.save({
+    await this.repo.save({
       id: primitives.id,
       name: primitives.name,
       description: primitives.description,
@@ -51,7 +57,7 @@ export class TypeOrmPreparationRecipeRepository extends PreparationRecipeReposit
   }
 
   async search(id: PreparationRecipeId): Promise<PreparationRecipe | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { id: id.value },
       relations: { additionalIngredients: { ingredient: true } }
     })
@@ -60,7 +66,7 @@ export class TypeOrmPreparationRecipeRepository extends PreparationRecipeReposit
   }
 
   async findByBaseIngredient(ingredientId: IngredientId): Promise<PreparationRecipe | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { baseIngredientId: ingredientId.value, isActive: true },
       relations: { additionalIngredients: { ingredient: true } }
     })
@@ -69,7 +75,7 @@ export class TypeOrmPreparationRecipeRepository extends PreparationRecipeReposit
   }
 
   async findActive(): Promise<PreparationRecipe[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { isActive: true },
       order: { name: 'ASC' },
       relations: { additionalIngredients: { ingredient: true } }
@@ -78,7 +84,7 @@ export class TypeOrmPreparationRecipeRepository extends PreparationRecipeReposit
   }
 
   async searchAll(): Promise<PreparationRecipe[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       order: { createdAt: 'DESC' },
       relations: { additionalIngredients: { ingredient: true } }
     })
@@ -87,7 +93,7 @@ export class TypeOrmPreparationRecipeRepository extends PreparationRecipeReposit
 
   async matching(criteria: Criteria): Promise<PaginatedResult<PreparationRecipe>> {
     const converter = new TypeOrmCriteriaConverter<PreparationRecipeEntity>()
-    let qb = this.repository
+    let qb = this.repo
       .createQueryBuilder('recipe')
       .leftJoinAndSelect('recipe.additionalIngredients', 'additionalIngredients')
       .leftJoinAndSelect('additionalIngredients.ingredient', 'ai_ingredient')

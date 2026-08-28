@@ -5,6 +5,7 @@ import { IngredientCategoryEntity } from '@/contexts/inventory/ingredient-catego
 import { IngredientCategoryId } from '@/contexts/inventory/ingredient-category/domain/ingredient-category-id'
 import { IngredientCategoryMother } from '../__mothers__/ingredient-category.mother'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 describe('TypeOrmIngredientCategoryRepository', () => {
   let repository: TypeOrmIngredientCategoryRepository
@@ -21,7 +22,7 @@ describe('TypeOrmIngredientCategoryRepository', () => {
         }),
         TypeOrmModule.forFeature([IngredientCategoryEntity])
       ],
-      providers: [TypeOrmIngredientCategoryRepository]
+      providers: [TypeOrmIngredientCategoryRepository, UnitOfWorkContextHolder]
     }).compile()
 
     repository = module.get(TypeOrmIngredientCategoryRepository)
