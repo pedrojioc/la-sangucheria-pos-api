@@ -9,6 +9,8 @@ import { DocumentTypeValue } from '../../../domain/customer-document-type'
 import { Criteria } from '@/shared/domain/criteria/criteria'
 import { PaginatedResult } from '@/shared/domain/criteria/paginated-result'
 import { TypeOrmCriteriaConverter } from '@/shared/infrastructure/persistence/typeorm/typeorm-criteria-converter'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 function toDomain(entity: CustomerEntity): Customer {
   return Customer.fromPrimitives({
@@ -43,23 +45,29 @@ function toEntity(primitives: CustomerPrimitives): Partial<CustomerEntity> {
 }
 
 @Injectable()
-export class TypeOrmCustomerRepository implements CustomerRepository {
+export class TypeOrmCustomerRepository
+  extends TransactionalRepository<CustomerEntity>
+  implements CustomerRepository
+{
   constructor(
     @InjectRepository(CustomerEntity)
-    private readonly repository: Repository<CustomerEntity>
-  ) {}
+    repository: Repository<CustomerEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(customer: Customer): Promise<void> {
-    await this.repository.save(toEntity(customer.toPrimitives()))
+    await this.repo.save(toEntity(customer.toPrimitives()))
   }
 
   async search(id: CustomerId): Promise<Customer | null> {
-    const entity = await this.repository.findOne({ where: { id: id.value } })
+    const entity = await this.repo.findOne({ where: { id: id.value } })
     return entity ? toDomain(entity) : null
   }
 
   async searchByPhone(phone: string): Promise<Customer[]> {
-    const entities = await this.repository
+    const entities = await this.repo
       .createQueryBuilder('customer')
       .where('customer.phone ILIKE :phone', { phone: `%${phone}%` })
       .andWhere('customer.status = :status', { status: 'active' })
@@ -71,19 +79,19 @@ export class TypeOrmCustomerRepository implements CustomerRepository {
   }
 
   async existsByPhone(phone: string): Promise<boolean> {
-    const count = await this.repository.count({ where: { phone } })
+    const count = await this.repo.count({ where: { phone } })
     return count > 0
   }
 
   async existsByDocument(type: DocumentTypeValue, number: string): Promise<boolean> {
-    const count = await this.repository.count({
+    const count = await this.repo.count({
       where: { documentType: type, documentNumber: number }
     })
     return count > 0
   }
 
   async matching(criteria: Criteria): Promise<PaginatedResult<Customer>> {
-    const queryBuilder = this.repository.createQueryBuilder('customer')
+    const queryBuilder = this.repo.createQueryBuilder('customer')
 
     const converter = new TypeOrmCriteriaConverter()
     converter.convert(queryBuilder, criteria, 'customer')

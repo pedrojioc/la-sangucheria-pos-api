@@ -5,17 +5,25 @@ import { Repository } from 'typeorm'
 import { BillingConfig } from '@contexts/billing/billing-config/domain/billing-config'
 import { BillingConfigRepository } from '@contexts/billing/billing-config/domain/repositories/billing-config.repository'
 import { BillingNotConfigured } from '@contexts/billing/billing-config/domain/exceptions/billing-not-configured.exception'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { BillingConfigEntity } from './billing-config.entity'
 
 @Injectable()
-export class TypeOrmBillingConfigRepository implements BillingConfigRepository {
+export class TypeOrmBillingConfigRepository
+  extends TransactionalRepository<BillingConfigEntity>
+  implements BillingConfigRepository
+{
   constructor(
     @InjectRepository(BillingConfigEntity)
-    private readonly repository: Repository<BillingConfigEntity>
-  ) {}
+    repository: Repository<BillingConfigEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async findSingleton(): Promise<BillingConfig> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: {},
       order: { createdAt: 'ASC' }
     })
@@ -40,7 +48,7 @@ export class TypeOrmBillingConfigRepository implements BillingConfigRepository {
 
   async save(config: BillingConfig): Promise<void> {
     const primitives = config.toPrimitives()
-    const entity = this.repository.create({
+    const entity = this.repo.create({
       id: primitives.id,
       factusApiToken: primitives.factusApiToken,
       factusApiBaseUrl: primitives.factusApiBaseUrl,
@@ -51,6 +59,6 @@ export class TypeOrmBillingConfigRepository implements BillingConfigRepository {
       resolucionValidFrom: primitives.resolucionValidFrom,
       resolucionValidTo: primitives.resolucionValidTo
     })
-    await this.repository.save(entity)
+    await this.repo.save(entity)
   }
 }

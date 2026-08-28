@@ -7,18 +7,26 @@ import { InvoiceId } from '@contexts/billing/invoice/domain/invoice-id'
 import { InvoiceRepository } from '@contexts/billing/invoice/domain/repositories/invoice.repository'
 import { InvoiceStatus } from '@contexts/billing/invoice/domain/invoice-status'
 import { DocumentType } from '@contexts/billing/invoice/domain/document-type'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { InvoiceEntity } from './invoice.entity'
 
 @Injectable()
-export class TypeOrmInvoiceRepository implements InvoiceRepository {
+export class TypeOrmInvoiceRepository
+  extends TransactionalRepository<InvoiceEntity>
+  implements InvoiceRepository
+{
   constructor(
     @InjectRepository(InvoiceEntity)
-    private readonly repository: Repository<InvoiceEntity>
-  ) {}
+    repository: Repository<InvoiceEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(invoice: Invoice): Promise<void> {
     const primitives = invoice.toPrimitives()
-    const entity = this.repository.create({
+    const entity = this.repo.create({
       id: primitives.id,
       documentType: primitives.documentType,
       snapshot: primitives.snapshot,
@@ -28,11 +36,11 @@ export class TypeOrmInvoiceRepository implements InvoiceRepository {
       failureReason: primitives.failureReason,
       attempts: primitives.attempts
     })
-    await this.repository.save(entity)
+    await this.repo.save(entity)
   }
 
   async search(id: InvoiceId): Promise<Invoice | null> {
-    const entity = await this.repository.findOne({ where: { id: id.value } })
+    const entity = await this.repo.findOne({ where: { id: id.value } })
     if (!entity) {
       return null
     }
@@ -40,7 +48,7 @@ export class TypeOrmInvoiceRepository implements InvoiceRepository {
   }
 
   async searchPending(): Promise<Invoice[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: {
         status: In([InvoiceStatus.FAILED, InvoiceStatus.PENDING])
       }

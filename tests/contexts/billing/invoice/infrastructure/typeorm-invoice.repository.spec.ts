@@ -7,6 +7,7 @@ import { InvoiceId } from '@contexts/billing/invoice/domain/invoice-id'
 import { InvoiceStatus } from '@contexts/billing/invoice/domain/invoice-status'
 import { InvoiceEntity } from '@contexts/billing/invoice/infrastructure/persistence/typeorm/invoice.entity'
 import { TypeOrmInvoiceRepository } from '@contexts/billing/invoice/infrastructure/persistence/typeorm/typeorm-invoice.repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import {
   InvoiceMother,
   InvoiceSnapshotMother
@@ -21,6 +22,7 @@ describe('TypeOrmInvoiceRepository', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TypeOrmInvoiceRepository,
+        UnitOfWorkContextHolder,
         {
           provide: getRepositoryToken(InvoiceEntity),
           useValue: {

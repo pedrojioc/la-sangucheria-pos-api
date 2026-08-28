@@ -7,17 +7,25 @@ import { EstablishmentRepository } from '../../../domain/repositories/establishm
 import { EstablishmentNotConfigured } from '../../../domain/exceptions/establishment-not-configured.exception'
 import { KitchenMode } from '../../../domain/kitchen-mode'
 import { TaxType } from '@shared/domain/value-objects/tax-type'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { EstablishmentEntity } from './establishment.entity'
 
 @Injectable()
-export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
+export class TypeOrmEstablishmentRepository
+  extends TransactionalRepository<EstablishmentEntity>
+  implements EstablishmentRepository
+{
   constructor(
     @InjectRepository(EstablishmentEntity)
-    private readonly repository: Repository<EstablishmentEntity>
-  ) {}
+    repository: Repository<EstablishmentEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async findSingleton(): Promise<Establishment> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: {},
       order: { createdAt: 'ASC' }
     })
@@ -59,7 +67,7 @@ export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
 
   async save(establishment: Establishment): Promise<void> {
     const primitives = establishment.toPrimitives()
-    const entity = this.repository.create({
+    const entity = this.repo.create({
       id: primitives.id,
       name: primitives.name,
       displayName: primitives.displayName,
@@ -88,6 +96,6 @@ export class TypeOrmEstablishmentRepository implements EstablishmentRepository {
       paymentMethods: primitives.paymentMethods,
       autoSendToKitchen: primitives.autoSendToKitchen
     })
-    await this.repository.save(entity)
+    await this.repo.save(entity)
   }
 }

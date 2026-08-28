@@ -4,6 +4,8 @@ import { Repository } from 'typeorm'
 import { AddressRepository } from '../../../domain/repositories/address.repository'
 import { Address, AddressPrimitives } from '../../../domain/address'
 import { AddressId } from '../../../domain/address-id'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { AddressEntity } from './address.entity'
 
 function toDomain(entity: AddressEntity): Address {
@@ -37,23 +39,29 @@ function toEntity(primitives: AddressPrimitives): Partial<AddressEntity> {
 }
 
 @Injectable()
-export class TypeOrmAddressRepository implements AddressRepository {
+export class TypeOrmAddressRepository
+  extends TransactionalRepository<AddressEntity>
+  implements AddressRepository
+{
   constructor(
     @InjectRepository(AddressEntity)
-    private readonly repository: Repository<AddressEntity>
-  ) {}
+    repository: Repository<AddressEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(address: Address): Promise<void> {
-    await this.repository.save(toEntity(address.toPrimitives()))
+    await this.repo.save(toEntity(address.toPrimitives()))
   }
 
   async search(id: AddressId): Promise<Address | null> {
-    const entity = await this.repository.findOne({ where: { id: id.value } })
+    const entity = await this.repo.findOne({ where: { id: id.value } })
     return entity ? toDomain(entity) : null
   }
 
   async findByCustomer(customerId: string): Promise<Address[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { customerId },
       order: { createdAt: 'ASC' }
     })
@@ -61,10 +69,10 @@ export class TypeOrmAddressRepository implements AddressRepository {
   }
 
   async countByCustomer(customerId: string): Promise<number> {
-    return this.repository.count({ where: { customerId } })
+    return this.repo.count({ where: { customerId } })
   }
 
   async delete(id: AddressId): Promise<void> {
-    await this.repository.delete({ id: id.value })
+    await this.repo.delete({ id: id.value })
   }
 }
