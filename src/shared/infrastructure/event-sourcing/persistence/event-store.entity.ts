@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index, Unique } from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm'
 
 /**
  * EventStoreEntity
@@ -31,8 +31,13 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index, Unique
 @Index('idx_event_store_occurred_at', ['occurredAt'])
 // Índice para correlación distribuida (tracing)
 @Index('idx_event_store_correlation_id', ['correlationId'])
-// Constraint único: No duplicar versiones en el stream
-@Unique('uq_event_store_aggregate_version', ['aggregateId', 'version'])
+// NOTA: la constraint única uq_event_store_aggregate_version fue removida —
+// DomainEvent.version es la versión de schema del evento (siempre 1), no una
+// secuencia real por agregado, y ningún repositorio rehidrata agregados desde
+// el stream de eventos. La constraint bloqueaba el segundo evento persistido
+// para cualquier agregado en cuanto el despacho empezara a funcionar de verdad.
+// El índice parcial idx_event_store_undispatched (ver columna dispatchedAt
+// más abajo) es usado por el outbox poller para encontrar filas pendientes.
 export class EventStoreEntity {
   /**
    * ID único del evento (UUID v4)
@@ -251,4 +256,21 @@ export class EventStoreEntity {
    */
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
+
+  /**
+   * Timestamp de cuándo el evento fue despachado a sus subscribers.
+   *
+   * `NULL` = pendiente de despacho (outbox), no-null = ya despachado.
+   * Para eventos de categoría 1 (sync, dentro de la transacción) se escribe
+   * `now()` en el mismo insert — sirven como registro de auditoría, el
+   * poller nunca debe recogerlas. Para eventos de categoría 2 se deja en
+   * `NULL` hasta que el OutboxPollerService las despacha exitosamente.
+   *
+   * @nullable Filas pendientes de despacho
+   * @indexed Índice parcial (solo filas NULL) para que el poller las
+   *          encuentre en O(filas pendientes), no O(tabla completa)
+   */
+  @Column({ name: 'dispatched_at', type: 'timestamp with time zone', nullable: true })
+  @Index('idx_event_store_undispatched', { where: '"dispatched_at" IS NULL' })
+  dispatchedAt: Date | null
 }
