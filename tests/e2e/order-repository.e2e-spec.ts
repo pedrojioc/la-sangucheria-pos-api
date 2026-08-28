@@ -9,6 +9,7 @@ import { OrderItemStatus } from '@contexts/orders/order/domain/order-item-status
 import { OrderMother } from '@test/contexts/orders/order/__mothers__/order.mother'
 import { OrderItemMother } from '@test/contexts/orders/order/__mothers__/order-item.mother'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { createE2eDataSource, cleanOrderTables } from './support/e2e-data-source'
 
 /**
@@ -28,7 +29,12 @@ describe('TypeOrmOrderRepository (e2e)', () => {
     await dataSource.initialize()
     orderRepository = dataSource.getRepository(OrderEntity)
     itemRepository = dataSource.getRepository(OrderItemEntity)
-    repository = new TypeOrmOrderRepository(orderRepository, itemRepository, dataSource)
+    repository = new TypeOrmOrderRepository(
+      orderRepository,
+      itemRepository,
+      dataSource,
+      new UnitOfWorkContextHolder()
+    )
   })
 
   afterAll(async () => {
