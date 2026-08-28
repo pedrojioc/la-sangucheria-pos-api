@@ -7,9 +7,11 @@ import {
   Param,
   Post,
   Put,
-  Query
+  Query,
+  UseInterceptors
 } from '@nestjs/common'
 import { CommandBus, QueryBus } from '@nestjs/cqrs'
+import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 import { CreateCustomerRequest } from '../dto/create-customer.request'
 import { UpdateCustomerRequest } from '../dto/update-customer.request'
 import { SearchCustomersRequest } from '../dto/search-customers.request'
@@ -30,6 +32,7 @@ export class CustomerController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(TransactionInterceptor)
   async create(@Body() dto: CreateCustomerRequest): Promise<void> {
     await this.commandBus.execute(
       new CreateCustomerCommand(

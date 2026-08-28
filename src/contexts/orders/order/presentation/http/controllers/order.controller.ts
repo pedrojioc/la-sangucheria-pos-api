@@ -8,8 +8,11 @@ import {
   Param,
   Patch,
   Post,
-  Query
+  Query,
+  UseInterceptors
 } from '@nestjs/common'
+
+import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 
 import { OpenOrder } from '../../../application/open/open-order'
 import { AddOrderItems } from '../../../application/add-items/add-order-items'
@@ -82,6 +85,7 @@ export class OrderController {
 
   @Post(':id/items')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async addItems(@Param('id') id: string, @Body() dto: AddOrderItemsRequest): Promise<void> {
     const items = dto.items.map(item => ({
       id: item.id,
@@ -105,6 +109,7 @@ export class OrderController {
 
   @Patch(':id/items/:itemId')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async updateItem(
     @Param('id') id: string,
     @Param('itemId') itemId: string,
@@ -115,18 +120,21 @@ export class OrderController {
 
   @Delete(':id/items/:itemId')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async removeItem(@Param('id') id: string, @Param('itemId') itemId: string): Promise<void> {
     await this.removeOrderItem.run(id, itemId)
   }
 
   @Post(':id/kitchen')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async sendToKitchen(@Param('id') id: string, @Body() dto: SendToKitchenRequest): Promise<void> {
     await this.sendOrderToKitchen.run(id, dto.ticketId, dto.itemIds, dto.sentBy)
   }
 
   @Post(':id/items/:itemId/cancel')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async cancelItem(
     @Param('id') id: string,
     @Param('itemId') itemId: string,
@@ -143,6 +151,7 @@ export class OrderController {
 
   @Post(':id/close')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async close(@Param('id') id: string, @Body() dto: CloseOrderRequest): Promise<void> {
     await this.closeOrder.run(
       id,
@@ -155,6 +164,7 @@ export class OrderController {
 
   @Patch(':id/items/:itemId/discount')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async applyItemDiscountEndpoint(
     @Param('id') id: string,
     @Param('itemId') itemId: string,
@@ -173,6 +183,7 @@ export class OrderController {
 
   @Delete(':id/items/:itemId/discount')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async removeItemDiscountEndpoint(
     @Param('id') id: string,
     @Param('itemId') itemId: string

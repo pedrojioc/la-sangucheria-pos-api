@@ -7,9 +7,11 @@ import {
   HttpStatus,
   Param,
   Post,
-  Put
+  Put,
+  UseInterceptors
 } from '@nestjs/common'
 import { CommandBus, QueryBus } from '@nestjs/cqrs'
+import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 import { AddAddressRequest } from '../dto/add-address.request'
 import { UpdateAddressRequest } from '../dto/update-address.request'
 import { AddAddressCommand } from '../../../application/add/add-address.command'
@@ -33,6 +35,7 @@ export class AddressController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(TransactionInterceptor)
   async add(
     @Param('customerId') customerId: string,
     @Body() dto: AddAddressRequest
@@ -68,6 +71,7 @@ export class AddressController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(TransactionInterceptor)
   async remove(@Param('customerId') customerId: string, @Param('id') id: string): Promise<void> {
     await this.commandBus.execute(new RemoveAddressCommand(id, customerId))
   }

@@ -7,9 +7,11 @@ import {
   HttpCode,
   HttpStatus,
   NotFoundException,
-  Post
+  Post,
+  UseInterceptors
 } from '@nestjs/common'
 
+import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 import { RedeemPairingCode } from '@contexts/kitchen-operations/pairing-code/application/redeem/redeem-pairing-code'
 import { PairingCodeNotRedeemable } from '@contexts/kitchen-operations/pairing-code/domain/exceptions/pairing-code-not-redeemable.exception'
 import { EstablishmentRepository } from '@contexts/establishment/establishment/domain/repositories/establishment.repository'
@@ -56,6 +58,7 @@ export class AgentPairingController {
   }
 
   @Post('redeem')
+  @UseInterceptors(TransactionInterceptor)
   async redeem(@Body() dto: RedeemPairingCodeRequest): Promise<RedeemPairingCodeResponse> {
     const establishment = await this.establishmentRepository.findSingleton()
     const establishmentId = establishment.id.value

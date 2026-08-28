@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Put, Query, UseInterceptors } from '@nestjs/common'
 import { CommandBus, QueryBus } from '@nestjs/cqrs'
+import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 
 import { CreateIngredientDto } from '../dto/create-ingredient.dto'
 import { UpdateIngredientDto } from '../dto/update-ingredient.dto'
@@ -19,6 +20,7 @@ export class IngredientController {
   ) {}
 
   @Post()
+  @UseInterceptors(TransactionInterceptor)
   async create(@Body() dto: CreateIngredientDto) {
     const command = new CreateIngredientCommand(
       dto.id,

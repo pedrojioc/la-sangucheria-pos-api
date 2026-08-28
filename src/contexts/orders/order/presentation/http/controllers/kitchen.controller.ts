@@ -8,9 +8,12 @@ import {
   Post,
   Body,
   Sse,
-  MessageEvent
+  MessageEvent,
+  UseInterceptors
 } from '@nestjs/common'
 import { Observable, interval, switchMap, map } from 'rxjs'
+
+import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 
 import { MarkOrderItemReady } from '../../../application/mark-item-ready/mark-item-ready'
 import { MarkOrderItemDelivered } from '../../../application/mark-item-delivered/mark-item-delivered'
@@ -41,12 +44,14 @@ export class KitchenController {
 
   @Patch(':id/items/:itemId/ready')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async markReady(@Param('id') id: string, @Param('itemId') itemId: string): Promise<void> {
     await this.markItemReady.run(id, itemId)
   }
 
   @Patch(':id/items/:itemId/delivered')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async markDelivered(
     @Param('id') id: string,
     @Param('itemId') itemId: string,

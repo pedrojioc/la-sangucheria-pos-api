@@ -8,9 +8,11 @@ import {
   Param,
   Post,
   Put,
-  Query
+  Query,
+  UseInterceptors
 } from '@nestjs/common'
 import { CommandBus, QueryBus } from '@nestjs/cqrs'
+import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 import { CreateEmployeeRequest } from '../dto/create-employee.request'
 import { UpdateEmployeeRequest } from '../dto/update-employee.request'
 import { GrantEmployeeAccessRequest } from '../dto/grant-employee-access.request'
@@ -81,6 +83,7 @@ export class EmployeeController {
 
   @Post(':id/grant-access')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(TransactionInterceptor)
   async grantAccess(
     @Param('id') employeeId: string,
     @Body() dto: GrantEmployeeAccessRequest
