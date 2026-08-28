@@ -1,26 +1,25 @@
-import { Module } from '@nestjs/common'
-import { EventEmitterModule } from '@nestjs/event-emitter'
-import { InMemoryNestEventBus } from './in-memory-nest-event-bus'
+import { Inject, Module, OnModuleInit } from '@nestjs/common'
+import { EventBusRouter } from '../event-bus.router'
 import {
   DOMAIN_SUBSCRIBERS,
   IN_MEMORY_EVENT_SUBSCRIBERS,
   DomainSubscribersArray
 } from '../providers/event-bus.tokens'
 import { EventBus } from '@/shared/domain/events'
+import { EventStoreModule } from '@/shared/infrastructure/event-sourcing/event-store.module'
 
+/**
+ * InMemoryEventBusModule
+ *
+ * Wires EventBusRouter as the EventBus implementation (design D7/D8 —
+ * replaces the deleted InMemoryNestEventBus). EventEmitterModule / EventEmitter2
+ * are dropped entirely: the router dispatches category-1 subscribers via direct
+ * invocation, not an event emitter, so the `wildcard: false` root cause
+ * that made the old PersistDomainEventsSubscriber inert no longer exists —
+ * both files were deleted (Slice 4), not reconfigured.
+ */
 @Module({
-  imports: [
-    EventEmitterModule.forRoot({
-      // Configuración optimizada para POS
-      wildcard: false,
-      delimiter: '.',
-      newListener: false,
-      removeListener: false,
-      maxListeners: 20, // Suficiente para múltiples subscribers
-      verboseMemoryLeak: false,
-      ignoreErrors: false
-    })
-  ],
+  imports: [EventStoreModule],
   providers: [
     ...DOMAIN_SUBSCRIBERS,
     {
@@ -28,12 +27,22 @@ import { EventBus } from '@/shared/domain/events'
       useFactory: (...subscribers): DomainSubscribersArray => subscribers,
       inject: [...DOMAIN_SUBSCRIBERS]
     },
-    InMemoryNestEventBus,
+    EventBusRouter,
     {
       provide: EventBus,
-      useExisting: InMemoryNestEventBus
+      useExisting: EventBusRouter
     }
   ],
-  exports: [EventBus, InMemoryNestEventBus, IN_MEMORY_EVENT_SUBSCRIBERS]
+  exports: [EventBus, EventBusRouter, IN_MEMORY_EVENT_SUBSCRIBERS]
 })
-export class InMemoryEventBusModule {}
+export class InMemoryEventBusModule implements OnModuleInit {
+  constructor(
+    private readonly eventBusRouter: EventBusRouter,
+    @Inject(IN_MEMORY_EVENT_SUBSCRIBERS)
+    private readonly subscribers: DomainSubscribersArray
+  ) {}
+
+  onModuleInit(): void {
+    this.eventBusRouter.addSubscribers(this.subscribers)
+  }
+}
