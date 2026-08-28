@@ -7,22 +7,30 @@ import { OptionGroupRepository } from '../../../domain/repositories/option-group
 import { OptionGroupEntity } from './option-group.entity'
 import { OptionItemEntity } from './option-item.entity'
 import { ProductOptionGroupEntity } from './product-option-group.entity'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmOptionGroupRepository implements OptionGroupRepository {
+export class TypeOrmOptionGroupRepository
+  extends TransactionalRepository<OptionGroupEntity>
+  implements OptionGroupRepository
+{
   constructor(
     @InjectRepository(OptionGroupEntity)
-    private readonly repository: Repository<OptionGroupEntity>,
+    repository: Repository<OptionGroupEntity>,
     @InjectRepository(OptionItemEntity)
     private readonly itemRepository: Repository<OptionItemEntity>,
     @InjectRepository(ProductOptionGroupEntity)
-    private readonly pivotRepository: Repository<ProductOptionGroupEntity>
-  ) {}
+    private readonly pivotRepository: Repository<ProductOptionGroupEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(group: OptionGroup): Promise<void> {
     const primitives = group.toPrimitives()
 
-    const entity = this.repository.create({
+    const entity = this.repo.create({
       id: primitives.id,
       name: primitives.name,
       type: primitives.type,
@@ -34,7 +42,7 @@ export class TypeOrmOptionGroupRepository implements OptionGroupRepository {
       updatedAt: primitives.updatedAt
     })
 
-    await this.repository.save(entity)
+    await this.repo.save(entity)
 
     await this.itemRepository.delete({ groupId: primitives.id })
 
@@ -57,7 +65,7 @@ export class TypeOrmOptionGroupRepository implements OptionGroupRepository {
   }
 
   async search(id: OptionGroupId): Promise<OptionGroup | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { id: id.value },
       relations: ['items']
     })
@@ -68,7 +76,7 @@ export class TypeOrmOptionGroupRepository implements OptionGroupRepository {
   }
 
   async searchAll(): Promise<OptionGroup[]> {
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { isActive: true },
       relations: ['items'],
       order: { createdAt: 'DESC' }
@@ -80,7 +88,7 @@ export class TypeOrmOptionGroupRepository implements OptionGroupRepository {
   async findByIds(ids: string[]): Promise<OptionGroup[]> {
     if (ids.length === 0) return []
 
-    const entities = await this.repository.find({
+    const entities = await this.repo.find({
       where: { id: In(ids) },
       relations: ['items']
     })
@@ -89,7 +97,7 @@ export class TypeOrmOptionGroupRepository implements OptionGroupRepository {
   }
 
   async delete(id: OptionGroupId): Promise<void> {
-    await this.repository.delete({ id: id.value })
+    await this.repo.delete({ id: id.value })
   }
 
   async isAssignedToAnyProduct(id: OptionGroupId): Promise<boolean> {

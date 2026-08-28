@@ -6,27 +6,35 @@ import { ProductRecipeRepository } from '@contexts/menu/product-recipe/domain/re
 import { ProductRecipeItem } from '@contexts/menu/product-recipe/domain/product-recipe-item'
 import { ProductRecipeEntity } from './product-recipe.entity'
 import { ProductRecipeItemEntity } from './product-recipe-item.entity'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmProductRecipeRepository implements ProductRecipeRepository {
+export class TypeOrmProductRecipeRepository
+  extends TransactionalRepository<ProductRecipeEntity>
+  implements ProductRecipeRepository
+{
   constructor(
     @InjectRepository(ProductRecipeEntity)
-    private readonly repository: Repository<ProductRecipeEntity>,
+    repository: Repository<ProductRecipeEntity>,
     @InjectRepository(ProductRecipeItemEntity)
-    private readonly itemRepository: Repository<ProductRecipeItemEntity>
-  ) {}
+    private readonly itemRepository: Repository<ProductRecipeItemEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(recipe: ProductRecipe): Promise<void> {
     const primitives = recipe.toPrimitives()
 
-    const entity = this.repository.create({
+    const entity = this.repo.create({
       id: primitives.id,
       productId: primitives.productId,
       createdAt: primitives.createdAt,
       updatedAt: primitives.updatedAt
     })
 
-    await this.repository.save(entity)
+    await this.repo.save(entity)
     await this.itemRepository.delete({ productRecipeId: primitives.id })
 
     const itemEntities = primitives.items.map((item, index) =>
@@ -45,7 +53,7 @@ export class TypeOrmProductRecipeRepository implements ProductRecipeRepository {
   }
 
   async findByProductId(productId: string): Promise<ProductRecipe | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { productId },
       relations: ['items']
     })

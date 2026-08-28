@@ -6,22 +6,30 @@ import { ProductCategoryEntity } from './product-category.entity'
 import { ProductCategoryRepository } from '@/contexts/menu/product-category/domain/repositories/product-category.repository'
 import { ProductCategory } from '@/contexts/menu/product-category/domain/product-category'
 import { ProductCategoryId } from '@/contexts/menu/product-category/domain/product-category-id'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmProductCategoryRepository implements ProductCategoryRepository {
+export class TypeOrmProductCategoryRepository
+  extends TransactionalRepository<ProductCategoryEntity>
+  implements ProductCategoryRepository
+{
   constructor(
     @InjectRepository(ProductCategoryEntity)
-    private readonly repository: Repository<ProductCategoryEntity>
-  ) {}
+    repository: Repository<ProductCategoryEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(productCategory: ProductCategory): Promise<void> {
     const primitives = productCategory.toPrimitives()
-    const entity = this.repository.create(primitives)
-    await this.repository.save(entity)
+    const entity = this.repo.create(primitives)
+    await this.repo.save(entity)
   }
 
   async search(id: ProductCategoryId): Promise<ProductCategory | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { id: id.value }
     })
 
@@ -42,7 +50,7 @@ export class TypeOrmProductCategoryRepository implements ProductCategoryReposito
   }
 
   async searchAll(): Promise<ProductCategory[]> {
-    const entities = await this.repository.find({ order: { displayOrder: 'ASC' } })
+    const entities = await this.repo.find({ order: { displayOrder: 'ASC' } })
     return entities.map(entity => {
       return ProductCategory.fromPrimitives({
         id: entity.id,
@@ -58,6 +66,6 @@ export class TypeOrmProductCategoryRepository implements ProductCategoryReposito
   }
 
   async delete(id: ProductCategoryId): Promise<void> {
-    await this.repository.delete({ id: id.value })
+    await this.repo.delete({ id: id.value })
   }
 }

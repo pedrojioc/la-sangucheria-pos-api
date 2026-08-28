@@ -9,22 +9,30 @@ import { ProductEntity } from './product.entity'
 import { Criteria } from '@/shared/domain/criteria/criteria'
 import { PaginatedResult } from '@/shared/domain/criteria/paginated-result'
 import { TypeOrmCriteriaConverter } from '@/shared/infrastructure/persistence/typeorm/typeorm-criteria-converter'
+import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
+import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 
 @Injectable()
-export class TypeOrmProductRepository implements ProductRepository {
+export class TypeOrmProductRepository
+  extends TransactionalRepository<ProductEntity>
+  implements ProductRepository
+{
   constructor(
     @InjectRepository(ProductEntity)
-    private readonly repository: Repository<ProductEntity>
-  ) {}
+    repository: Repository<ProductEntity>,
+    uow: UnitOfWorkContextHolder
+  ) {
+    super(repository, uow)
+  }
 
   async save(product: Product): Promise<void> {
     const primitives = product.toPrimitives()
-    const entity = this.repository.create(primitives)
-    await this.repository.save(entity)
+    const entity = this.repo.create(primitives)
+    await this.repo.save(entity)
   }
 
   async search(id: ProductId): Promise<Product | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { id: id.value }
     })
 
@@ -36,7 +44,7 @@ export class TypeOrmProductRepository implements ProductRepository {
   }
 
   async findBySku(sku: ProductSku): Promise<Product | null> {
-    const entity = await this.repository.findOne({
+    const entity = await this.repo.findOne({
       where: { sku: sku.value }
     })
 
@@ -49,7 +57,7 @@ export class TypeOrmProductRepository implements ProductRepository {
 
   async matching(criteria: Criteria): Promise<PaginatedResult<Product>> {
     const converter = new TypeOrmCriteriaConverter<ProductEntity>()
-    const qb = converter.convert(this.repository.createQueryBuilder('product'), criteria, 'product')
+    const qb = converter.convert(this.repo.createQueryBuilder('product'), criteria, 'product')
 
     const [items, total] = await qb.getManyAndCount()
 
@@ -64,11 +72,11 @@ export class TypeOrmProductRepository implements ProductRepository {
   }
 
   async delete(id: ProductId): Promise<void> {
-    await this.repository.delete({ id: id.value })
+    await this.repo.delete({ id: id.value })
   }
 
   async getLastSkuNumber(): Promise<number | null> {
-    const result = await this.repository
+    const result = await this.repo
       .createQueryBuilder('product')
       .select('product.sku')
       .where('product.sku LIKE :prefix', { prefix: 'PROD-%' })
