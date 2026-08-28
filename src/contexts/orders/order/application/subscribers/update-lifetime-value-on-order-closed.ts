@@ -5,7 +5,7 @@ import { CustomerRepository } from '@contexts/crm/customer/domain/repositories/c
 import { CustomerId } from '@contexts/crm/customer/domain/customer-id'
 
 @Injectable()
-export class OnOrderClosedUpdateLifetimeValue implements DomainEventSubscriber<OrderClosedEvent> {
+export class UpdateLifetimeValueOnOrderClosed implements DomainEventSubscriber<OrderClosedEvent> {
   constructor(private readonly customerRepository: CustomerRepository) {}
 
   subscribedTo(): DomainEventClass[] {

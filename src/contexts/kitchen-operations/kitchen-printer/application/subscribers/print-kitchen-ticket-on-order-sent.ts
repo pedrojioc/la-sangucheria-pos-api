@@ -2,7 +2,7 @@ import { DomainEvent, DomainEventClass, DomainEventSubscriber } from '@shared/do
 import { OrderSentToKitchenEvent } from '@contexts/orders/order/domain/events/order-sent-to-kitchen.event'
 import { KitchenPrinterDispatcher } from '../kitchen-printer-dispatcher'
 
-export class OnOrderSentPrintKitchenTicket implements DomainEventSubscriber<DomainEvent> {
+export class PrintKitchenTicketOnOrderSent implements DomainEventSubscriber<DomainEvent> {
   constructor(private readonly dispatcher: KitchenPrinterDispatcher) {}
 
   subscribedTo(): DomainEventClass[] {

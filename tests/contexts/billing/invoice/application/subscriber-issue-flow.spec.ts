@@ -1,4 +1,4 @@
-import { OnOrderClosedIssueBillingDocument } from '@contexts/billing/invoice/application/subscribers/on-order-closed-issue-billing-document'
+import { IssueBillingDocumentOnOrderClosed } from '@contexts/billing/invoice/application/subscribers/issue-billing-document-on-order-closed'
 import { IssueInvoice } from '@contexts/billing/invoice/application/issue-invoice/issue-invoice'
 import { InvoiceRepository } from '@contexts/billing/invoice/domain/repositories/invoice.repository'
 import { BillingConfigRepository } from '@contexts/billing/billing-config/domain/repositories/billing-config.repository'
@@ -10,13 +10,13 @@ import { BillingNotConfigured } from '@contexts/billing/billing-config/domain/ex
 import { BillingConfigMother } from '@test/contexts/billing/billing-config/__mothers__/billing-config.mother'
 import { OrderClosedEventMother } from '@test/contexts/billing/invoice/__mothers__/order-closed-event.mother'
 
-describe('OnOrderClosedIssueBillingDocument — full vertical slice (subscriber + IssueInvoice wired)', () => {
+describe('IssueBillingDocumentOnOrderClosed — full vertical slice (subscriber + IssueInvoice wired)', () => {
   let invoiceRepository: jest.Mocked<InvoiceRepository>
   let billingConfigRepository: jest.Mocked<BillingConfigRepository>
   let factusApiPort: jest.Mocked<FactusApiPort>
   let eventBus: jest.Mocked<EventBus>
   let issueInvoice: IssueInvoice
-  let subscriber: OnOrderClosedIssueBillingDocument
+  let subscriber: IssueBillingDocumentOnOrderClosed
 
   beforeEach(() => {
     invoiceRepository = { save: jest.fn(), search: jest.fn(), searchPending: jest.fn() } as any
@@ -34,7 +34,7 @@ describe('OnOrderClosedIssueBillingDocument — full vertical slice (subscriber 
       factusApiPort,
       eventBus
     )
-    subscriber = new OnOrderClosedIssueBillingDocument(issueInvoice)
+    subscriber = new IssueBillingDocumentOnOrderClosed(issueInvoice)
   })
 
   it('should save invoice as PENDING then ISSUED and publish InvoiceIssuedEvent on Factus success', async () => {

@@ -4,7 +4,7 @@ import { OrderCancelledEvent } from '../../domain/events/order-cancelled.event'
 import { ReleaseTable } from '@contexts/restaurant/table/application/release/release-table'
 
 @Injectable()
-export class OnOrderCancelledReleaseTable implements DomainEventSubscriber<OrderCancelledEvent> {
+export class ReleaseTableOnOrderCancelled implements DomainEventSubscriber<OrderCancelledEvent> {
   constructor(private readonly releaseTable: ReleaseTable) {}
 
   subscribedTo(): DomainEventClass[] {

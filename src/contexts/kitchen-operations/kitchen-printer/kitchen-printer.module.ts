@@ -12,7 +12,7 @@ import { KitchenPrinterDispatcher } from './application/kitchen-printer-dispatch
 import { ReprintKitchenTicket } from './application/reprint/reprint-kitchen-ticket'
 import { FindUnprintedPrintJobs } from './application/find-unprinted/find-unprinted-print-jobs'
 import { FindFailedPrintJobs } from './application/find-failed/find-failed-print-jobs'
-import { OnOrderSentPrintKitchenTicket } from './application/subscribers/on-order-sent-print-kitchen-ticket'
+import { PrintKitchenTicketOnOrderSent } from './application/subscribers/print-kitchen-ticket-on-order-sent'
 import { EscPosKitchenPrinterAdapter } from './infrastructure/adapters/esc-pos-kitchen-printer.adapter'
 import { TypeOrmPrinterStationResolverAdapter } from './infrastructure/adapters/typeorm-printer-station-resolver.adapter'
 import { KitchenTicketPrintJobRepository } from './domain/repositories/kitchen-ticket-print-job.repository'
@@ -61,9 +61,9 @@ import { KitchenPrintJobController } from './presentation/http/controllers/kitch
 
     // SUBSCRIBER
     {
-      provide: OnOrderSentPrintKitchenTicket,
+      provide: PrintKitchenTicketOnOrderSent,
       useFactory: (dispatcher: KitchenPrinterDispatcher) =>
-        new OnOrderSentPrintKitchenTicket(dispatcher),
+        new PrintKitchenTicketOnOrderSent(dispatcher),
       inject: [KitchenPrinterDispatcher]
     }
   ],
@@ -72,7 +72,7 @@ import { KitchenPrintJobController } from './presentation/http/controllers/kitch
 export class KitchenPrinterModule implements OnModuleInit {
   constructor(
     private readonly eventBus: EventBus,
-    private readonly subscriber: OnOrderSentPrintKitchenTicket
+    private readonly subscriber: PrintKitchenTicketOnOrderSent
   ) {}
 
   onModuleInit(): void {

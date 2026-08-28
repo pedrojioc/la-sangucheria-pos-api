@@ -28,10 +28,10 @@ import { RemoveOrderDiscount } from '@contexts/orders/order/application/remove-o
 import { OrderQueryService } from '@contexts/orders/order/application/services/order-query.service'
 import { TypeOrmOrderQueryService } from '@contexts/orders/order/infrastructure/query-services/typeorm-order-query.service'
 
-import { OnOrderOpenedSetTableOccupied } from '@contexts/orders/order/application/subscribers/on-order-opened-set-table-occupied'
-import { OnOrderClosedReleaseTable } from '@contexts/orders/order/application/subscribers/on-order-closed-release-table'
-import { OnOrderCancelledReleaseTable } from '@contexts/orders/order/application/subscribers/on-order-cancelled-release-table'
-import { OnOrderClosedUpdateLifetimeValue } from '@contexts/orders/order/application/subscribers/on-order-closed-update-lifetime-value'
+import { SetTableOccupiedOnOrderOpened } from '@contexts/orders/order/application/subscribers/set-table-occupied-on-order-opened'
+import { ReleaseTableOnOrderClosed } from '@contexts/orders/order/application/subscribers/release-table-on-order-closed'
+import { ReleaseTableOnOrderCancelled } from '@contexts/orders/order/application/subscribers/release-table-on-order-cancelled'
+import { UpdateLifetimeValueOnOrderClosed } from '@contexts/orders/order/application/subscribers/update-lifetime-value-on-order-closed'
 
 import { OrderController } from '@contexts/orders/order/presentation/http/controllers/order.controller'
 import { KitchenController } from '@contexts/orders/order/presentation/http/controllers/kitchen.controller'
@@ -136,24 +136,24 @@ import { createProvider } from '@core/utils/create-provider'
 
     // SUBSCRIBERS
     {
-      provide: OnOrderOpenedSetTableOccupied,
-      useFactory: (occupyTable: OccupyTable) => new OnOrderOpenedSetTableOccupied(occupyTable),
+      provide: SetTableOccupiedOnOrderOpened,
+      useFactory: (occupyTable: OccupyTable) => new SetTableOccupiedOnOrderOpened(occupyTable),
       inject: [OccupyTable]
     },
     {
-      provide: OnOrderClosedReleaseTable,
-      useFactory: (releaseTable: ReleaseTable) => new OnOrderClosedReleaseTable(releaseTable),
+      provide: ReleaseTableOnOrderClosed,
+      useFactory: (releaseTable: ReleaseTable) => new ReleaseTableOnOrderClosed(releaseTable),
       inject: [ReleaseTable]
     },
     {
-      provide: OnOrderCancelledReleaseTable,
-      useFactory: (releaseTable: ReleaseTable) => new OnOrderCancelledReleaseTable(releaseTable),
+      provide: ReleaseTableOnOrderCancelled,
+      useFactory: (releaseTable: ReleaseTable) => new ReleaseTableOnOrderCancelled(releaseTable),
       inject: [ReleaseTable]
     },
     {
-      provide: OnOrderClosedUpdateLifetimeValue,
+      provide: UpdateLifetimeValueOnOrderClosed,
       useFactory: (customerRepository: CustomerRepository) =>
-        new OnOrderClosedUpdateLifetimeValue(customerRepository),
+        new UpdateLifetimeValueOnOrderClosed(customerRepository),
       inject: [CustomerRepository]
     }
   ],
@@ -162,18 +162,18 @@ import { createProvider } from '@core/utils/create-provider'
 export class OrderModule implements OnModuleInit {
   constructor(
     private readonly eventBus: EventBus,
-    private readonly onOrderOpenedSetTableOccupied: OnOrderOpenedSetTableOccupied,
-    private readonly onOrderClosedReleaseTable: OnOrderClosedReleaseTable,
-    private readonly onOrderCancelledReleaseTable: OnOrderCancelledReleaseTable,
-    private readonly onOrderClosedUpdateLifetimeValue: OnOrderClosedUpdateLifetimeValue
+    private readonly setTableOccupiedOnOrderOpened: SetTableOccupiedOnOrderOpened,
+    private readonly releaseTableOnOrderClosed: ReleaseTableOnOrderClosed,
+    private readonly releaseTableOnOrderCancelled: ReleaseTableOnOrderCancelled,
+    private readonly updateLifetimeValueOnOrderClosed: UpdateLifetimeValueOnOrderClosed
   ) {}
 
   onModuleInit(): void {
     this.eventBus.addSubscribers([
-      this.onOrderOpenedSetTableOccupied,
-      this.onOrderClosedReleaseTable,
-      this.onOrderCancelledReleaseTable,
-      this.onOrderClosedUpdateLifetimeValue
+      this.setTableOccupiedOnOrderOpened,
+      this.releaseTableOnOrderClosed,
+      this.releaseTableOnOrderCancelled,
+      this.updateLifetimeValueOnOrderClosed
     ])
   }
 }

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, OnModuleInit } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { CqrsModule } from '@nestjs/cqrs'
 
@@ -8,7 +8,7 @@ import { TypeOrmLoyaltyAccountRepository } from './infrastructure/persistence/ty
 
 import { EventBus } from '@/shared/domain/events'
 
-import { ReactOnCustomerCreated } from './application/subscribers/react-on-customer-created'
+import { CreateLoyaltyAccountOnCustomerCreated } from './application/subscribers/create-loyalty-account-on-customer-created'
 
 import { createProvider } from '@/core/utils/create-provider'
 
@@ -17,8 +17,17 @@ import { createProvider } from '@/core/utils/create-provider'
   providers: [
     { provide: LoyaltyAccountRepository, useClass: TypeOrmLoyaltyAccountRepository },
 
-    createProvider(ReactOnCustomerCreated, [LoyaltyAccountRepository, EventBus])
+    createProvider(CreateLoyaltyAccountOnCustomerCreated, [LoyaltyAccountRepository, EventBus])
   ],
   exports: [LoyaltyAccountRepository]
 })
-export class LoyaltyModule {}
+export class LoyaltyModule implements OnModuleInit {
+  constructor(
+    private readonly eventBus: EventBus,
+    private readonly createLoyaltyAccountOnCustomerCreated: CreateLoyaltyAccountOnCustomerCreated
+  ) {}
+
+  onModuleInit(): void {
+    this.eventBus.addSubscribers([this.createLoyaltyAccountOnCustomerCreated])
+  }
+}

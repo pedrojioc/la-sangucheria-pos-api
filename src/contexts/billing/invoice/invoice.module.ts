@@ -20,7 +20,7 @@ import { RetryInvoice } from '@contexts/billing/invoice/application/retry-invoic
 import { ListPendingInvoices } from '@contexts/billing/invoice/application/list-pending-invoices/list-pending-invoices'
 
 // Subscribers
-import { OnOrderClosedIssueBillingDocument } from '@contexts/billing/invoice/application/subscribers/on-order-closed-issue-billing-document'
+import { IssueBillingDocumentOnOrderClosed } from '@contexts/billing/invoice/application/subscribers/issue-billing-document-on-order-closed'
 
 // Controllers
 import { InvoiceController } from '@contexts/billing/invoice/presentation/invoice.controller'
@@ -67,16 +67,16 @@ import { createProvider } from '@core/utils/create-provider'
     createProvider(ListPendingInvoices, [InvoiceRepository]),
 
     // SUBSCRIBERS
-    createProvider(OnOrderClosedIssueBillingDocument, [IssueInvoice])
+    createProvider(IssueBillingDocumentOnOrderClosed, [IssueInvoice])
   ]
 })
 export class InvoiceModule implements OnModuleInit {
   constructor(
     private readonly eventBus: EventBus,
-    private readonly onOrderClosedIssueBillingDocument: OnOrderClosedIssueBillingDocument
+    private readonly issueBillingDocumentOnOrderClosed: IssueBillingDocumentOnOrderClosed
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.addSubscribers([this.onOrderClosedIssueBillingDocument])
+    this.eventBus.addSubscribers([this.issueBillingDocumentOnOrderClosed])
   }
 }

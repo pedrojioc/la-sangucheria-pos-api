@@ -8,7 +8,7 @@ import { InvoiceSnapshot } from '@contexts/billing/invoice/domain/invoice-snapsh
 import { IssueInvoice } from '../issue-invoice/issue-invoice'
 
 @Injectable()
-export class OnOrderClosedIssueBillingDocument implements DomainEventSubscriber<OrderClosedEvent> {
+export class IssueBillingDocumentOnOrderClosed implements DomainEventSubscriber<OrderClosedEvent> {
   constructor(private readonly issueInvoice: IssueInvoice) {}
 
   subscribedTo(): DomainEventClass[] {

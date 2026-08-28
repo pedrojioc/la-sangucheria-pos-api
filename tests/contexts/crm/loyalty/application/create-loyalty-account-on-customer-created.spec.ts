@@ -1,4 +1,4 @@
-import { ReactOnCustomerCreated } from '@/contexts/crm/loyalty/application/subscribers/react-on-customer-created'
+import { CreateLoyaltyAccountOnCustomerCreated } from '@/contexts/crm/loyalty/application/subscribers/create-loyalty-account-on-customer-created'
 import { LoyaltyAccountRepository } from '@/contexts/crm/loyalty/domain/repositories/loyalty-account.repository'
 import { CustomerCreatedEvent } from '@/contexts/crm/customer/domain/events/customer-created.event'
 import { LoyaltyAccountCreatedEvent } from '@/contexts/crm/loyalty/domain/events/loyalty-account-created.event'
@@ -6,8 +6,8 @@ import { LoyaltyAccount } from '@/contexts/crm/loyalty/domain/loyalty-account'
 import { EventBus } from '@/shared/domain/events'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
-describe('ReactOnCustomerCreated', () => {
-  let subscriber: ReactOnCustomerCreated
+describe('CreateLoyaltyAccountOnCustomerCreated', () => {
+  let subscriber: CreateLoyaltyAccountOnCustomerCreated
   let repository: jest.Mocked<LoyaltyAccountRepository>
   let eventBus: jest.Mocked<EventBus>
 
@@ -18,7 +18,7 @@ describe('ReactOnCustomerCreated', () => {
     } as any
 
     eventBus = { publish: jest.fn() } as any
-    subscriber = new ReactOnCustomerCreated(repository, eventBus)
+    subscriber = new CreateLoyaltyAccountOnCustomerCreated(repository, eventBus)
   })
 
   it('should subscribe to CustomerCreatedEvent', () => {

@@ -1,17 +1,17 @@
-import { OnOrderClosedIssueBillingDocument } from '@contexts/billing/invoice/application/subscribers/on-order-closed-issue-billing-document'
+import { IssueBillingDocumentOnOrderClosed } from '@contexts/billing/invoice/application/subscribers/issue-billing-document-on-order-closed'
 import { IssueInvoice } from '@contexts/billing/invoice/application/issue-invoice/issue-invoice'
 import { DocumentType } from '@contexts/billing/invoice/domain/document-type'
 import { OrderClosedEventMother } from '@test/contexts/billing/invoice/__mothers__/order-closed-event.mother'
 
-describe('OnOrderClosedIssueBillingDocument', () => {
+describe('IssueBillingDocumentOnOrderClosed', () => {
   let issueInvoice: jest.Mocked<IssueInvoice>
-  let subscriber: OnOrderClosedIssueBillingDocument
+  let subscriber: IssueBillingDocumentOnOrderClosed
 
   beforeEach(() => {
     issueInvoice = { run: jest.fn() } as any
     issueInvoice.run.mockResolvedValue(undefined)
 
-    subscriber = new OnOrderClosedIssueBillingDocument(issueInvoice)
+    subscriber = new IssueBillingDocumentOnOrderClosed(issueInvoice)
   })
 
   it('should always call issueInvoice — BillingNotConfigured is handled inside IssueInvoice', async () => {

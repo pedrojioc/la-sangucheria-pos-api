@@ -5,7 +5,7 @@ import { OrderType } from '../../domain/order-type'
 import { OccupyTable } from '@contexts/restaurant/table/application/occupy/occupy-table'
 
 @Injectable()
-export class OnOrderOpenedSetTableOccupied implements DomainEventSubscriber<OrderOpenedEvent> {
+export class SetTableOccupiedOnOrderOpened implements DomainEventSubscriber<OrderOpenedEvent> {
   constructor(private readonly occupyTable: OccupyTable) {}
 
   subscribedTo(): DomainEventClass[] {

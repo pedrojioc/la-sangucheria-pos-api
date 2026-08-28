@@ -7,7 +7,9 @@ import { EventBus } from '@/shared/domain/events'
 import { Uuid } from '@shared/domain/value-objects/uuid'
 
 @Injectable()
-export class ReactOnCustomerCreated implements DomainEventSubscriber<CustomerCreatedEvent> {
+export class CreateLoyaltyAccountOnCustomerCreated
+  implements DomainEventSubscriber<CustomerCreatedEvent>
+{
   constructor(
     private readonly loyaltyAccountRepository: LoyaltyAccountRepository,
     private readonly eventBus: EventBus
