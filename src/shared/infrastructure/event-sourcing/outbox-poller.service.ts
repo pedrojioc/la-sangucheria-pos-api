@@ -92,8 +92,23 @@ export class OutboxPollerService {
    * marked), so a retry re-attempts every subscriber, not just the failed
    * one. Logs and swallows the failure so one bad row never stops the rest
    * of the batch from being processed.
+   *
+   * Subscribers are looked up BEFORE rehydration: an event with zero
+   * category-2 subscribers today (e.g. UserLoggedInEvent, which has no
+   * subscriber of any category) has nothing to rehydrate for — treating it
+   * as dispatched avoids both an EventRegistry lookup failure and an
+   * infinite retry loop for events that were never meant to reach this
+   * poller in the first place (they land in event_store because the router
+   * persists every published event for audit purposes, not because they
+   * need deferred dispatch).
    */
   private async dispatchRow(row: EventStoreEntity): Promise<boolean> {
+    const subscribers = this.eventBusRouter.deferredSubscribersFor(row.eventType)
+
+    if (subscribers.length === 0) {
+      return true
+    }
+
     try {
       const event = this.eventRegistry.rehydrate(row.eventType, {
         aggregateId: row.aggregateId,
@@ -103,8 +118,6 @@ export class OutboxPollerService {
         metadata: row.metadata ?? {},
         version: row.version
       })
-
-      const subscribers = this.eventBusRouter.deferredSubscribersFor(row.eventType)
 
       for (const subscriber of subscribers) {
         await subscriber.on(event)

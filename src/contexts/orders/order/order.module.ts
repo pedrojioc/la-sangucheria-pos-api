@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { OrderEntity } from '@contexts/orders/order/infrastructure/persistence/typeorm/order.entity'
 import { OrderItemEntity } from '@contexts/orders/order/infrastructure/persistence/typeorm/order-item.entity'
+import { OrderDailySequenceEntity } from '@contexts/orders/order/infrastructure/persistence/typeorm/order-daily-sequence.entity'
 import { OrderRepository } from '@contexts/orders/order/domain/repositories/order.repository'
 import { TypeOrmOrderRepository } from '@contexts/orders/order/infrastructure/persistence/typeorm/typeorm-order.repository'
 
@@ -66,7 +67,7 @@ import { createProvider } from '@core/utils/create-provider'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([OrderEntity, OrderItemEntity]),
+    TypeOrmModule.forFeature([OrderEntity, OrderItemEntity, OrderDailySequenceEntity]),
     TableModule,
     CustomerModule,
     EstablishmentModule,

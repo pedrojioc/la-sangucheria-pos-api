@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, OnModuleInit } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
 // Entities
@@ -125,4 +125,13 @@ const Subscribers = [OnProductRecipeSavedUpdateStrategySubscriber]
   ],
   exports: [ProductRepository]
 })
-export class ProductModule {}
+export class ProductModule implements OnModuleInit {
+  constructor(
+    private readonly eventBus: EventBus,
+    private readonly onProductRecipeSavedUpdateStrategySubscriber: OnProductRecipeSavedUpdateStrategySubscriber
+  ) {}
+
+  onModuleInit(): void {
+    this.eventBus.addSubscribers([this.onProductRecipeSavedUpdateStrategySubscriber])
+  }
+}

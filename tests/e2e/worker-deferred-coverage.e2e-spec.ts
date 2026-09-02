@@ -53,8 +53,8 @@ function deferredSubscriberNames(router: EventBusRouter): Set<string> {
       .registeredSubscribers()
       .filter(
         subscriber =>
-          (DISPATCH_CATEGORIES.get(subscriber.constructor as SubscriberClass) ?? DEFAULT_CATEGORY) ===
-          DispatchCategory.Deferred
+          (DISPATCH_CATEGORIES.get(subscriber.constructor as SubscriberClass) ??
+            DEFAULT_CATEGORY) === DispatchCategory.Deferred
       )
       .map(subscriber => subscriber.constructor.name)
   )

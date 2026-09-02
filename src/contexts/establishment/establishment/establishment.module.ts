@@ -18,6 +18,7 @@ import { EventBus } from '@shared/domain/events'
 // Use Cases
 import { GetEstablishmentSettings } from './application/get-settings/get-establishment-settings'
 import { UpdateEstablishmentSettings } from './application/update-settings/update-establishment-settings'
+import { InitializeEstablishment } from './application/initialize/initialize-establishment'
 
 // Controllers
 import { EstablishmentController } from './presentation/http/controllers/establishment.controller'
@@ -53,7 +54,8 @@ import { createProvider } from '@core/utils/create-provider'
 
     // USE CASES
     createProvider(GetEstablishmentSettings, [EstablishmentRepository, StationOutputDevicesPort]),
-    createProvider(UpdateEstablishmentSettings, [EstablishmentRepository, EventBus])
+    createProvider(UpdateEstablishmentSettings, [EstablishmentRepository, EventBus]),
+    createProvider(InitializeEstablishment, [EstablishmentRepository, EventBus])
   ],
   exports: [GetEstablishmentSettings, EstablishmentRepository]
 })

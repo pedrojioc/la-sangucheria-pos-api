@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Put } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Put,
+  UseInterceptors
+} from '@nestjs/common'
+import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 import { SaveProductRecipe } from '@contexts/menu/product-recipe/application/save/save-product-recipe'
 import { FindProductRecipe } from '@contexts/menu/product-recipe/application/find/find-product-recipe'
 import { ProductRecipeResponse } from '@contexts/menu/product-recipe/application/dto/product-recipe.response'
@@ -13,6 +23,7 @@ export class ProductRecipeController {
 
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(TransactionInterceptor)
   async save(
     @Param('productId') productId: string,
     @Body() dto: SaveProductRecipeRequest

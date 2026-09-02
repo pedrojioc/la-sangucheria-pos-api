@@ -4,16 +4,31 @@ import { OrderController } from '@contexts/orders/order/presentation/http/contro
 import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 
 /**
- * Slice 6 Group B + 6.7 — proves the 8 Order-controller endpoints carry
+ * Slice 6 Group B + 6.7, plus a post-hoc fix — proves the 10
+ * Order-controller endpoints that need it carry
  * `@UseInterceptors(TransactionInterceptor)`.
  *
- * 6.7 (`close`) is the last endpoint in Slice 6 (16/16): `CloseOrder`
+ * 6.7 (`close`) is the last endpoint of Slice 6's original 16: `CloseOrder`
  * publishes `OrderClosedEvent`, dispatched synchronously (category 1, D5/D8)
  * to THREE subscribers — `ReleaseTableOnOrderClosed`,
  * `UpdateLifetimeValueOnOrderClosed`, `DeductIngredientsOnOrderClosed` (Slice
  * 8). Without this interceptor, all three throw `MissingUnitOfWorkContext`
  * per D5's fail-fast rule the moment `CloseOrder` runs end-to-end. See
  * `close-order.uow-atomicity.spec.ts` for the atomicity/rollback proof.
+ *
+ * `open` and `cancel` were fixed AFTER Slice 6 shipped: the original audit
+ * classified endpoints by "does the use case make multiple writes", which
+ * missed that `OpenOrder` and `CancelOrder` each publish an event with a
+ * category-1 subscriber (`SetTableOccupiedOnOrderOpened`,
+ * `ReleaseTableOnOrderCancelled`) even though the use case itself is
+ * single-write. ANY endpoint whose use case triggers a category-1
+ * subscriber needs this interceptor — the subscriber has no transaction to
+ * run inside otherwise, and the router fails loudly
+ * (`MissingUnitOfWorkContext`) rather than degrading silently, which is
+ * exactly what surfaced this gap in manual e2e testing: `POST /orders`
+ * committed the order row, then threw trying to run
+ * `SetTableOccupiedOnOrderOpened` with no ambient context, leaving the order
+ * created but its table never marked occupied.
  *
  * Root cause this closes: `TypeOrmOrderRepository.save()` always issues 2-3
  * non-atomic statements (order upsert + order_items DELETE-diff + item
@@ -40,6 +55,7 @@ describe('OrderController — TransactionInterceptor wiring (Slice 6 Group B)', 
   }
 
   it.each([
+    ['open', 'POST /orders (OpenOrder — cat-1 SetTableOccupiedOnOrderOpened)'],
     ['addItems', 'POST /orders/:id/items (AddOrderItems)'],
     ['updateItem', 'PATCH /orders/:id/items/:itemId (UpdateOrderItem)'],
     ['removeItem', 'DELETE /orders/:id/items/:itemId (RemoveOrderItem)'],
@@ -50,6 +66,7 @@ describe('OrderController — TransactionInterceptor wiring (Slice 6 Group B)', 
       'removeItemDiscountEndpoint',
       'DELETE /orders/:id/items/:itemId/discount (RemoveItemDiscount)'
     ],
+    ['cancel', 'POST /orders/:id/cancel (CancelOrder — cat-1 ReleaseTableOnOrderCancelled)'],
     [
       'close',
       'POST /orders/:id/close (CloseOrder — Group A, 6.7 — cat-1 ReleaseTableOnOrderClosed, UpdateLifetimeValueOnOrderClosed, DeductIngredientsOnOrderClosed)'
@@ -59,19 +76,17 @@ describe('OrderController — TransactionInterceptor wiring (Slice 6 Group B)', 
   })
 
   it.each([
-    ['open', 'POST /orders (OpenOrder — out of scope, Group A/B exclusion)'],
     ['findById', 'GET /orders/:id (read-only, no interceptor needed)'],
-    ['cancel', 'POST /orders/:id/cancel (CancelOrder — low-risk, out of scope)'],
     [
       'applyOrderDiscountEndpoint',
-      'PATCH /orders/:id/discount (ApplyOrderDiscount — low-risk, out of scope)'
+      'PATCH /orders/:id/discount (ApplyOrderDiscount — order-level field only, no cat-1 subscriber)'
     ],
     [
       'removeOrderDiscountEndpoint',
-      'DELETE /orders/:id/discount (RemoveOrderDiscount — low-risk, out of scope)'
+      'DELETE /orders/:id/discount (RemoveOrderDiscount — order-level field only, no cat-1 subscriber)'
     ],
     ['search', 'GET /orders (read-only, no interceptor needed)']
-  ] as const)('%s does NOT carry TransactionInterceptor yet — %s', (methodName, _description) => {
+  ] as const)('%s does NOT carry TransactionInterceptor — %s', (methodName, _description) => {
     expect(readInterceptors(methodName)).not.toContain(TransactionInterceptor)
   })
 })

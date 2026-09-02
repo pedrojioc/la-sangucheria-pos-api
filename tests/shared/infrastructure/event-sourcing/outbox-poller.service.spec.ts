@@ -141,6 +141,35 @@ describe('OutboxPollerService', () => {
     expect(eventStoreService.markDispatched).toHaveBeenCalledWith(manager, ['id-ok'])
   })
 
+  it('marks an event with zero category-2 subscribers as dispatched without attempting rehydration', async () => {
+    const manager = {} as EntityManager
+    const dataSource = buildDataSource(manager)
+
+    const rows = [buildRow('id-orphan', 'agg-orphan')]
+    const eventStoreService = {
+      claimUndispatched: jest.fn().mockResolvedValue(rows),
+      markDispatched: jest.fn().mockResolvedValue(undefined)
+    } as unknown as EventStoreService
+
+    const router = new EventBusRouter(
+      { current: () => undefined } as never,
+      dataSource,
+      eventStoreService
+    )
+    // No addSubscribers() call — FakeEvent has zero subscribers of any category.
+
+    const eventRegistry = new EventRegistry()
+    // Deliberately NOT registered — rehydrate() would throw if ever reached.
+    const rehydrateSpy = jest.spyOn(eventRegistry, 'rehydrate')
+
+    const poller = new OutboxPollerService(dataSource, eventStoreService, router, eventRegistry)
+
+    await expect(poller.pollOnce()).resolves.not.toThrow()
+
+    expect(rehydrateSpy).not.toHaveBeenCalled()
+    expect(eventStoreService.markDispatched).toHaveBeenCalledWith(manager, ['id-orphan'])
+  })
+
   it('does nothing (no markDispatched call) when there are no undispatched rows', async () => {
     const manager = {} as EntityManager
     const dataSource = buildDataSource(manager)

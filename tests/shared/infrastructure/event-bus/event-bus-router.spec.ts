@@ -465,7 +465,10 @@ describe('EventBusRouter — registeredSubscribers (Slice: outbox-worker-process
     // multiple event-name buckets in subscribersByEventName.
     class OverlappingSubscriber implements DomainEventSubscriber<DomainEvent> {
       subscribedTo(): DomainEventClass[] {
-        return [FakeEvent as unknown as DomainEventClass, MultiEventEvent as unknown as DomainEventClass]
+        return [
+          FakeEvent as unknown as DomainEventClass,
+          MultiEventEvent as unknown as DomainEventClass
+        ]
       }
       on(): Promise<void> {
         return Promise.resolve()

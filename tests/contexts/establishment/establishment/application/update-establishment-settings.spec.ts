@@ -12,6 +12,7 @@ describe('UpdateEstablishmentSettings', () => {
 
   beforeEach(() => {
     repository = {
+      exists: jest.fn(),
       findSingleton: jest.fn(),
       save: jest.fn()
     } as jest.Mocked<EstablishmentRepository>

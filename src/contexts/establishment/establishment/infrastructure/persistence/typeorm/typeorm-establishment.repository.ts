@@ -24,6 +24,11 @@ export class TypeOrmEstablishmentRepository
     super(repository, uow)
   }
 
+  async exists(): Promise<boolean> {
+    const count = await this.repo.count()
+    return count > 0
+  }
+
   async findSingleton(): Promise<Establishment> {
     const entity = await this.repo.findOne({
       where: {},

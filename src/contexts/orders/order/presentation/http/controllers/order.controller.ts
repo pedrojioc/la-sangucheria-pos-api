@@ -63,6 +63,7 @@ export class OrderController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(TransactionInterceptor)
   async open(@Body() dto: OpenOrderRequest): Promise<{ orderNumber: string }> {
     const orderNumber = await this.openOrder.run(
       dto.id,
@@ -145,6 +146,7 @@ export class OrderController {
 
   @Post(':id/cancel')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async cancel(@Param('id') id: string, @Body() dto: CancelOrderRequest): Promise<void> {
     await this.cancelOrder.run(id, dto.reason, dto.cancelledBy)
   }

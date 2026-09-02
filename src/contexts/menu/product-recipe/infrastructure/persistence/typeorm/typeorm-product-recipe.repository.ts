@@ -18,10 +18,17 @@ export class TypeOrmProductRecipeRepository
     @InjectRepository(ProductRecipeEntity)
     repository: Repository<ProductRecipeEntity>,
     @InjectRepository(ProductRecipeItemEntity)
-    private readonly itemRepository: Repository<ProductRecipeItemEntity>,
-    uow: UnitOfWorkContextHolder
+    private readonly defaultItemRepository: Repository<ProductRecipeItemEntity>,
+    private readonly uowHolder: UnitOfWorkContextHolder
   ) {
-    super(repository, uow)
+    super(repository, uowHolder)
+  }
+
+  private get itemRepository(): Repository<ProductRecipeItemEntity> {
+    const manager = this.uowHolder.currentManager()
+    return manager
+      ? manager.getRepository(this.defaultItemRepository.target)
+      : this.defaultItemRepository
   }
 
   async save(recipe: ProductRecipe): Promise<void> {

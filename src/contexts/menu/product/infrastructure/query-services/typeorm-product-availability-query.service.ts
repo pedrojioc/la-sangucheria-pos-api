@@ -37,16 +37,19 @@ export class TypeOrmProductAvailabilityQueryService implements ProductAvailabili
       [productIds]
     )
 
+    // NOTE: raw SQL bypasses the domain (Quantity/ensureSameUnit, FifoInventoryService).
+    // Tracked as tech debt — migrate to the domain-based availability check.
     const directResults: { product_id: string; available: boolean }[] = await this.dataSource.query(
       `
       SELECT
         p.id AS product_id,
-        COALESCE(SUM(b.remaining_quantity), 0) > 0 AS available
+        p.ingredient_id IS NOT NULL
+          AND COALESCE(SUM(b.remaining_quantity), 0) > 0 AS available
       FROM products p
       LEFT JOIN inventory_batches b ON b.ingredient_id = p.ingredient_id AND b.remaining_quantity > 0
       WHERE p.id = ANY($1)
         AND p.inventory_strategy_type = 'DIRECT'
-      GROUP BY p.id
+      GROUP BY p.id, p.ingredient_id
       `,
       [productIds]
     )
