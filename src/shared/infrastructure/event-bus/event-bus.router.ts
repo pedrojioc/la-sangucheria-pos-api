@@ -181,6 +181,16 @@ export class EventBusRouter implements EventBus {
     )
   }
 
+  /**
+   * Test/introspection seam (Slice: outbox-worker-process, design D2): every
+   * subscriber currently registered across all event names, deduped. Used by
+   * the differential e2e safety net to compare AppModule's vs WorkerModule's
+   * populated router without needing a second, parallel subscriber registry.
+   */
+  registeredSubscribers(): Subscribers {
+    return [...new Set([...this.subscribersByEventName.values()].flat())]
+  }
+
   private categoryOneSubscribersFor(event: DomainEvent): Subscribers {
     const subscribers = this.subscribersByEventName.get(event.eventName) ?? []
     return subscribers.filter(

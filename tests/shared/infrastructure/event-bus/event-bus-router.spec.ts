@@ -436,3 +436,65 @@ describe('EventBusRouter — deferredSubscribersFor (Slice 9, OutboxPollerServic
     expect(router.deferredSubscribersFor('unknown.event')).toEqual([])
   })
 })
+
+describe('EventBusRouter — registeredSubscribers (Slice: outbox-worker-process, safety-net discovery)', () => {
+  it('returns a deduped flat array of every subscriber registered across all event names, each exactly once', () => {
+    const holder = new UnitOfWorkContextHolder()
+    const eventStoreService = buildEventStoreService()
+    const dataSource = buildDataSource()
+    const router = new EventBusRouter(
+      holder,
+      dataSource as unknown as DataSource,
+      eventStoreService as unknown as EventStoreService
+    )
+
+    class MultiEventEvent extends DomainEvent {
+      static readonly EVENT_NAME = 'multi.event'
+      constructor() {
+        super({ eventName: MultiEventEvent.EVENT_NAME, aggregateId: 'multi', payload: {} })
+      }
+      toPrimitives(): Record<string, unknown> {
+        return {}
+      }
+      static fromPrimitives(): DomainEvent {
+        throw new Error('not needed')
+      }
+    }
+
+    // Subscribed to BOTH FakeEvent and MultiEventEvent — proves dedup across
+    // multiple event-name buckets in subscribersByEventName.
+    class OverlappingSubscriber implements DomainEventSubscriber<DomainEvent> {
+      subscribedTo(): DomainEventClass[] {
+        return [FakeEvent as unknown as DomainEventClass, MultiEventEvent as unknown as DomainEventClass]
+      }
+      on(): Promise<void> {
+        return Promise.resolve()
+      }
+    }
+
+    const catOneSubscriber = new FakeCategoryOneSubscriber()
+    const catTwoSubscriber = new FakeCategoryTwoSubscriber()
+    const overlappingSubscriber = new OverlappingSubscriber()
+    router.addSubscribers([catOneSubscriber, catTwoSubscriber, overlappingSubscriber])
+
+    const registered = router.registeredSubscribers()
+
+    expect(registered).toHaveLength(3)
+    expect(registered).toEqual(
+      expect.arrayContaining([catOneSubscriber, catTwoSubscriber, overlappingSubscriber])
+    )
+  })
+
+  it('returns an empty array when no subscribers have been registered', () => {
+    const holder = new UnitOfWorkContextHolder()
+    const eventStoreService = buildEventStoreService()
+    const dataSource = buildDataSource()
+    const router = new EventBusRouter(
+      holder,
+      dataSource as unknown as DataSource,
+      eventStoreService as unknown as EventStoreService
+    )
+
+    expect(router.registeredSubscribers()).toEqual([])
+  })
+})
