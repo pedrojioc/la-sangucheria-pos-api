@@ -2,7 +2,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 import { SearchOptionGroupsByCriteriaQuery } from './search-option-groups-by-criteria.query'
 import { SearchOptionGroupsByCriteria } from './search-option-groups-by-criteria'
 import { PaginatedOptionGroupListResponse } from '../dto/paginated-option-group-list.response'
-import { OptionGroupListItemResponse } from '../../presentation/http/dto/option-group-list-item.response'
+import { OptionGroupListItemResponse } from '../dto/option-group-list-item.response'
 
 @QueryHandler(SearchOptionGroupsByCriteriaQuery)
 export class SearchOptionGroupsByCriteriaHandler

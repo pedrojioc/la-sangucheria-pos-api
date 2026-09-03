@@ -1,7 +1,7 @@
 import { UnitRepository } from '../../domain/repositories/unit.repository'
 import { EventBus } from '@/shared/domain/events/event-bus'
 import { UnitId } from '../../domain/unit-id'
-import { UnitNotExist } from '../../domain/exceptions/unit-not-exist'
+import { UnitNotExist } from '../../domain/exceptions/unit-not-exist.exception'
 
 export class DeleteUnit {
   constructor(

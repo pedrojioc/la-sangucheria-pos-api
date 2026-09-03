@@ -1,4 +1,4 @@
-import { CustomerListItem, DefaultAddressData } from '../../../application/dto/customer-list-item'
+import { CustomerListItem, DefaultAddressData } from './customer-list-item'
 
 export class CustomerListItemResponse {
   constructor(

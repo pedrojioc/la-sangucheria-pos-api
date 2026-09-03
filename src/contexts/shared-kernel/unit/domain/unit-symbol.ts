@@ -1,5 +1,5 @@
 import { StringValueObject } from '@/shared/domain/value-objects/string'
-import { UnitSymbolTooLong } from './exceptions/unit-symbol-too-long'
+import { UnitSymbolTooLong } from './exceptions/unit-symbol-too-long.exception'
 
 export class UnitSymbol extends StringValueObject {
   private static readonly MAX_LENGTH = 10

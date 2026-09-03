@@ -1,6 +1,6 @@
-import { DomainException } from '@shared/domain/exceptions/domain.exception'
+import { NotFoundException } from '@shared/domain/exceptions/domain.exception'
 
-export class ProductRecipeNotFound extends DomainException {
+export class ProductRecipeNotFound extends NotFoundException {
   constructor(productId: string) {
     super(`Product recipe for product ${productId} does not exist`)
   }

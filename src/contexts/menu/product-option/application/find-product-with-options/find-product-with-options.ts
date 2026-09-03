@@ -1,6 +1,6 @@
 import { TypeOrmProductWithOptionsQueryService } from '../../infrastructure/query-services/typeorm-product-with-options-query.service'
 import { ProductWithOptionsResponse } from '../dto/product-with-options.response'
-import { ProductNotExist } from '@contexts/menu/product/domain/exceptions/product-not-exist'
+import { ProductNotExist } from '@contexts/menu/product/domain/exceptions/product-not-exist.exception'
 import { ProductId } from '@contexts/menu/product/domain/product-id'
 
 export class FindProductWithOptions {

@@ -9,10 +9,6 @@ import { PurchaseOrderItemEntity } from './infrastructure/persistence/typeorm/pu
 import { PurchaseOrderRepository } from './domain/repositories/purchase-order.repository'
 import { TypeOrmPurchaseOrderRepository } from './infrastructure/persistence/typeorm/typeorm-purchase-order.repository'
 
-// Unit of Work
-import { ReceptionUnitOfWork } from './domain/reception-unit-of-work'
-import { TypeOrmReceptionUnitOfWork } from './infrastructure/persistence/typeorm/typeorm-reception-unit-of-work'
-
 // Query Services (Application - Read Operations)
 import { PurchaseOrderQueryService } from './application/services/purchase-order-query.service'
 import { TypeOrmPurchaseOrderQueryService } from './infrastructure/query-services/typeorm-purchase-order-query.service'
@@ -60,11 +56,6 @@ import { PurchaseOrderValidationService } from './domain/services/purchase-order
 import { IngredientEntity } from '@/contexts/inventory/ingredient/infrastructure/persistence/typeorm/ingredient.entity'
 import { UserEntity } from '@/contexts/iam/user/infrastructure/persistence/typeorm/user.entity'
 
-// Dependencies from other modules
-import { IngredientRepository } from '@contexts/inventory/ingredient/domain/repositories/ingredient.repository'
-import { UnitConversionRepository } from '@contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
-import { IngredientModule } from '@contexts/inventory/ingredient/ingredient.module'
-
 const CommandHandlers = [
   CreatePurchaseOrderHandler,
   UpdatePurchaseOrderHandler,
@@ -90,8 +81,7 @@ const QueryHandlers = [
       PurchaseOrderItemEntity,
       IngredientEntity,
       UserEntity
-    ]),
-    IngredientModule
+    ])
   ],
   controllers: [PurchaseOrderController],
   providers: [
@@ -99,12 +89,6 @@ const QueryHandlers = [
     {
       provide: PurchaseOrderRepository,
       useClass: TypeOrmPurchaseOrderRepository
-    },
-
-    // UNIT OF WORK
-    {
-      provide: ReceptionUnitOfWork,
-      useClass: TypeOrmReceptionUnitOfWork
     },
 
     // QUERY SERVICES (Application - Read Operations)
@@ -134,12 +118,7 @@ const QueryHandlers = [
     createProvider(ApprovePurchaseOrder, [PurchaseOrderRepository, EventBus]),
     createProvider(RejectPurchaseOrder, [PurchaseOrderRepository, EventBus]),
     createProvider(OrderPurchaseOrder, [PurchaseOrderRepository, EventBus]),
-    createProvider(RegisterItemReception, [
-      ReceptionUnitOfWork,
-      IngredientRepository,
-      UnitConversionRepository,
-      EventBus
-    ]),
+    createProvider(RegisterItemReception, [PurchaseOrderRepository, EventBus]),
     createProvider(CancelPurchaseOrderItems, [PurchaseOrderRepository, EventBus]),
     createProvider(ClosePurchaseOrder, [PurchaseOrderRepository, EventBus]),
 

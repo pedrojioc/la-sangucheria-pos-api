@@ -4,7 +4,7 @@ import { OptionGroupRepository } from '@contexts/menu/product-option/domain/repo
 import { ProductOptionGroupRepository } from '@contexts/menu/product-option/domain/repositories/product-option-group.repository'
 import { OptionGroupNotFound } from '@contexts/menu/product-option/domain/exceptions/option-group-not-found.exception'
 import { DuplicateOptionGroupInAssignment } from '@contexts/menu/product-option/domain/exceptions/duplicate-option-group-in-assignment.exception'
-import { ProductNotExist } from '@contexts/menu/product/domain/exceptions/product-not-exist'
+import { ProductNotExist } from '@contexts/menu/product/domain/exceptions/product-not-exist.exception'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 import { OptionGroupMother } from '../__mothers__/option-group.mother'
 

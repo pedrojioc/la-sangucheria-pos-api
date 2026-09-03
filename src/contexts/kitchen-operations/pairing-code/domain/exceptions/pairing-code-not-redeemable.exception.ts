@@ -1,8 +1,8 @@
-import { DomainException } from '@shared/domain/exceptions/domain.exception'
+import { BusinessRuleViolationException } from '@shared/domain/exceptions/domain.exception'
 
 export type PairingCodeNotRedeemableReason = 'unknown' | 'expired' | 'consumed'
 
-export class PairingCodeNotRedeemable extends DomainException {
+export class PairingCodeNotRedeemable extends BusinessRuleViolationException {
   public readonly reason: PairingCodeNotRedeemableReason
 
   constructor(reason: PairingCodeNotRedeemableReason, code?: string) {

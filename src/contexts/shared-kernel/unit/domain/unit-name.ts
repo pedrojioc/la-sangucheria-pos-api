@@ -1,5 +1,5 @@
 import { StringValueObject } from '@/shared/domain/value-objects/string'
-import { UnitNameTooLong } from './exceptions/unit-name-too-long'
+import { UnitNameTooLong } from './exceptions/unit-name-too-long.exception'
 
 export class UnitName extends StringValueObject {
   private static readonly MAX_LENGTH = 50

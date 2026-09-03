@@ -2,7 +2,7 @@ import { EventBus } from '@/shared/domain/events'
 import { ProductRepository } from '../../domain/repositories/product.repository'
 import { Product } from '../../domain/product'
 import { ProductSku } from '../../domain/product-sku'
-import { ProductSkuAlreadyExists } from '../../domain/exceptions/product-sku-already-exists'
+import { ProductSkuAlreadyExists } from '../../domain/exceptions/product-sku-already-exists.exception'
 import { InventoryStrategyType } from '../../domain/inventory-strategy-type'
 
 import { FileStorageRepository } from '@/shared/domain/file-storage/repositories/file-storage.repository'

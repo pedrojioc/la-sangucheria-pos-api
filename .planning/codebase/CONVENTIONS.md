@@ -14,7 +14,7 @@
 
 **Functions:**
 - Use camelCase for all functions and methods
-- Use `run()` method for use cases (never `execute()` or `handle()`)
+- Use `run()` method for use cases (never `execute()` or `handle()`) — this is the target convention for new code; see `docs/architecture/onion-architecture-conformance-audit.md` finding #5 for the ~99 existing files still on the `@nestjs/cqrs` Command/QueryHandler pattern, migrated context-by-context
 - Factory methods: `create()`, `fromPrimitives()`, `random()` (for test mothers)
 - Getter/Builder methods: `static random()`, `static create()`, `static inDraft()` (see `PurchaseOrderMother`)
 
@@ -114,11 +114,10 @@ await this.validationService.validateIngredientsExists(
 )
 ```
 
-4. **Global exception handling** - `GlobalExceptionFilter` in `src/core/filters/global-exception.filter.ts` catches all exceptions:
-- HttpException and subclasses → HTTP status code preserved
-- Other exceptions → 500 Internal Server Error
-- Logs full context (method, URL, body, query, params, stack trace in dev)
-- Response format: `{ statusCode, timestamp, path, error, message, stack? }`
+4. **Global exception handling** - `DomainExceptionFilter` in `src/core/filters/domain-exception.filter.ts` is the single registered filter (`app.useGlobalFilters(new DomainExceptionFilter())` in `main.ts`), mapping the `DomainException` hierarchy to HTTP status codes:
+- `InvalidValueObjectException` → 400
+- `BusinessRuleViolationException` → 422 (also the default for any unmatched `DomainException`)
+- `NotFoundException` → 404
 
 ## Logging
 
@@ -236,7 +235,7 @@ export interface PurchaseOrderPrimitives { ... }
 ## Value Objects
 
 **Pattern:**
-- String value objects extend `StringValueObject` from `@/shared/domain/value-objects/string-value-object.ts`
+- String value objects extend `StringValueObject` from `@/shared/domain/value-objects/string.ts`
 - All value objects are immutable (constructor only, no setters)
 - Include validation in constructor (throw `InvalidValueObjectException` or specific domain exception)
 - Expose value via `value` property

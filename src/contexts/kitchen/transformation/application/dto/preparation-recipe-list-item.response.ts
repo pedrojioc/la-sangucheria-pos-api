@@ -1,4 +1,4 @@
-import { PreparationRecipeListItem } from '../../../application/dto/preparation-recipe-list-item'
+import { PreparationRecipeListItem } from './preparation-recipe-list-item'
 
 export class PreparationRecipeListItemResponse {
   constructor(

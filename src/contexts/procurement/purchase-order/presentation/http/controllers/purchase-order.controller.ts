@@ -7,10 +7,12 @@ import {
   Param,
   Post,
   Put,
-  Query
+  Query,
+  UseInterceptors
 } from '@nestjs/common'
 import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import { CurrentUser } from '@/contexts/iam/shared/decorators/current-user.decorator'
+import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 
 // Request DTOs
 import { CreatePurchaseOrderRequest } from '../dto/create-purchase-order.request'
@@ -220,6 +222,7 @@ export class PurchaseOrderController {
    */
   @Put(':id/receive')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(TransactionInterceptor)
   async receive(
     @Param('id') purchaseOrderId: string,
     @Body() dto: ReceivePurchaseOrderRequest,

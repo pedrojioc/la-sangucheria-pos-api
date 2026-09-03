@@ -1,7 +1,7 @@
 import { ProductRepository } from '../../domain/repositories/product.repository'
 import { Product } from '../../domain/product'
 import { ProductId } from '../../domain/product-id'
-import { ProductNotExist } from '../../domain/exceptions/product-not-exist'
+import { ProductNotExist } from '../../domain/exceptions/product-not-exist.exception'
 
 export class FindProduct {
   constructor(private readonly productRepository: ProductRepository) {}

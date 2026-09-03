@@ -2,7 +2,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 import { SearchPreparationRecipesByCriteriaQuery } from './search-preparation-recipes-by-criteria.query'
 import { SearchPreparationRecipesByCriteria } from './search-preparation-recipes-by-criteria'
 import { PaginatedPreparationRecipeListResponse } from '../dto/paginated-preparation-recipe-list.response'
-import { PreparationRecipeListItemResponse } from '../../presentation/http/dto/preparation-recipe-list-item.response'
+import { PreparationRecipeListItemResponse } from '../dto/preparation-recipe-list-item.response'
 
 @QueryHandler(SearchPreparationRecipesByCriteriaQuery)
 export class SearchPreparationRecipesByCriteriaHandler

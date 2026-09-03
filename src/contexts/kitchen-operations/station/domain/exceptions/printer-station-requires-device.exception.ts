@@ -1,6 +1,6 @@
-import { DomainException } from '@shared/domain/exceptions/domain.exception'
+import { InvalidValueObjectException } from '@shared/domain/exceptions/domain.exception'
 
-export class PrinterStationRequiresDevice extends DomainException {
+export class PrinterStationRequiresDevice extends InvalidValueObjectException {
   constructor() {
     super('A discoveredPrinterDeviceId is required when the output device is PRINTER')
   }

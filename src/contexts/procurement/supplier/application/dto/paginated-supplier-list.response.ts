@@ -1,5 +1,5 @@
 import { PaginationMeta } from '@/shared/domain/criteria/paginated-result'
-import { SupplierListItemResponse } from '../../presentation/http/dto/supplier-list-item.response'
+import { SupplierListItemResponse } from './supplier-list-item.response'
 
 export class PaginatedSupplierListResponse {
   constructor(

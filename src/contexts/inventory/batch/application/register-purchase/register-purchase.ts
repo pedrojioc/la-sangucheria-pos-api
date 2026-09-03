@@ -1,11 +1,13 @@
 import { InventoryBatch } from '@contexts/inventory/batch/domain/inventory-batch'
+import { InventoryBatchRepository } from '@contexts/inventory/batch/domain/repositories/inventory-batch.repository'
 import { IngredientRepository } from '@/contexts/inventory/ingredient/domain/repositories/ingredient.repository'
 import { IngredientId } from '@/contexts/inventory/ingredient/domain/ingredient-id'
 import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
 import { UnitConversionNotFound } from '@/contexts/shared-kernel/unit-conversion/domain/exceptions/unit-conversion-not-found.exception'
 import { NotFoundException } from '@/shared/domain/exceptions/domain.exception'
 import { EventBus } from '@/shared/domain/events'
-import { PurchaseUnitOfWork } from '@contexts/inventory/batch/domain/purchase-unit-of-work'
+import { InventoryMovementRepository } from '@contexts/inventory/stock-level/domain/repositories/inventory-movement.repository'
+import { InventoryLevelRepository } from '@contexts/inventory/stock-level/domain/repositories/inventory-level.repository'
 import { InventoryMovement } from '@contexts/inventory/stock-level/domain/inventory-movement'
 import { InventoryLevel } from '@contexts/inventory/stock-level/domain/inventory-level'
 import { MovementType } from '@contexts/inventory/stock-level/domain/movement-type'
@@ -20,8 +22,17 @@ import { Uuid } from '@/shared/domain/value-objects/uuid'
  *   2. Crea el InventoryMovement (tipo PURCHASE)
  *   3. Actualiza el InventoryLevel
  *
- * Los tres pasos ocurren en una única transacción DB vía PurchaseUnitOfWork.
- * Los eventos de dominio se publican después del commit para notificar otros contextos.
+ * TRANSACTION: this use case does NOT open a transaction. The caller is
+ * expected to run inside an ambient transaction opened by
+ * @UseInterceptors(TransactionInterceptor) on the triggering endpoint (or,
+ * for the event-driven path, the transaction already open around the
+ * publisher). All repositories here are TransactionalRepository and enlist
+ * automatically via the ambient UnitOfWorkContext.
+ *
+ * EVENT PUBLICATION IS IN-TRANSACTION. Publishing inside run() (not after
+ * a separate commit step) means any category-1 subscriber to the batch/level
+ * events runs atomically with these writes. Do not move publish() outside
+ * of run() or defer it — that would silently break atomicity.
  *
  * Conversión automática de unidades:
  *   Si la unidad de compra difiere de la unidad base del ingrediente, el sistema convierte.
@@ -31,7 +42,9 @@ export class RegisterPurchase {
   constructor(
     private readonly ingredientRepository: IngredientRepository,
     private readonly unitConversionRepository: UnitConversionRepository,
-    private readonly uow: PurchaseUnitOfWork,
+    private readonly batchRepository: InventoryBatchRepository,
+    private readonly movementRepository: InventoryMovementRepository,
+    private readonly levelRepository: InventoryLevelRepository,
     private readonly eventBus: EventBus
   ) {}
 
@@ -68,54 +81,52 @@ export class RegisterPurchase {
 
     const allEvents: any[] = []
 
-    await this.uow.commit(async uow => {
-      // 1. Batch
-      const batch = InventoryBatch.create(
-        batchId,
-        ingredientId,
-        finalQuantity,
-        finalUnitId,
-        finalUnitCost,
-        currency,
-        purchaseDate,
-        expirationDate,
-        supplier,
-        referenceCode
-      )
-      await uow.batchRepository.save(batch)
-      allEvents.push(...batch.pullDomainEvents())
+    // 1. Batch
+    const batch = InventoryBatch.create(
+      batchId,
+      ingredientId,
+      finalQuantity,
+      finalUnitId,
+      finalUnitCost,
+      currency,
+      purchaseDate,
+      expirationDate,
+      supplier,
+      referenceCode
+    )
+    await this.batchRepository.save(batch)
+    allEvents.push(...batch.pullDomainEvents())
 
-      // 2. Movement
-      const movement = InventoryMovement.create(
-        Uuid.random().value,
-        ingredientId,
-        MovementType.PURCHASE,
-        finalQuantity,
-        finalUnitId,
-        finalUnitCost,
-        currency,
-        batchId,
-        'Purchase registered',
-        referenceCode,
-        null,
-        purchaseDate
-      )
-      await uow.movementRepository.save(movement)
+    // 2. Movement
+    const movement = InventoryMovement.create(
+      Uuid.random().value,
+      ingredientId,
+      MovementType.PURCHASE,
+      finalQuantity,
+      finalUnitId,
+      finalUnitCost,
+      currency,
+      batchId,
+      'Purchase registered',
+      referenceCode,
+      null,
+      purchaseDate
+    )
+    await this.movementRepository.save(movement)
 
-      // 3. Level
-      const ingredientIdVO = new IngredientId(ingredientId)
-      let level = await uow.levelRepository.findByIngredient(ingredientIdVO)
+    // 3. Level
+    const ingredientIdVO = new IngredientId(ingredientId)
+    let level = await this.levelRepository.findByIngredient(ingredientIdVO)
 
-      if (!level) {
-        level = InventoryLevel.create(Uuid.random().value, ingredientId, 0, finalUnitId)
-      }
+    if (!level) {
+      level = InventoryLevel.create(Uuid.random().value, ingredientId, 0, finalUnitId)
+    }
 
-      level.increase(new Quantity(finalQuantity, finalUnitId))
-      await uow.levelRepository.save(level)
-      allEvents.push(...level.pullDomainEvents())
-    })
+    level.increase(new Quantity(finalQuantity, finalUnitId))
+    await this.levelRepository.save(level)
+    allEvents.push(...level.pullDomainEvents())
 
-    // Publish after commit — notifies other contexts (e.g. notifications, analytics)
+    // In-transaction publish. See class doc — do not move this.
     if (allEvents.length > 0) {
       await this.eventBus.publish(allEvents)
     }

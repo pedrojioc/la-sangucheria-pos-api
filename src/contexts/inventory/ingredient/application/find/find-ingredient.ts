@@ -1,6 +1,6 @@
 import { IngredientRepository } from '../../domain/repositories/ingredient.repository'
 import { IngredientId } from '../../domain/ingredient-id'
-import { IngredientNotExist } from '../../domain/exceptions/ingredient-not-exist'
+import { IngredientNotExist } from '../../domain/exceptions/ingredient-not-exist.exception'
 import { Ingredient } from '../../domain/ingredient'
 
 export class FindIngredient {

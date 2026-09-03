@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { CqrsModule } from '@nestjs/cqrs'
 
 // Entities
 import { InventoryBatchEntity } from './infrastructure/persistence/typeorm/inventory-batch.entity'
@@ -9,55 +8,15 @@ import { InventoryBatchEntity } from './infrastructure/persistence/typeorm/inven
 import { InventoryBatchRepository } from './domain/repositories/inventory-batch.repository'
 import { TypeOrmInventoryBatchRepository } from './infrastructure/persistence/typeorm/typeorm-inventory-batch.repository'
 
-// Unit of Work
-import { PurchaseUnitOfWork } from './domain/purchase-unit-of-work'
-import { TypeOrmPurchaseUnitOfWork } from './infrastructure/persistence/typeorm/typeorm-purchase-unit-of-work'
-
-// Use Cases
-import { RegisterPurchase } from './application/register-purchase/register-purchase'
-
-// Handlers
-import { RegisterPurchaseHandler } from './application/register-purchase/register-purchase.handler'
-
-// Dependencies from other modules
-import { IngredientRepository } from '@/contexts/inventory/ingredient/domain/repositories/ingredient.repository'
-import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
-import { EventBus } from '@/shared/domain/events'
-
-// Utils
-import { createProvider } from '@/core/utils/create-provider'
-
-// Import modules that export required dependencies
-import { IngredientModule } from '../ingredient/ingredient.module'
-
-const CommandHandlers = [RegisterPurchaseHandler]
-
 @Module({
-  imports: [TypeOrmModule.forFeature([InventoryBatchEntity]), CqrsModule, IngredientModule],
+  imports: [TypeOrmModule.forFeature([InventoryBatchEntity])],
   providers: [
     // Repositories
     {
       provide: InventoryBatchRepository,
       useClass: TypeOrmInventoryBatchRepository
-    },
-
-    // Unit of Work
-    {
-      provide: PurchaseUnitOfWork,
-      useClass: TypeOrmPurchaseUnitOfWork
-    },
-
-    // Use Cases
-    createProvider(RegisterPurchase, [
-      IngredientRepository,
-      UnitConversionRepository,
-      PurchaseUnitOfWork,
-      EventBus
-    ]),
-
-    // Handlers
-    ...CommandHandlers
+    }
   ],
-  exports: [InventoryBatchRepository, RegisterPurchase]
+  exports: [InventoryBatchRepository]
 })
 export class InventoryBatchModule {}

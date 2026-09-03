@@ -1,4 +1,4 @@
-import { SupplierListItem } from '../../../application/dto/supplier-list-item'
+import { SupplierListItem } from './supplier-list-item'
 
 export class SupplierListItemResponse {
   constructor(

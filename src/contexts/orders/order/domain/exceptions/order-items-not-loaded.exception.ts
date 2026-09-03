@@ -1,6 +1,6 @@
-import { DomainException } from '@shared/domain/exceptions/domain.exception'
+import { BusinessRuleViolationException } from '@shared/domain/exceptions/domain.exception'
 
-export class OrderItemsNotLoaded extends DomainException {
+export class OrderItemsNotLoaded extends BusinessRuleViolationException {
   constructor(orderId: string) {
     super(
       `Order items relation was not loaded for order ${orderId}. ` +

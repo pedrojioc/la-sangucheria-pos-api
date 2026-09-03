@@ -1,7 +1,7 @@
-import { DomainException } from '@shared/domain/exceptions/domain.exception'
+import { InvalidValueObjectException } from '@shared/domain/exceptions/domain.exception'
 import { TaxType } from '@shared/domain/value-objects/tax-type'
 
-export class InvalidTaxRateForTaxType extends DomainException {
+export class InvalidTaxRateForTaxType extends InvalidValueObjectException {
   constructor(taxType: TaxType, taxRate: number) {
     super(
       `Invalid tax configuration: taxType <${taxType}> requires ` +

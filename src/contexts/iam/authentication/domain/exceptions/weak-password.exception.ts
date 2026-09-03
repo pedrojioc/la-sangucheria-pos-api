@@ -1,6 +1,6 @@
-import { DomainException } from '@/shared/domain/exceptions/domain.exception'
+import { InvalidValueObjectException } from '@/shared/domain/exceptions/domain.exception'
 
-export class WeakPassword extends DomainException {
+export class WeakPassword extends InvalidValueObjectException {
   constructor(message: string) {
     super(message)
   }

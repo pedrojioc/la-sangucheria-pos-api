@@ -1,6 +1,6 @@
 import { UnitRepository } from '../../domain/repositories/unit.repository'
 import { UnitId } from '../../domain/unit-id'
-import { UnitNotExist } from '../../domain/exceptions/unit-not-exist'
+import { UnitNotExist } from '../../domain/exceptions/unit-not-exist.exception'
 import { Unit } from '../../domain/unit'
 
 export class FindUnit {

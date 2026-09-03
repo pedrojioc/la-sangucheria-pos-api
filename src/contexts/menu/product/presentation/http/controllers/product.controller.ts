@@ -30,7 +30,7 @@ import { FindProductWithOptionsQuery } from '@contexts/menu/product-option/appli
 import { ProductWithOptionsResponse } from '@contexts/menu/product-option/application/dto/product-with-options.response'
 import { FileAdapter } from '@/shared/presentation/dto/file-adapter'
 import { GenerateProductSkuQuery } from '@contexts/menu/product/application/generate-sku/generate-product-sku.query'
-import { GenerateProductSkuResponse } from '../dto/generate-product-sku.response'
+import { GenerateProductSkuResponse } from '@contexts/menu/product/application/dto/generate-product-sku.response'
 
 @Controller('products')
 export class ProductController {

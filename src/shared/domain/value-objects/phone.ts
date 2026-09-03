@@ -1,10 +1,12 @@
+import { InvalidValueObjectException } from '@shared/domain/exceptions/domain.exception'
+
 export class Phone {
   private static readonly PHONE_REGEX = /^\+?[1-9]\d{1,14}$/
 
   constructor(private readonly value: string) {
     const cleanValue = value.replace(/\s|-/g, '')
     if (!cleanValue || !Phone.PHONE_REGEX.test(cleanValue)) {
-      throw new Error('Invalid phone number format')
+      throw new InvalidValueObjectException('Invalid phone number format')
     }
     this.value = cleanValue
   }
