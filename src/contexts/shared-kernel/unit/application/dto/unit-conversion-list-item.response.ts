@@ -1,4 +1,4 @@
-import { UnitConversionListItem } from '../../../application/dto/unit-conversion-list-item'
+import { UnitConversionListItem } from './unit-conversion-list-item'
 
 class UnitRefResponse {
   constructor(

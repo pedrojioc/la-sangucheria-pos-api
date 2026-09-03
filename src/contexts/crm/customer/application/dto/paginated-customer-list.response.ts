@@ -1,5 +1,5 @@
 import { PaginationMeta } from '@/shared/domain/criteria/paginated-result'
-import { CustomerListItemResponse } from '../../presentation/http/dto/customer-list-item.response'
+import { CustomerListItemResponse } from './customer-list-item.response'
 
 export class PaginatedCustomerListResponse {
   constructor(

@@ -2,7 +2,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 import { SearchSuppliersByCriteriaQuery } from './search-suppliers-by-criteria.query'
 import { SearchSuppliersByCriteria } from './search-suppliers-by-criteria'
 import { PaginatedSupplierListResponse } from '../dto/paginated-supplier-list.response'
-import { SupplierListItemResponse } from '../../presentation/http/dto/supplier-list-item.response'
+import { SupplierListItemResponse } from '../dto/supplier-list-item.response'
 
 @QueryHandler(SearchSuppliersByCriteriaQuery)
 export class SearchSuppliersByCriteriaHandler

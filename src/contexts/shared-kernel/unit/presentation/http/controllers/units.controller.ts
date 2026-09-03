@@ -21,7 +21,7 @@ import { FindAllUnitsQuery } from '@/contexts/shared-kernel/unit/application/fin
 import { FindUnitConversionsQuery } from '@/contexts/shared-kernel/unit/application/find-conversions/find-unit-conversions.query'
 import { UnitResponse } from '@/contexts/shared-kernel/unit/application/dto/unit.response'
 import { UnitListResponse } from '@/contexts/shared-kernel/unit/application/dto/unit-list.response'
-import { UnitConversionListItemResponse } from '../dto/unit-conversion-list-item.response'
+import { UnitConversionListItemResponse } from '@/contexts/shared-kernel/unit/application/dto/unit-conversion-list-item.response'
 
 @Controller('units')
 export class UnitsController {

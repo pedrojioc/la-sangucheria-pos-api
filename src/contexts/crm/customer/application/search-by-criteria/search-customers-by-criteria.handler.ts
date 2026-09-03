@@ -2,7 +2,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 import { SearchCustomersByCriteriaQuery } from './search-customers-by-criteria.query'
 import { SearchCustomersByCriteria } from './search-customers-by-criteria'
 import { PaginatedCustomerListResponse } from '../dto/paginated-customer-list.response'
-import { CustomerListItemResponse } from '../../presentation/http/dto/customer-list-item.response'
+import { CustomerListItemResponse } from '../dto/customer-list-item.response'
 
 @QueryHandler(SearchCustomersByCriteriaQuery)
 export class SearchCustomersByCriteriaHandler

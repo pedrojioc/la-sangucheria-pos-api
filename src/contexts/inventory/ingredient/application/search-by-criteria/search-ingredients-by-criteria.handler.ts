@@ -2,7 +2,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 import { SearchIngredientsByCriteriaQuery } from './search-ingredients-by-criteria.query'
 import { SearchIngredientsByCriteria } from './search-ingredients-by-criteria'
 import { PaginatedIngredientListResponse } from '../dto/paginated-ingredient-list.response'
-import { IngredientListItemResponse } from '../../presentation/http/dto/ingredient-list-item.response'
+import { IngredientListItemResponse } from '../dto/ingredient-list-item.response'
 
 @QueryHandler(SearchIngredientsByCriteriaQuery)
 export class SearchIngredientsByCriteriaHandler

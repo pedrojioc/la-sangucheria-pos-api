@@ -1,7 +1,4 @@
-import {
-  OptionGroupListItem,
-  OptionItemListData
-} from '../../../application/dto/option-group-list-item'
+import { OptionGroupListItem, OptionItemListData } from './option-group-list-item'
 
 export interface OptionItemListItemData {
   id: string
