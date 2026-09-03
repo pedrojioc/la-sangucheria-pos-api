@@ -1,6 +1,6 @@
-import { DomainException } from '@shared/domain/exceptions/domain.exception'
+import { InvalidValueObjectException } from '@shared/domain/exceptions/domain.exception'
 
-export class ProductRecipeMustHaveItems extends DomainException {
+export class ProductRecipeMustHaveItems extends InvalidValueObjectException {
   constructor() {
     super('Product recipe must have at least one ingredient')
   }

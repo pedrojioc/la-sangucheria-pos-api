@@ -1,6 +1,6 @@
-import { DomainException } from '@/shared/domain/exceptions/domain.exception'
+import { BusinessRuleViolationException } from '@/shared/domain/exceptions/domain.exception'
 
-export class ProductSkuAlreadyExists extends DomainException {
+export class ProductSkuAlreadyExists extends BusinessRuleViolationException {
   constructor(sku: string) {
     super(`Product with SKU <${sku}> already exists`)
   }
