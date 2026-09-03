@@ -1,11 +1,12 @@
 import { Unit } from '../unit'
 import { UnitId } from '../unit-id'
 
-export interface UnitRepository {
-  save(unit: Unit): Promise<void>
-  findById(id: UnitId): Promise<Unit | null>
-  findAll(): Promise<Unit[]>
-  delete(id: UnitId): Promise<void>
-}
+export abstract class UnitRepository {
+  abstract save(unit: Unit): Promise<void>
 
-export const UnitRepository = Symbol('UnitRepository')
+  abstract findById(id: UnitId): Promise<Unit | null>
+
+  abstract findAll(): Promise<Unit[]>
+
+  abstract delete(id: UnitId): Promise<void>
+}
