@@ -12,13 +12,12 @@ import {
 import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import { CreateRecipeRequest } from '../dto/create-recipe.request'
 import { UpdateRecipeRequest } from '../dto/update-recipe.request'
-import { RecipeResponse } from '../dto/recipe.response'
+import { RecipeResponse } from '@contexts/kitchen/recipe/application/dto/recipe.response'
 import { CreateRecipeCommand } from '@contexts/kitchen/recipe/application/create/create-recipe.command'
 import { FindRecipeQuery } from '@contexts/kitchen/recipe/application/find/find-recipe.query'
 import { SearchAllRecipesQuery } from '@contexts/kitchen/recipe/application/search-all/search-all-recipes.query'
 import { UpdateRecipeCommand } from '@contexts/kitchen/recipe/application/update/update-recipe.command'
 import { DeleteRecipeCommand } from '@contexts/kitchen/recipe/application/delete/delete-recipe.command'
-import { Recipe } from '@contexts/kitchen/recipe/domain/recipe'
 
 @Controller('recipes')
 export class RecipeController {
@@ -44,15 +43,13 @@ export class RecipeController {
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<RecipeResponse> {
     const query = new FindRecipeQuery(id)
-    const recipe: Recipe = await this.queryBus.execute(query)
-    return RecipeResponse.fromDomain(recipe)
+    return this.queryBus.execute(query)
   }
 
   @Get()
   async findAll(): Promise<RecipeResponse[]> {
     const query = new SearchAllRecipesQuery()
-    const recipes: Recipe[] = await this.queryBus.execute(query)
-    return recipes.map(recipe => RecipeResponse.fromDomain(recipe))
+    return this.queryBus.execute(query)
   }
 
   @Put(':id')
