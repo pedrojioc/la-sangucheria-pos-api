@@ -8,6 +8,7 @@ import { CreateLoyaltyAccountOnCustomerCreated } from '@contexts/crm/loyalty/app
 import { IssueBillingDocumentOnOrderClosed } from '@contexts/billing/invoice/application/subscribers/issue-billing-document-on-order-closed'
 import { PrintKitchenTicketOnOrderSent } from '@contexts/kitchen-operations/kitchen-printer/application/subscribers/print-kitchen-ticket-on-order-sent'
 import { CreateInventoryLevelOnIngredientCreated } from '@contexts/inventory/stock-level/application/subscribers/create-inventory-level-on-ingredient-created'
+import { RegisterPurchaseOnItemReceived } from '@contexts/inventory/stock-level/application/subscribers/register-purchase-on-item-received'
 import { OnProductRecipeSavedUpdateStrategySubscriber } from '@contexts/menu/product/application/on-product-recipe-saved/on-product-recipe-saved-update-strategy.subscriber'
 
 /**
@@ -50,6 +51,7 @@ export const DISPATCH_CATEGORIES = new Map<SubscriberClass, DispatchCategory>([
   [IssueBillingDocumentOnOrderClosed, DispatchCategory.Deferred],
   [PrintKitchenTicketOnOrderSent, DispatchCategory.Deferred],
   [CreateInventoryLevelOnIngredientCreated, DispatchCategory.Synchronous],
+  [RegisterPurchaseOnItemReceived, DispatchCategory.Synchronous],
   [OnProductRecipeSavedUpdateStrategySubscriber, DispatchCategory.Synchronous]
 ])
 

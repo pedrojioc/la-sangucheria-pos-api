@@ -18,6 +18,9 @@ import { FifoInventoryService } from '@/contexts/inventory/batch/domain/services
 import { InventoryBatchModule } from '@/contexts/inventory/batch/inventory-batch.module'
 import { GetIngredientFifoCost } from './application/get-ingredient-fifo-cost/get-ingredient-fifo-cost'
 
+// Import modules that export required dependencies
+import { IngredientModule } from '@/contexts/inventory/ingredient/ingredient.module'
+
 // Query Services
 import { InventoryLevelQueryService } from './application/services/inventory-level-query.service'
 import { TypeOrmInventoryLevelQueryService } from './infrastructure/query-services/typeorm-inventory-level-query.service'
@@ -33,14 +36,17 @@ import { RegisterManualAdjustment } from './application/register-manual-adjustme
 import { DeductIngredient } from './application/deduct/deduct-ingredient'
 import { AddProducedStock } from './application/add-produced-stock/add-produced-stock'
 import { InitializeInventoryLevel } from './application/initialize-inventory-level/initialize-inventory-level'
+import { RegisterPurchase } from '@/contexts/inventory/batch/application/register-purchase/register-purchase'
 
 // Handlers
 import { SearchInventoryLevelsByCriteriaHandler } from './application/search-by-criteria/search-inventory-levels-by-criteria.handler'
 import { GetInventoryLevelStatisticsHandler } from './application/get-statistics/get-inventory-level-statistics.handler'
 import { RegisterManualAdjustmentHandler } from './application/register-manual-adjustment/register-manual-adjustment.handler'
+import { RegisterPurchaseHandler } from '@/contexts/inventory/batch/application/register-purchase/register-purchase.handler'
 
 // Subscribers
 import { CreateInventoryLevelOnIngredientCreated } from './application/subscribers/create-inventory-level-on-ingredient-created'
+import { RegisterPurchaseOnItemReceived } from './application/subscribers/register-purchase-on-item-received'
 
 // Controllers
 import { InventoryLevelController } from './presentation/http/controllers/inventory-level.controller'
@@ -49,11 +55,16 @@ import { InventoryLevelController } from './presentation/http/controllers/invent
 import { EventBus } from '@/shared/domain/events'
 import { createProvider } from '@/core/utils/create-provider'
 
+// Dependencies from other modules
+import { IngredientRepository } from '@/contexts/inventory/ingredient/domain/repositories/ingredient.repository'
+import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([InventoryMovementEntity, InventoryLevelEntity]),
     CqrsModule,
-    InventoryBatchModule
+    InventoryBatchModule,
+    IngredientModule
   ],
   controllers: [InventoryLevelController],
   providers: [
@@ -104,6 +115,14 @@ import { createProvider } from '@/core/utils/create-provider'
       EventBus
     ]),
     createProvider(InitializeInventoryLevel, [InventoryLevelRepository]),
+    createProvider(RegisterPurchase, [
+      IngredientRepository,
+      UnitConversionRepository,
+      InventoryBatchRepository,
+      InventoryMovementRepository,
+      InventoryLevelRepository,
+      EventBus
+    ]),
 
     // Use Cases - Queries
     createProvider(SearchInventoryLevelsByCriteria, [InventoryLevelQueryService]),
@@ -113,6 +132,7 @@ import { createProvider } from '@/core/utils/create-provider'
     SearchInventoryLevelsByCriteriaHandler,
     GetInventoryLevelStatisticsHandler,
     RegisterManualAdjustmentHandler,
+    RegisterPurchaseHandler,
 
     // Event Subscribers
     {
@@ -120,6 +140,12 @@ import { createProvider } from '@/core/utils/create-provider'
       useFactory: (useCase: InitializeInventoryLevel) =>
         new CreateInventoryLevelOnIngredientCreated(useCase),
       inject: [InitializeInventoryLevel]
+    },
+    {
+      provide: RegisterPurchaseOnItemReceived,
+      useFactory: (registerPurchase: RegisterPurchase) =>
+        new RegisterPurchaseOnItemReceived(registerPurchase),
+      inject: [RegisterPurchase]
     }
   ],
   exports: [
@@ -133,10 +159,11 @@ import { createProvider } from '@/core/utils/create-provider'
 export class StockLevelModule implements OnModuleInit {
   constructor(
     private readonly eventBus: EventBus,
-    private readonly createLevelSubscriber: CreateInventoryLevelOnIngredientCreated
+    private readonly createLevelSubscriber: CreateInventoryLevelOnIngredientCreated,
+    private readonly registerPurchaseOnItemReceived: RegisterPurchaseOnItemReceived
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.addSubscribers([this.createLevelSubscriber])
+    this.eventBus.addSubscribers([this.createLevelSubscriber, this.registerPurchaseOnItemReceived])
   }
 }
