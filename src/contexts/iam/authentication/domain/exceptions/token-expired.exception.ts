@@ -1,6 +1,6 @@
-import { DomainException } from '@/shared/domain/exceptions/domain.exception'
+import { BusinessRuleViolationException } from '@/shared/domain/exceptions/domain.exception'
 
-export class TokenExpired extends DomainException {
+export class TokenExpired extends BusinessRuleViolationException {
   constructor() {
     super('Token has expired')
   }
