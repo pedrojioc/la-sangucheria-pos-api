@@ -3,7 +3,7 @@ import { EventBus } from '@/shared/domain/events'
 import { FindIngredientCategory } from '@contexts/inventory/ingredient-category/application/find/find-ingredient-category'
 import { FindIngredient } from '../find/find-ingredient'
 import { IngredientId } from '../../domain/ingredient-id'
-import { IngredientNotExist } from '../../domain/exceptions/ingredient-not-exist'
+import { IngredientNotExist } from '../../domain/exceptions/ingredient-not-exist.exception'
 import { IngredientUnitChangeNotAllowedException } from '../../domain/exceptions/ingredient-unit-change-not-allowed.exception'
 
 export class UpdateIngredient {

@@ -1,6 +1,6 @@
 import { DeleteUnit } from '@/contexts/shared-kernel/unit/application/delete/delete-unit'
 import { UnitRepository } from '@/contexts/shared-kernel/unit/domain/repositories/unit.repository'
-import { UnitNotExist } from '@/contexts/shared-kernel/unit/domain/exceptions/unit-not-exist'
+import { UnitNotExist } from '@/contexts/shared-kernel/unit/domain/exceptions/unit-not-exist.exception'
 import { UnitDeletedEvent } from '@/contexts/shared-kernel/unit/domain/events/unit-deleted.event'
 import { EventBus } from '@/shared/domain/events'
 import { UnitMother } from '../__mothers__/unit.mother'

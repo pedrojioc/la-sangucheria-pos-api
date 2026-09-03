@@ -1,7 +1,7 @@
 import { EventBus } from '@/shared/domain/events'
 import { ProductRepository } from '../../domain/repositories/product.repository'
 import { ProductId } from '../../domain/product-id'
-import { ProductNotExist } from '../../domain/exceptions/product-not-exist'
+import { ProductNotExist } from '../../domain/exceptions/product-not-exist.exception'
 import { ProductDeletedEvent } from '../../domain/events/product-deleted.event'
 import { FileStorageRepository } from '@/shared/domain/file-storage/repositories/file-storage.repository'
 

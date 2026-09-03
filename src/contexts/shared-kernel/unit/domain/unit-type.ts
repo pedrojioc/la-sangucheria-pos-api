@@ -1,5 +1,5 @@
 import { ValueObject } from '@/shared/domain/value-objects/value-object'
-import { InvalidUnitType } from './exceptions/invalid-unit-type'
+import { InvalidUnitType } from './exceptions/invalid-unit-type.exception'
 
 export enum UnitTypeEnum {
   WEIGHT = 'weight',

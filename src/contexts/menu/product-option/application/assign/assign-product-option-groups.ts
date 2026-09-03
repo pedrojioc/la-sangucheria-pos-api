@@ -1,6 +1,6 @@
 import { ProductRepository } from '@contexts/menu/product/domain/repositories/product.repository'
 import { ProductId } from '@contexts/menu/product/domain/product-id'
-import { ProductNotExist } from '@contexts/menu/product/domain/exceptions/product-not-exist'
+import { ProductNotExist } from '@contexts/menu/product/domain/exceptions/product-not-exist.exception'
 import { OptionGroupRepository } from '../../domain/repositories/option-group.repository'
 import { ProductOptionGroupRepository } from '../../domain/repositories/product-option-group.repository'
 import { OptionGroupNotFound } from '../../domain/exceptions/option-group-not-found.exception'

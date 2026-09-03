@@ -1,6 +1,6 @@
 import { IngredientCategoryRepository } from '../../domain/repositories/ingredient-category.repository'
 import { IngredientCategoryId } from '../../domain/ingredient-category-id'
-import { IngredientCategoryNotExist } from '../../domain/exceptions/ingredient-category-not-exist'
+import { IngredientCategoryNotExist } from '../../domain/exceptions/ingredient-category-not-exist.exception'
 import { IngredientCategory } from '../../domain/ingredient-category'
 
 export class FindIngredientCategory {

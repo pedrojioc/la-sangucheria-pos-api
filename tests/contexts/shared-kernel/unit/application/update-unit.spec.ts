@@ -1,6 +1,6 @@
 import { UpdateUnit } from '@/contexts/shared-kernel/unit/application/update/update-unit'
 import { UnitRepository } from '@/contexts/shared-kernel/unit/domain/repositories/unit.repository'
-import { UnitNotExist } from '@/contexts/shared-kernel/unit/domain/exceptions/unit-not-exist'
+import { UnitNotExist } from '@/contexts/shared-kernel/unit/domain/exceptions/unit-not-exist.exception'
 import { UnitUpdatedEvent } from '@/contexts/shared-kernel/unit/domain/events/unit-updated.event'
 import { EventBus } from '@/shared/domain/events'
 import { UnitTypeEnum } from '@/contexts/shared-kernel/unit/domain/unit-type'
