@@ -114,11 +114,10 @@ await this.validationService.validateIngredientsExists(
 )
 ```
 
-4. **Global exception handling** - `GlobalExceptionFilter` in `src/core/filters/global-exception.filter.ts` catches all exceptions:
-- HttpException and subclasses → HTTP status code preserved
-- Other exceptions → 500 Internal Server Error
-- Logs full context (method, URL, body, query, params, stack trace in dev)
-- Response format: `{ statusCode, timestamp, path, error, message, stack? }`
+4. **Global exception handling** - `DomainExceptionFilter` in `src/core/filters/domain-exception.filter.ts` is the single registered filter (`app.useGlobalFilters(new DomainExceptionFilter())` in `main.ts`), mapping the `DomainException` hierarchy to HTTP status codes:
+- `InvalidValueObjectException` → 400
+- `BusinessRuleViolationException` → 422 (also the default for any unmatched `DomainException`)
+- `NotFoundException` → 404
 
 ## Logging
 
