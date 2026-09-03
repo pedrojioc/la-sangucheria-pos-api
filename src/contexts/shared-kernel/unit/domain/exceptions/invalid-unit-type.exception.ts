@@ -1,6 +1,6 @@
-import { DomainException } from '@/shared/domain/exceptions/domain.exception'
+import { InvalidValueObjectException } from '@/shared/domain/exceptions/domain.exception'
 
-export class InvalidUnitType extends DomainException {
+export class InvalidUnitType extends InvalidValueObjectException {
   constructor() {
     super('Invalid unit type')
   }
