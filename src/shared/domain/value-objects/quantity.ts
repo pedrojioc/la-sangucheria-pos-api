@@ -1,3 +1,8 @@
+import {
+  InvalidValueObjectException,
+  BusinessRuleViolationException
+} from '@shared/domain/exceptions/domain.exception'
+
 export class Quantity {
   constructor(
     public readonly value: number,
@@ -16,24 +21,24 @@ export class Quantity {
     this.ensureSameUnit(other)
     const result = this.value - other.value
     if (result < 0) {
-      throw new Error('Cannot have negative quantity')
+      throw new BusinessRuleViolationException('Cannot have negative quantity')
     }
     return new Quantity(result, this.unitId)
   }
 
   multiply(multiplier: number): Quantity {
     if (multiplier < 0) {
-      throw new Error('Cannot multiply quantity by negative number')
+      throw new BusinessRuleViolationException('Cannot multiply quantity by negative number')
     }
     return new Quantity(this.value * multiplier, this.unitId)
   }
 
   divide(divisor: number): Quantity {
     if (divisor === 0) {
-      throw new Error('Cannot divide quantity by zero')
+      throw new BusinessRuleViolationException('Cannot divide quantity by zero')
     }
     if (divisor < 0) {
-      throw new Error('Cannot divide quantity by negative number')
+      throw new BusinessRuleViolationException('Cannot divide quantity by negative number')
     }
     return new Quantity(this.value / divisor, this.unitId)
   }
@@ -81,24 +86,23 @@ export class Quantity {
   }
 
   private ensureIsValidValue(value: number): void {
-    console.log('Validating quantity value:', value)
     if (value < 0) {
-      throw new Error('Quantity value cannot be negative')
+      throw new InvalidValueObjectException('Quantity value cannot be negative')
     }
     if (!Number.isFinite(value)) {
-      throw new Error('Quantity value must be a finite number')
+      throw new InvalidValueObjectException('Quantity value must be a finite number')
     }
   }
 
   private ensureIsValidUnitId(unitId: string): void {
     if (!unitId || unitId.trim().length === 0) {
-      throw new Error('Unit ID cannot be empty')
+      throw new InvalidValueObjectException('Unit ID cannot be empty')
     }
   }
 
   private ensureSameUnit(other: Quantity): void {
     if (this.unitId !== other.unitId) {
-      throw new Error(
+      throw new BusinessRuleViolationException(
         `Cannot operate on quantities with different units: ${this.unitId} vs ${other.unitId}`
       )
     }

@@ -1,9 +1,11 @@
+import { InvalidValueObjectException } from '@shared/domain/exceptions/domain.exception'
+
 export class Email {
   private static readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   constructor(private readonly value: string) {
     if (!value || !Email.EMAIL_REGEX.test(value)) {
-      throw new Error('Invalid email format')
+      throw new InvalidValueObjectException('Invalid email format')
     }
   }
 
