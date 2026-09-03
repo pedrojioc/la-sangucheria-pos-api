@@ -38,14 +38,37 @@ Corré los tests después de cada cambio.
 
 ```
 Lee el hallazgo #2 de docs/architecture/onion-architecture-conformance-audit.md
-(register-item-reception.ts). Cargá completas las skills onion-architecture y
-onion-infrastructure (.claude/skills/), incluyendo references/rationale.md,
-antes de tocar código.
+(register-item-reception.ts). Cargá completas las skills onion-architecture,
+onion-application y onion-infrastructure (.claude/skills/), incluyendo
+references/rationale.md, antes de tocar código. El fix toca tanto el use
+case (application/) como el nuevo adapter (infrastructure/), así que las
+reglas de ambas capas aplican.
 
 Diseñá el/los puerto(s) necesarios en application/ports/ de
 procurement/purchase-order y sus adapters en infrastructure/adapters/,
 usando EstablishmentSettingsPort/TypeOrmEstablishmentSettingsAdapter
 (orders/order) como referencia exacta de la forma correcta.
+
+No toques ningún otro hallazgo en esta sesión.
+```
+
+Ejemplo para el hallazgo #1 (mismo patrón, distinto archivo):
+
+```
+Lee el hallazgo #1 de docs/architecture/onion-architecture-conformance-audit.md
+(deduct-ingredients-on-order-closed.ts). Cargá completas las skills
+onion-architecture, onion-application y onion-infrastructure
+(.claude/skills/), incluyendo references/rationale.md, antes de tocar
+código. El fix toca tanto el subscriber (application/) como el/los nuevos
+adapters (infrastructure/), así que las reglas de ambas capas aplican.
+
+Diseñá el/los puerto(s) necesarios en orders/order/application/ports/ para
+reemplazar las dependencias directas de menu (ProductRepository,
+ProductRecipeRepository) e inventory (DeductIngredient), y sus adapters en
+orders/order/infrastructure/adapters/ que llamen a los use cases públicos
+de esos contextos — nunca a su dominio. Usá
+EstablishmentSettingsPort/TypeOrmEstablishmentSettingsAdapter (mismo
+módulo, orders/order) como referencia exacta de la forma correcta.
 
 No toques ningún otro hallazgo en esta sesión.
 ```

@@ -1,10 +1,10 @@
 import { DeductIngredientsOnOrderClosed } from '@contexts/orders/order/application/subscribers/deduct-ingredients-on-order-closed'
-import { ProductRepository } from '@contexts/menu/product/domain/repositories/product.repository'
-import { ProductRecipeRepository } from '@contexts/menu/product-recipe/domain/repositories/product-recipe.repository'
-import { DeductIngredient } from '@contexts/inventory/stock-level/application/deduct/deduct-ingredient'
-import { Product } from '@contexts/menu/product/domain/product'
-import { ProductRecipe } from '@contexts/menu/product-recipe/domain/product-recipe'
-import { ProductRecipeItem } from '@contexts/menu/product-recipe/domain/product-recipe-item'
+import {
+  ProductDeductionPlan,
+  ProductDeductionPlanPort,
+  RecipeDeductionItem
+} from '@contexts/orders/order/application/ports/product-deduction-plan.port'
+import { IngredientDeductionPort } from '@contexts/orders/order/application/ports/ingredient-deduction.port'
 import {
   OrderClosedEvent,
   OrderClosedItemPayload
@@ -13,33 +13,22 @@ import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('DeductIngredientsOnOrderClosed', () => {
   let subscriber: DeductIngredientsOnOrderClosed
-  let productRepository: jest.Mocked<ProductRepository>
-  let productRecipeRepository: jest.Mocked<ProductRecipeRepository>
-  let deductIngredient: jest.Mocked<DeductIngredient>
+  let productDeductionPlanPort: jest.Mocked<ProductDeductionPlanPort>
+  let ingredientDeductionPort: jest.Mocked<IngredientDeductionPort>
 
   beforeEach(() => {
-    productRepository = {
-      save: jest.fn(),
-      search: jest.fn(),
-      findBySku: jest.fn(),
-      matching: jest.fn(),
-      delete: jest.fn(),
-      getLastSkuNumber: jest.fn()
+    productDeductionPlanPort = {
+      findPlan: jest.fn(),
+      findRecipeItems: jest.fn()
     } as any
 
-    productRecipeRepository = {
-      save: jest.fn(),
-      findByProductId: jest.fn()
-    } as any
-
-    deductIngredient = {
-      run: jest.fn()
+    ingredientDeductionPort = {
+      deduct: jest.fn()
     } as any
 
     subscriber = new DeductIngredientsOnOrderClosed(
-      productRepository,
-      productRecipeRepository,
-      deductIngredient
+      productDeductionPlanPort,
+      ingredientDeductionPort
     )
   })
 
@@ -86,132 +75,114 @@ describe('DeductIngredientsOnOrderClosed', () => {
   it('should deduct the ingredient directly for a DIRECT-strategy product', async () => {
     const productId = UuidMother.random()
     const ingredientId = UuidMother.random()
-    const product = Product.create(
-      productId,
-      'Bottled Water',
-      UuidMother.random(),
-      2,
-      'SKU-1',
-      'DIRECT',
-      null,
-      ingredientId
-    )
-    productRepository.search.mockResolvedValue(product)
+    const plan: ProductDeductionPlan = { strategy: 'DIRECT', ingredientId }
+    productDeductionPlanPort.findPlan.mockResolvedValue(plan)
 
     const item = buildItem({ productId, quantity: 3 })
     const event = buildEvent([item])
 
     await subscriber.on(event)
 
-    expect(deductIngredient.run).toHaveBeenCalledTimes(1)
-    expect(deductIngredient.run).toHaveBeenCalledWith(
+    expect(ingredientDeductionPort.deduct).toHaveBeenCalledTimes(1)
+    expect(ingredientDeductionPort.deduct).toHaveBeenCalledWith(
       ingredientId,
       3,
       'unit',
       expect.any(String),
-      event.toPrimitives().orderId,
-      null
+      event.toPrimitives().orderId
     )
-    expect(productRecipeRepository.findByProductId).not.toHaveBeenCalled()
+    expect(productDeductionPlanPort.findRecipeItems).not.toHaveBeenCalled()
   })
 
   it('should deduct every scaled recipe ingredient for a RECIPE-strategy product', async () => {
     const productId = UuidMother.random()
-    const product = Product.create(productId, 'Sanguche', UuidMother.random(), 8, 'SKU-2', 'RECIPE')
-    productRepository.search.mockResolvedValue(product)
+    const plan: ProductDeductionPlan = { strategy: 'RECIPE', ingredientId: null }
+    productDeductionPlanPort.findPlan.mockResolvedValue(plan)
 
     const bread = UuidMother.random()
     const meat = UuidMother.random()
-    const recipe = ProductRecipe.create(UuidMother.random(), productId, [
-      ProductRecipeItem.create(bread, 2, 'unit'),
-      ProductRecipeItem.create(meat, 150, 'g')
-    ])
-    productRecipeRepository.findByProductId.mockResolvedValue(recipe)
+    const items: RecipeDeductionItem[] = [
+      { ingredientId: bread, quantity: 2, unitId: 'unit' },
+      { ingredientId: meat, quantity: 150, unitId: 'g' }
+    ]
+    productDeductionPlanPort.findRecipeItems.mockResolvedValue(items)
 
     const item = buildItem({ productId, quantity: 3 })
     const event = buildEvent([item])
 
     await subscriber.on(event)
 
-    expect(deductIngredient.run).toHaveBeenCalledTimes(2)
-    expect(deductIngredient.run).toHaveBeenCalledWith(
+    expect(ingredientDeductionPort.deduct).toHaveBeenCalledTimes(2)
+    expect(ingredientDeductionPort.deduct).toHaveBeenCalledWith(
       bread,
       6,
       'unit',
       expect.any(String),
-      event.toPrimitives().orderId,
-      null
+      event.toPrimitives().orderId
     )
-    expect(deductIngredient.run).toHaveBeenCalledWith(
+    expect(ingredientDeductionPort.deduct).toHaveBeenCalledWith(
       meat,
       450,
       'g',
       expect.any(String),
-      event.toPrimitives().orderId,
-      null
+      event.toPrimitives().orderId
     )
   })
 
   it('should skip deduction for a NONE-strategy product', async () => {
     const productId = UuidMother.random()
-    const product = Product.create(
-      productId,
-      'Merch T-Shirt',
-      UuidMother.random(),
-      15,
-      'SKU-3',
-      'NONE'
-    )
-    productRepository.search.mockResolvedValue(product)
+    const plan: ProductDeductionPlan = { strategy: 'NONE', ingredientId: null }
+    productDeductionPlanPort.findPlan.mockResolvedValue(plan)
 
     const item = buildItem({ productId })
     const event = buildEvent([item])
 
     await subscriber.on(event)
 
-    expect(deductIngredient.run).not.toHaveBeenCalled()
-    expect(productRecipeRepository.findByProductId).not.toHaveBeenCalled()
+    expect(ingredientDeductionPort.deduct).not.toHaveBeenCalled()
+    expect(productDeductionPlanPort.findRecipeItems).not.toHaveBeenCalled()
   })
 
   it('should skip items whose product no longer exists', async () => {
     const productId = UuidMother.random()
-    productRepository.search.mockResolvedValue(null)
+    productDeductionPlanPort.findPlan.mockResolvedValue(null)
 
     const item = buildItem({ productId })
     const event = buildEvent([item])
 
     await subscriber.on(event)
 
-    expect(deductIngredient.run).not.toHaveBeenCalled()
+    expect(ingredientDeductionPort.deduct).not.toHaveBeenCalled()
+  })
+
+  it('should skip deduction when a RECIPE-strategy product has no recipe', async () => {
+    const productId = UuidMother.random()
+    const plan: ProductDeductionPlan = { strategy: 'RECIPE', ingredientId: null }
+    productDeductionPlanPort.findPlan.mockResolvedValue(plan)
+    productDeductionPlanPort.findRecipeItems.mockResolvedValue(null)
+
+    const item = buildItem({ productId })
+    const event = buildEvent([item])
+
+    await expect(subscriber.on(event)).resolves.toBeUndefined()
+
+    expect(ingredientDeductionPort.deduct).not.toHaveBeenCalled()
   })
 
   it('should process multiple order items independently', async () => {
     const directProductId = UuidMother.random()
     const directIngredientId = UuidMother.random()
-    const directProduct = Product.create(
-      directProductId,
-      'Soda',
-      UuidMother.random(),
-      3,
-      'SKU-4',
-      'DIRECT',
-      null,
-      directIngredientId
-    )
+    const directPlan: ProductDeductionPlan = {
+      strategy: 'DIRECT',
+      ingredientId: directIngredientId
+    }
 
     const noneProductId = UuidMother.random()
-    const noneProduct = Product.create(
-      noneProductId,
-      'Sticker',
-      UuidMother.random(),
-      1,
-      'SKU-5',
-      'NONE'
-    )
+    const nonePlan: ProductDeductionPlan = { strategy: 'NONE', ingredientId: null }
 
-    productRepository.search.mockImplementation(id => {
-      if (id.value === directProductId) return Promise.resolve(directProduct)
-      if (id.value === noneProductId) return Promise.resolve(noneProduct)
+    productDeductionPlanPort.findPlan.mockImplementation(productId => {
+      if (productId === directProductId) return Promise.resolve(directPlan)
+      if (productId === noneProductId) return Promise.resolve(nonePlan)
       return Promise.resolve(null)
     })
 
@@ -222,32 +193,22 @@ describe('DeductIngredientsOnOrderClosed', () => {
 
     await subscriber.on(event)
 
-    expect(deductIngredient.run).toHaveBeenCalledTimes(1)
-    expect(deductIngredient.run).toHaveBeenCalledWith(
+    expect(ingredientDeductionPort.deduct).toHaveBeenCalledTimes(1)
+    expect(ingredientDeductionPort.deduct).toHaveBeenCalledWith(
       directIngredientId,
       1,
       'unit',
       expect.any(String),
-      event.toPrimitives().orderId,
-      null
+      event.toPrimitives().orderId
     )
   })
 
   it('should propagate a deduction failure so the caller can roll back the transaction', async () => {
     const productId = UuidMother.random()
     const ingredientId = UuidMother.random()
-    const product = Product.create(
-      productId,
-      'Bottled Water',
-      UuidMother.random(),
-      2,
-      'SKU-6',
-      'DIRECT',
-      null,
-      ingredientId
-    )
-    productRepository.search.mockResolvedValue(product)
-    deductIngredient.run.mockRejectedValue(new Error('No stock available'))
+    const plan: ProductDeductionPlan = { strategy: 'DIRECT', ingredientId }
+    productDeductionPlanPort.findPlan.mockResolvedValue(plan)
+    ingredientDeductionPort.deduct.mockRejectedValue(new Error('No stock available'))
 
     const event = buildEvent([buildItem({ productId })])
 

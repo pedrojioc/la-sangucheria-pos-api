@@ -47,9 +47,6 @@ import { StockLevelModule } from '@contexts/inventory/stock-level/stock-level.mo
 import { OccupyTable } from '@contexts/restaurant/table/application/occupy/occupy-table'
 import { ReleaseTable } from '@contexts/restaurant/table/application/release/release-table'
 import { CustomerRepository } from '@contexts/crm/customer/domain/repositories/customer.repository'
-import { ProductRepository } from '@contexts/menu/product/domain/repositories/product.repository'
-import { ProductRecipeRepository } from '@contexts/menu/product-recipe/domain/repositories/product-recipe.repository'
-import { DeductIngredient } from '@contexts/inventory/stock-level/application/deduct/deduct-ingredient'
 
 import { StationRoutingPort } from '@contexts/orders/order/application/ports/station-routing.port'
 import { TypeOrmStationRoutingAdapter } from '@contexts/orders/order/infrastructure/adapters/typeorm-station-routing.adapter'
@@ -57,6 +54,10 @@ import { TableLabelPort } from '@contexts/orders/order/application/ports/table-l
 import { TypeOrmTableLabelAdapter } from '@contexts/orders/order/infrastructure/adapters/typeorm-table-label.adapter'
 import { EstablishmentSettingsPort } from '@contexts/orders/order/application/ports/establishment-settings.port'
 import { TypeOrmEstablishmentSettingsAdapter } from '@contexts/orders/order/infrastructure/adapters/establishment-settings.adapter'
+import { ProductDeductionPlanPort } from '@contexts/orders/order/application/ports/product-deduction-plan.port'
+import { MenuProductDeductionPlanAdapter } from '@contexts/orders/order/infrastructure/adapters/menu-product-deduction-plan.adapter'
+import { IngredientDeductionPort } from '@contexts/orders/order/application/ports/ingredient-deduction.port'
+import { InventoryIngredientDeductionAdapter } from '@contexts/orders/order/infrastructure/adapters/inventory-ingredient-deduction.adapter'
 
 import { EstablishmentModule } from '@contexts/establishment/establishment/establishment.module'
 
@@ -96,6 +97,14 @@ import { createProvider } from '@core/utils/create-provider'
     {
       provide: EstablishmentSettingsPort,
       useClass: TypeOrmEstablishmentSettingsAdapter
+    },
+    {
+      provide: ProductDeductionPlanPort,
+      useClass: MenuProductDeductionPlanAdapter
+    },
+    {
+      provide: IngredientDeductionPort,
+      useClass: InventoryIngredientDeductionAdapter
     },
 
     // USE CASES
@@ -170,16 +179,10 @@ import { createProvider } from '@core/utils/create-provider'
     {
       provide: DeductIngredientsOnOrderClosed,
       useFactory: (
-        productRepository: ProductRepository,
-        productRecipeRepository: ProductRecipeRepository,
-        deductIngredient: DeductIngredient
-      ) =>
-        new DeductIngredientsOnOrderClosed(
-          productRepository,
-          productRecipeRepository,
-          deductIngredient
-        ),
-      inject: [ProductRepository, ProductRecipeRepository, DeductIngredient]
+        productDeductionPlanPort: ProductDeductionPlanPort,
+        ingredientDeductionPort: IngredientDeductionPort
+      ) => new DeductIngredientsOnOrderClosed(productDeductionPlanPort, ingredientDeductionPort),
+      inject: [ProductDeductionPlanPort, IngredientDeductionPort]
     }
   ],
   exports: [FindOrder, OrderRepository]

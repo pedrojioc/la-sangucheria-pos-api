@@ -123,7 +123,7 @@ const Subscribers = [OnProductRecipeSavedUpdateStrategySubscriber]
     // SUBSCRIBERS
     ...Subscribers
   ],
-  exports: [ProductRepository]
+  exports: [ProductRepository, FindProduct]
 })
 export class ProductModule implements OnModuleInit {
   constructor(

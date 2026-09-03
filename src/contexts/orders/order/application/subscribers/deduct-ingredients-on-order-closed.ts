@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { DomainEventClass, DomainEventSubscriber } from '@shared/domain/events'
 import { OrderClosedEvent } from '../../domain/events/order-closed.event'
-import { ProductRepository } from '@contexts/menu/product/domain/repositories/product.repository'
-import { ProductId } from '@contexts/menu/product/domain/product-id'
-import { ProductRecipeRepository } from '@contexts/menu/product-recipe/domain/repositories/product-recipe.repository'
-import { DeductIngredient } from '@contexts/inventory/stock-level/application/deduct/deduct-ingredient'
+import { ProductDeductionPlanPort } from '../ports/product-deduction-plan.port'
+import { IngredientDeductionPort } from '../ports/ingredient-deduction.port'
 
 const DIRECT_DEDUCTION_UNIT_ID = 'unit'
 const DEDUCTION_REASON = 'Venta de orden'
@@ -12,9 +10,8 @@ const DEDUCTION_REASON = 'Venta de orden'
 @Injectable()
 export class DeductIngredientsOnOrderClosed implements DomainEventSubscriber<OrderClosedEvent> {
   constructor(
-    private readonly productRepository: ProductRepository,
-    private readonly productRecipeRepository: ProductRecipeRepository,
-    private readonly deductIngredient: DeductIngredient
+    private readonly productDeductionPlanPort: ProductDeductionPlanPort,
+    private readonly ingredientDeductionPort: IngredientDeductionPort
   ) {}
 
   subscribedTo(): DomainEventClass[] {
@@ -30,12 +27,12 @@ export class DeductIngredientsOnOrderClosed implements DomainEventSubscriber<Ord
   }
 
   private async deductForItem(orderId: string, productId: string, quantity: number): Promise<void> {
-    const product = await this.productRepository.search(new ProductId(productId))
-    if (!product) return
+    const plan = await this.productDeductionPlanPort.findPlan(productId)
+    if (!plan) return
 
-    switch (product.getInventoryStrategyType()) {
+    switch (plan.strategy) {
       case 'DIRECT':
-        await this.deductDirect(orderId, product.getIngredientId(), quantity)
+        await this.deductDirect(orderId, plan.ingredientId, quantity)
         return
       case 'RECIPE':
         await this.deductRecipe(orderId, productId, quantity)
@@ -52,28 +49,26 @@ export class DeductIngredientsOnOrderClosed implements DomainEventSubscriber<Ord
   ): Promise<void> {
     if (!ingredientId) return
 
-    await this.deductIngredient.run(
+    await this.ingredientDeductionPort.deduct(
       ingredientId,
       quantity,
       DIRECT_DEDUCTION_UNIT_ID,
       DEDUCTION_REASON,
-      orderId,
-      null
+      orderId
     )
   }
 
   private async deductRecipe(orderId: string, productId: string, quantity: number): Promise<void> {
-    const recipe = await this.productRecipeRepository.findByProductId(productId)
-    if (!recipe) return
+    const items = await this.productDeductionPlanPort.findRecipeItems(productId)
+    if (!items) return
 
-    for (const recipeItem of recipe.getItems()) {
-      await this.deductIngredient.run(
-        recipeItem.ingredientId.value,
-        recipeItem.quantity.value * quantity,
-        recipeItem.quantity.unitId,
+    for (const item of items) {
+      await this.ingredientDeductionPort.deduct(
+        item.ingredientId,
+        item.quantity * quantity,
+        item.unitId,
         DEDUCTION_REASON,
-        orderId,
-        null
+        orderId
       )
     }
   }
