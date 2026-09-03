@@ -4,7 +4,7 @@ import { BillingConfigController } from '@contexts/billing/billing-config/presen
 import { GetBillingConfig } from '@contexts/billing/billing-config/application/get-billing-config/get-billing-config'
 import { UpdateBillingConfig } from '@contexts/billing/billing-config/application/update-billing-config/update-billing-config'
 import { BillingNotConfigured } from '@contexts/billing/billing-config/domain/exceptions/billing-not-configured.exception'
-import { BillingConfigResponse } from '@contexts/billing/billing-config/presentation/dtos/billing-config.response'
+import { BillingConfigResponse } from '@contexts/billing/billing-config/application/dto/billing-config.response'
 import { BillingConfigMother } from '../__mothers__/billing-config.mother'
 
 describe('BillingConfigController', () => {

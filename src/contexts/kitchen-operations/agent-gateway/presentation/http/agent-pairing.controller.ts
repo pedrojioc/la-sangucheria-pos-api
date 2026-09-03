@@ -18,7 +18,7 @@ import { EstablishmentRepository } from '@contexts/establishment/establishment/d
 import { GetAgentPairingStatus } from '@contexts/kitchen-operations/agent-gateway/application/get-status/get-agent-pairing-status'
 import { UnpairAgent } from '@contexts/kitchen-operations/agent-gateway/application/unpair/unpair-agent'
 import { RedeemPairingCodeRequest } from './dto/redeem-pairing-code.request'
-import { AgentPairingStatusResponse } from './dto/agent-pairing-status.response'
+import { AgentPairingStatusResponse } from '@contexts/kitchen-operations/agent-gateway/application/dto/agent-pairing-status.response'
 
 export interface RedeemPairingCodeResponse {
   paired: true

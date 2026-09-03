@@ -13,7 +13,7 @@ import { ListPendingInvoices } from '@contexts/billing/invoice/application/list-
 import { RetryInvoice } from '@contexts/billing/invoice/application/retry-invoice/retry-invoice'
 import { InvoiceNotExist } from '@contexts/billing/invoice/domain/exceptions/invoice-not-exist.exception'
 import { InvoiceNotRetryable } from '@contexts/billing/invoice/domain/exceptions/invoice-not-retryable.exception'
-import { InvoiceResponse } from './dtos/invoice.response'
+import { InvoiceResponse } from '@contexts/billing/invoice/application/dto/invoice.response'
 
 @Controller('invoices')
 export class InvoiceController {

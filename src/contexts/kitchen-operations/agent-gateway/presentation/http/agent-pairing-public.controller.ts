@@ -15,9 +15,9 @@ import { PairingCodeNotRedeemable } from '@contexts/kitchen-operations/pairing-c
 import { PairingCodePendingSecretUnavailable } from '@contexts/kitchen-operations/pairing-code/domain/exceptions/pairing-code-pending-secret-unavailable.exception'
 import { Public } from '@/contexts/iam/shared/decorators/public.decorator'
 import { PairingIpThrottleGuard } from '../../infrastructure/guards/pairing-ip-throttle.guard'
-import { StartPairingResponse } from './dto/start-pairing.response'
+import { StartPairingResponse } from '@contexts/kitchen-operations/agent-gateway/application/dto/start-pairing.response'
 import { PollPairingRequest } from './dto/poll-pairing.request'
-import { PollPairingResponse } from './dto/poll-pairing.response'
+import { PollPairingResponse } from '@contexts/kitchen-operations/agent-gateway/application/dto/poll-pairing.response'
 
 // UNAUTHENTICATED by design — Smart-TV-style pairing flow: an agent has no
 // credential yet when it calls these two endpoints. @Public() bypasses the
