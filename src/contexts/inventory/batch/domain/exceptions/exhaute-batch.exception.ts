@@ -1,6 +1,6 @@
-import { DomainException } from '@shared/domain/exceptions/domain.exception'
+import { BusinessRuleViolationException } from '@shared/domain/exceptions/domain.exception'
 
-export class CannotDeductFromExhaustedBatchException extends DomainException {
+export class CannotDeductFromExhaustedBatchException extends BusinessRuleViolationException {
   constructor() {
     super('Cannot deduct from exhausted batch')
   }
