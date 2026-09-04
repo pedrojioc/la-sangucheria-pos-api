@@ -34,7 +34,7 @@ Corré los tests después de cada cambio.
 
 **Group 2 — medium risk, contained blast radius:** findings #7, #8, #6. Follow a mechanical pattern already defined in the skills, but touch more files — do each as its own session.
 
-**Group 3 — cross-context ports, one finding per session:** findings #1, #2, #3, #4. The port shape to copy already exists (`EstablishmentSettingsPort`/`TypeOrmEstablishmentSettingsAdapter` in `orders/order`) — this is direct correction, not new design.
+**Group 3 — cross-context violations, one finding per session:** findings #1, #2, #3, #4. Not all of these need a Port: #1, #2, #4 are direct *pull* calls (fix with Port/Adapter, copying `EstablishmentSettingsPort`/`TypeOrmEstablishmentSettingsAdapter`); #3 is a *push* subscription to another context's Domain Event (fix per `onion-application` Rule 6 — translate on receipt, no Port). Either way this is direct correction, not new design — the pattern to copy already exists in the codebase.
 
 ```
 Lee el hallazgo #2 de docs/architecture/onion-architecture-conformance-audit.md
@@ -73,6 +73,30 @@ módulo, orders/order) como referencia exacta de la forma correcta.
 No toques ningún otro hallazgo en esta sesión.
 ```
 
+Ejemplo para el hallazgo #3 (distinto: es un evento cruzando contexto, *push*, no un Port):
+
+```
+Lee el hallazgo #3 de docs/architecture/onion-architecture-conformance-audit.md
+(kitchen-print-ticket.ts / print-kitchen-ticket-on-order-sent.ts). Cargá
+completas las skills onion-architecture, onion-application y
+onion-infrastructure (.claude/skills/), incluyendo references/rationale.md,
+antes de tocar código.
+
+A diferencia de otros hallazgos cross-context, acá NO hace falta un Port —
+kitchen-operations ya recibe todo el dato que necesita en el payload del
+evento (push), no necesita pedirle nada a orders (pull). El problema real
+es que el tipo de dominio OrderType de orders se propaga sin traducir hasta
+la interfaz local KitchenPrintTicket.
+
+Traducí el payload de OrderSentToKitchenEvent a un tipo propio de
+kitchen-printer (ej. un string/enum local para el tipo de orden) apenas
+llega al subscriber o al dispatcher — no dejes que OrderType de orders
+llegue a KitchenPrintTicket ni a ningún otro tipo propio de kitchen-printer.
+La suscripción al evento en sí está bien como está — no hace falta sacarla.
+
+No toques ningún otro hallazgo en esta sesión.
+```
+
 **Group 4 — CQRS bus migration, one bounded context per session:** finding #5 (99 use cases across 8 contexts). Same direct-correction logic, just large — split by context so each session/PR stays reviewable.
 
 ```
@@ -96,7 +120,7 @@ Repetir cambiando `crm` por el siguiente contexto en cada sesión sucesiva.
 |---|---|---|---|---|
 | 1 | `deduct-ingredients-on-order-closed.ts` imports `menu`/`inventory` domain+application directly, no port | High | Cross-context | `onion-architecture` Rule 4 |
 | 2 | `register-item-reception.ts` imports `inventory`+`shared-kernel` domain directly (3 contexts, no port) | High | Cross-context | `onion-architecture` Rule 4 |
-| 3 | Kitchen-printer subscribers import `orders` domain directly | Medium | Cross-context | `onion-architecture` Rule 4 |
+| 3 | Kitchen-printer subscriber leaks `orders`' `OrderType` into its own local DTO (event push, not a pull call) | Medium | Cross-context (event) | `onion-application` Rule 6 |
 | 4 | `create-product.ts` calls sibling use cases directly, no port | Low | Cross-context | `onion-architecture` Rule 4 |
 | 5 | Two competing use-case orchestration styles (plain `.run()` vs `@nestjs/cqrs` bus) across contexts | High | Application | `onion-architecture` Rule 3 |
 | 6 | Response DTO location split between `application/dto/` and `presentation/dto/` | Medium | Application/Presentation | `onion-architecture` Rule 5 |
@@ -151,7 +175,7 @@ The most severe instance found: **8 domain objects imported directly from 2 othe
 
 **Files:** `src/contexts/kitchen-operations/kitchen-printer/application/kitchen-print-ticket.ts`, `.../subscribers/print-kitchen-ticket-on-order-sent.ts`
 
-Import `OrderType`/`OrderSentToKitchenEvent` straight from `orders/order/domain`. Same category of violation as #1/#2, smaller blast radius (read-only event data, not repositories).
+Import `OrderType`/`OrderSentToKitchenEvent` straight from `orders/order/domain`. **Correction:** this is not the same category as #1/#2 — those are direct *pull* calls (no port), this is an unconsidered subscription to a cross-context Domain Event (*push*). The subscription itself is fine; the violation is `OrderType` (a domain type owned by `orders`) leaking unmapped into `kitchen-printer`'s own `KitchenPrintTicket` interface. Now governed by `onion-application` Rule 6 (Domain Event vs. Integration Event / translate on receipt), not Rule 4/Port-ACL. See the Group 3 prompt below for the #3-specific fix, which does not introduce a Port.
 
 ### 4. `create-product.ts` — Low
 
