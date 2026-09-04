@@ -60,7 +60,10 @@ module.exports = {
       transform: sharedTransform,
       transformIgnorePatterns,
       testEnvironment: 'node',
-      moduleNameMapper: sharedModuleNameMapper
+      moduleNameMapper: sharedModuleNameMapper,
+      globalSetup: '<rootDir>/tests/e2e/support/global-setup.ts',
+      globalTeardown: '<rootDir>/tests/e2e/support/global-teardown.ts',
+      setupFilesAfterEnv: ['<rootDir>/tests/e2e/support/jest-setup.ts']
     }
   ]
 }
