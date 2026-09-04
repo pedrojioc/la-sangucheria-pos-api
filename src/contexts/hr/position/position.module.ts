@@ -11,16 +11,7 @@ import { DeletePosition } from './application/delete/delete-position'
 import { FindPosition } from './application/find/find-position'
 import { FindAllPositions } from './application/find-all/find-all-positions'
 
-import { CreatePositionHandler } from './application/create/create-position.handler'
-import { UpdatePositionHandler } from './application/update/update-position.handler'
-import { DeletePositionHandler } from './application/delete/delete-position.handler'
-import { FindPositionHandler } from './application/find/find-position.handler'
-import { FindAllPositionsHandler } from './application/find-all/find-all-positions.handler'
-
 import { PositionController } from './presentation/http/controllers/position.controller'
-
-const CommandHandlers = [CreatePositionHandler, UpdatePositionHandler, DeletePositionHandler]
-const QueryHandlers = [FindPositionHandler, FindAllPositionsHandler]
 
 @Module({
   imports: [TypeOrmModule.forFeature([PositionEntity])],
@@ -31,9 +22,7 @@ const QueryHandlers = [FindPositionHandler, FindAllPositionsHandler]
     createProvider(UpdatePosition, [PositionRepository]),
     createProvider(DeletePosition, [PositionRepository]),
     createProvider(FindPosition, [PositionRepository]),
-    createProvider(FindAllPositions, [PositionRepository]),
-    ...CommandHandlers,
-    ...QueryHandlers
+    createProvider(FindAllPositions, [PositionRepository])
   ],
   exports: [PositionRepository, FindPosition]
 })
