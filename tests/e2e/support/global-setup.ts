@@ -66,6 +66,10 @@ export default async function globalSetup(): Promise<void> {
 
   // Everything else in env.validation.ts — defaulted so a contributor never needs a
   // gitignored .env.test file (that's the same machine-state coupling this change removes).
+  // KEEP IN SYNC with the required (non-@IsOptional) fields of `EnvironmentVariables` in
+  // src/config/env/env.validation.ts — that file is the source of truth; a new required
+  // field added there must be defaulted here too, or AppModule boot will fail with an
+  // opaque validation error instead of a clear "missing env var" message.
   defaultEnv('NODE_ENV', 'test')
   defaultEnv('PORT', '3000')
   defaultEnv('APP_NAME', 'La Sanguchería POS (e2e)')
@@ -81,9 +85,20 @@ export default async function globalSetup(): Promise<void> {
   // not declared in env.validation.ts, but non-null-asserted at construction time. An
   // ephemeral keypair minted per run is sufficient; no user/DB round trip is required to
   // exercise JwtAuthGuard (design D4).
-  const { publicKey, privateKey } = generateEphemeralRsaKeyPair()
-  defaultEnv('JWT_PUBLIC_KEY', publicKey)
-  defaultEnv('JWT_PRIVATE_KEY', privateKey)
+  //
+  // The pair must be generated and set atomically: if only ONE of JWT_PUBLIC_KEY /
+  // JWT_PRIVATE_KEY is already present in the environment (e.g. a stale value from a
+  // contributor's shell profile), defaulting them independently would pair a pre-existing
+  // key with a freshly generated, unrelated one — Rs256JwtService signs with one key while
+  // JwtStrategy/JwtRefreshStrategy verify with the other, and every authenticated e2e
+  // request fails with an opaque "invalid signature". Generation is also skipped entirely
+  // (not just deferred) when both are already set, avoiding a wasted synchronous 2048-bit
+  // RSA keygen (~50-150ms) on every run.
+  if (!process.env.JWT_PUBLIC_KEY || !process.env.JWT_PRIVATE_KEY) {
+    const { publicKey, privateKey } = generateEphemeralRsaKeyPair()
+    forceEnv('JWT_PUBLIC_KEY', publicKey)
+    forceEnv('JWT_PRIVATE_KEY', privateKey)
+  }
   defaultEnv('JWT_ISSUER', 'la-sangucheria-pos-e2e')
   defaultEnv('JWT_AUDIENCE', 'la-sangucheria-pos-e2e-clients')
   defaultEnv('JWT_ACCESS_EXPIRATION', '15m')
@@ -97,15 +112,29 @@ export default async function globalSetup(): Promise<void> {
   defaultEnv('CLOUDFLARE_IMAGES_API_TOKEN', 'e2e-dummy-api-token')
   defaultEnv('CLOUDFLARE_IMAGES_ACCOUNT_HASH', 'e2e-dummy-account-hash')
 
-  const migrationDataSource = createMigrationDataSource()
-  await migrationDataSource.initialize()
-  // The developer's local Postgres (Postgres.app / homebrew) already has this
-  // extension enabled from some out-of-band setup step; a fresh Testcontainers
-  // image does not. InitialSchemaMigration relies on `uuid_generate_v4()` for
-  // `event_store.id`'s default value, so it must exist before migrations run.
-  // Not a migration-file change (keeps the zero-`src/`-diff boundary) — this
-  // is bootstrap the harness itself owns, same as running migrations.
-  await migrationDataSource.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-  await migrationDataSource.runMigrations()
-  await migrationDataSource.destroy()
+  // From here on the container is already started and stashed on
+  // `global.__PG_CONTAINER__`. Jest's `@jest/core` invokes `globalSetup` and
+  // `globalTeardown` as two independent sequential calls with no surrounding
+  // try/finally of its own — if this function rejects, `globalTeardown` never
+  // runs, and the container leaks (Ryuk, Testcontainers' reaper sidecar, is
+  // often disabled in CI / Docker-in-Docker setups). Explicitly stop the
+  // container on any failure here before re-throwing, so a failed
+  // globalSetup never leaves an orphaned container behind.
+  try {
+    const migrationDataSource = createMigrationDataSource()
+    await migrationDataSource.initialize()
+    // The developer's local Postgres (Postgres.app / homebrew) already has this
+    // extension enabled from some out-of-band setup step; a fresh Testcontainers
+    // image does not. InitialSchemaMigration relies on `uuid_generate_v4()` for
+    // `event_store.id`'s default value, so it must exist before migrations run.
+    // Not a migration-file change (keeps the zero-`src/`-diff boundary) — this
+    // is bootstrap the harness itself owns, same as running migrations.
+    await migrationDataSource.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+    await migrationDataSource.runMigrations()
+    await migrationDataSource.destroy()
+  } catch (error) {
+    await container.stop()
+    global.__PG_CONTAINER__ = undefined
+    throw error
+  }
 }

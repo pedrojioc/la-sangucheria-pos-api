@@ -11,13 +11,23 @@ const ENTITIES_GLOB = __dirname + '/../../../src/**/*.entity{.ts,.js}'
 const MIGRATIONS_GLOB =
   __dirname + '/../../../src/shared/infrastructure/database/typeorm/migrations/*{.ts,.js}'
 
+const REQUIRED_CONTAINER_ENV_VARS = [
+  'DB_HOST',
+  'DB_PORT',
+  'DB_USERNAME',
+  'DB_PASSWORD',
+  'DB_DATABASE'
+] as const
+
 function requireContainerEnv(): void {
-  if (!process.env.DB_HOST) {
+  const missing = REQUIRED_CONTAINER_ENV_VARS.filter((key) => !process.env[key])
+
+  if (missing.length > 0) {
     throw new Error(
-      'DB_HOST is not set. e2e tests must run via `pnpm test:e2e`, which starts the Postgres ' +
-        'testcontainer and forces DB_* env vars in Jest globalSetup ' +
-        '(tests/e2e/support/global-setup.ts). Running this file directly, or outside the ' +
-        '`e2e` Jest project, is not supported — there is no local-Postgres fallback.'
+      `${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} not set. e2e tests must run ` +
+        'via `pnpm test:e2e`, which starts the Postgres testcontainer and forces DB_* env vars ' +
+        'in Jest globalSetup (tests/e2e/support/global-setup.ts). Running this file directly, ' +
+        'or outside the `e2e` Jest project, is not supported — there is no local-Postgres fallback.'
     )
   }
 }
