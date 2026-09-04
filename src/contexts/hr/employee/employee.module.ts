@@ -17,22 +17,7 @@ import { FindEmployee } from './application/find/find-employee'
 import { SearchEmployeesByCriteria } from './application/search-by-criteria/search-employees-by-criteria'
 import { GrantEmployeeAccess } from './application/grant-access/grant-employee-access'
 
-import { CreateEmployeeHandler } from './application/create/create-employee.handler'
-import { UpdateEmployeeHandler } from './application/update/update-employee.handler'
-import { DeleteEmployeeHandler } from './application/delete/delete-employee.handler'
-import { FindEmployeeHandler } from './application/find/find-employee.handler'
-import { SearchEmployeesByCriteriaHandler } from './application/search-by-criteria/search-employees-by-criteria.handler'
-import { GrantEmployeeAccessHandler } from './application/grant-access/grant-employee-access.handler'
-
 import { EmployeeController } from './presentation/http/controllers/employee.controller'
-
-const CommandHandlers = [
-  CreateEmployeeHandler,
-  UpdateEmployeeHandler,
-  DeleteEmployeeHandler,
-  GrantEmployeeAccessHandler
-]
-const QueryHandlers = [FindEmployeeHandler, SearchEmployeesByCriteriaHandler]
 
 @Module({
   imports: [TypeOrmModule.forFeature([EmployeeEntity]), UserModule],
@@ -44,13 +29,10 @@ const QueryHandlers = [FindEmployeeHandler, SearchEmployeesByCriteriaHandler]
     createProvider(CreateEmployee, [EmployeeRepository, EventBus]),
     createProvider(UpdateEmployee, [EmployeeRepository, EventBus]),
     createProvider(DeleteEmployee, [EmployeeRepository]),
-    createProvider(FindEmployee, [EmployeeRepository]),
+    createProvider(FindEmployee, [EmployeeQueryService]),
     createProvider(SearchEmployeesByCriteria, [EmployeeQueryService]),
-    createProvider(GrantEmployeeAccess, [EmployeeRepository, RegisterUser, EventBus]),
-
-    ...CommandHandlers,
-    ...QueryHandlers
+    createProvider(GrantEmployeeAccess, [EmployeeRepository, RegisterUser, EventBus])
   ],
-  exports: [EmployeeRepository, FindEmployee]
+  exports: [EmployeeRepository]
 })
 export class EmployeeModule {}
