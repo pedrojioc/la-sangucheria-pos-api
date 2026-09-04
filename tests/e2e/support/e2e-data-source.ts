@@ -20,7 +20,7 @@ const REQUIRED_CONTAINER_ENV_VARS = [
 ] as const
 
 function requireContainerEnv(): void {
-  const missing = REQUIRED_CONTAINER_ENV_VARS.filter((key) => !process.env[key])
+  const missing = REQUIRED_CONTAINER_ENV_VARS.filter(key => !process.env[key])
 
   if (missing.length > 0) {
     throw new Error(
