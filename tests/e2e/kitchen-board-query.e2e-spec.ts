@@ -1,6 +1,6 @@
 import { DataSource, Repository } from 'typeorm'
+import { INestApplication } from '@nestjs/common'
 
-import { TypeOrmKitchenBoardQueryService } from '@contexts/kitchen-operations/kitchen-board/infrastructure/query-services/typeorm-kitchen-board-query.service'
 import { TypeOrmOrderRepository } from '@contexts/orders/order/infrastructure/persistence/typeorm/typeorm-order.repository'
 import { OrderEntity } from '@contexts/orders/order/infrastructure/persistence/typeorm/order.entity'
 import { OrderItemEntity } from '@contexts/orders/order/infrastructure/persistence/typeorm/order-item.entity'
@@ -9,25 +9,44 @@ import { OrderMother } from '@test/contexts/orders/order/__mothers__/order.mothe
 import { OrderItemMother } from '@test/contexts/orders/order/__mothers__/order-item.mother'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
-import { createE2eDataSource, cleanOrderTables } from './support/e2e-data-source'
+import { KitchenBoardOrderGroup } from '@contexts/kitchen-operations/kitchen-board/application/dto/kitchen-board.response'
+
+import { bootstrapE2eApp, E2eContext } from './support/bootstrap-e2e-app'
+import { truncateTables, ORDER_TABLES } from './support/truncate'
 
 /**
- * Real-Postgres coverage for TypeOrmKitchenBoardQueryService, closing the gap
+ * Real-Postgres coverage for the kitchen board read path, closing the gap
  * left by tests/e2e/ not existing (design decision 4). The mocked
  * QueryBuilder unit tests can assert *call arguments* but cannot faithfully
  * simulate LEFT JOIN / ON-clause semantics — this suite executes the actual
  * SQL against Postgres.
+ *
+ * HYBRID style (design "Spec Migration Plan"): Arrange stays hand-wired
+ * (`TypeOrmOrderRepository` to build fixtures directly against the
+ * container-backed DataSource) — there is no HTTP endpoint to build an order
+ * with specific item statuses, and adding one is out of scope (proposal
+ * non-goal, domain coverage). Act converts to a real HTTP
+ * `GET /kitchen-operations/board` request via `bootstrapE2eApp()`, so the
+ * query service is reached through the real `KitchenBoardController`, the
+ * global `JwtAuthGuard`, and `ClassSerializerInterceptor` — not just the
+ * query service directly.
  */
-describe('TypeOrmKitchenBoardQueryService (e2e)', () => {
+describe('KitchenBoardController (e2e)', () => {
+  let app: INestApplication
   let dataSource: DataSource
+  let http: E2eContext['http']
+  let authHeader: E2eContext['authHeader']
   let orderRepository: Repository<OrderEntity>
   let itemRepository: Repository<OrderItemEntity>
   let repository: TypeOrmOrderRepository
-  let queryService: TypeOrmKitchenBoardQueryService
 
   beforeAll(async () => {
-    dataSource = createE2eDataSource()
-    await dataSource.initialize()
+    const context = await bootstrapE2eApp()
+    app = context.app
+    dataSource = context.dataSource
+    http = context.http
+    authHeader = context.authHeader
+
     orderRepository = dataSource.getRepository(OrderEntity)
     itemRepository = dataSource.getRepository(OrderItemEntity)
     repository = new TypeOrmOrderRepository(
@@ -36,23 +55,31 @@ describe('TypeOrmKitchenBoardQueryService (e2e)', () => {
       dataSource,
       new UnitOfWorkContextHolder()
     )
-    queryService = new TypeOrmKitchenBoardQueryService(orderRepository)
   })
 
   afterAll(async () => {
-    await cleanOrderTables(dataSource)
-    await dataSource.destroy()
+    await app.close()
   })
 
   beforeEach(async () => {
-    await cleanOrderTables(dataSource)
+    await truncateTables(dataSource, ORDER_TABLES)
   })
+
+  const getBoard = async (stationId?: string): Promise<KitchenBoardOrderGroup[]> => {
+    const response = await http()
+      .get('/kitchen-operations/board')
+      .query(stationId ? { stationId } : {})
+      .set(...(await authHeader()))
+
+    expect(response.status).toBe(200)
+    return response.body as KitchenBoardOrderGroup[]
+  }
 
   it('produces exactly one board group with items: [] for an OPEN order with zero order_items rows', async () => {
     const order = OrderMother.create({ status: OrderStatus.OPEN, items: [] })
     await repository.save(order)
 
-    const board = await queryService.findActiveByStation()
+    const board = await getBoard()
     const group = board.find(g => g.orderId === order.toPrimitives().id)
 
     // Deliberately-wrong assertion first: asserting the group is absent
@@ -78,17 +105,17 @@ describe('TypeOrmKitchenBoardQueryService (e2e)', () => {
     })
     await repository.save(order)
 
-    const unfiltered = await queryService.findActiveByStation()
+    const unfiltered = await getBoard()
     const unfilteredGroup = unfiltered.find(g => g.orderId === order.toPrimitives().id)!
     const unfilteredItemIds = unfilteredGroup.items.map(i => i.itemId).sort()
     expect(unfilteredItemIds).toEqual([sentOnA.id, readyOnA.id, sentOnB.id].sort())
 
-    const filteredByStationA = await queryService.findActiveByStation(stationA)
+    const filteredByStationA = await getBoard(stationA)
     const groupA = filteredByStationA.find(g => g.orderId === order.toPrimitives().id)!
     const stationAItemIds = groupA.items.map(i => i.itemId).sort()
     expect(stationAItemIds).toEqual([sentOnA.id, readyOnA.id].sort())
 
-    const filteredByStationB = await queryService.findActiveByStation(stationB)
+    const filteredByStationB = await getBoard(stationB)
     const groupB = filteredByStationB.find(g => g.orderId === order.toPrimitives().id)!
     expect(groupB.items.map(i => i.itemId)).toEqual([sentOnB.id])
   })
@@ -102,7 +129,7 @@ describe('TypeOrmKitchenBoardQueryService (e2e)', () => {
     })
     await repository.save(order)
 
-    const board = await queryService.findActiveByStation()
+    const board = await getBoard()
     const group = board.find(g => g.orderId === order.toPrimitives().id)!
 
     expect(group.items.map(i => i.itemId)).toEqual([sentItem.id])
