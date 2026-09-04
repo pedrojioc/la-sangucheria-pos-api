@@ -10,13 +10,27 @@ import { OrderMother } from '@test/contexts/orders/order/__mothers__/order.mothe
 import { OrderItemMother } from '@test/contexts/orders/order/__mothers__/order-item.mother'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
-import { createE2eDataSource, cleanOrderTables } from './support/e2e-data-source'
+import { createE2eDataSource } from './support/e2e-data-source'
+import { truncateTables, ORDER_TABLES } from './support/truncate'
 
 /**
  * Real-Postgres coverage for TypeOrmOrderRepository, closing the gap left by
  * the `describe.skip('TypeOrmOrderRepository (transactional integration)')`
  * block in tests/contexts/orders/order/infrastructure/persistence/typeorm/typeorm-order.repository.spec.ts
  * (design decisions 1 and 2, tasks 2.6/2.8).
+ *
+ * DOCUMENTED HAND-WIRED-STYLE EXCEPTION (spec requirement "Hand-wired style
+ * requires a documented reason"): this spec deliberately bypasses the HTTP
+ * boundary and drives `TypeOrmOrderRepository` directly. It asserts
+ * persistence-mapping internals — replace-children DELETE vs UPDATE
+ * semantics and the `searchWithActiveKitchenItems()` EXISTS-subquery filter —
+ * that no HTTP endpoint exposes. Converting it to HTTP would weaken these
+ * assertions to whatever a controller happens to serialize back, exactly the
+ * risk the proposal names. Only the connection source changed here: this
+ * spec now runs against the Testcontainers-backed Postgres via
+ * `createE2eDataSource()`, and truncation uses the composable
+ * `truncateTables()` helper (the former `cleanOrderTables()` shim has been
+ * deleted from `e2e-data-source.ts`).
  */
 describe('TypeOrmOrderRepository (e2e)', () => {
   let dataSource: DataSource
@@ -38,12 +52,12 @@ describe('TypeOrmOrderRepository (e2e)', () => {
   })
 
   afterAll(async () => {
-    await cleanOrderTables(dataSource)
+    await truncateTables(dataSource, ORDER_TABLES)
     await dataSource.destroy()
   })
 
   beforeEach(async () => {
-    await cleanOrderTables(dataSource)
+    await truncateTables(dataSource, ORDER_TABLES)
   })
 
   describe('save() replace-children semantics', () => {

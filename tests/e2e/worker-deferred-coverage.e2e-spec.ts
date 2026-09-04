@@ -27,9 +27,11 @@ import {
  * own EventBusRouter with real, DI-resolved subscribers — that's the only
  * way to observe the runtime registration surface, since there is no static
  * subscriber→module map anywhere in the codebase. AppModule needs the real
- * DataSource DatabaseModule.forRootAsync builds against local Postgres, so
- * this cannot live in the unit project (no DB, ts-jest `unit` project only
- * mocks repositories). Runs under `pnpm test:all` / `pnpm test:e2e`, NOT
+ * DataSource DatabaseModule.forRootAsync builds against — the ephemeral
+ * Testcontainers-backed Postgres started in `tests/e2e/support/
+ * global-setup.ts`, not a locally running Postgres instance — so this cannot
+ * live in the unit project (no DB, ts-jest `unit` project only mocks
+ * repositories). Runs under `pnpm test:all` / `pnpm test:e2e`, NOT
  * `pnpm test` (unit).
  *
  * MECHANISM: compile + init() both modules, read each EventBusRouter's
