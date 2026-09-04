@@ -56,9 +56,7 @@ describe('IngredientCategoryController (e2e)', () => {
 
       expect(response.status).toBe(201)
 
-      const rows = await dataSource.query('SELECT * FROM ingredient_categories WHERE id = $1', [
-        id
-      ])
+      const rows = await dataSource.query('SELECT * FROM ingredient_categories WHERE id = $1', [id])
 
       expect(rows).toHaveLength(1)
       expect(rows[0].name).toBe('Bebidas')

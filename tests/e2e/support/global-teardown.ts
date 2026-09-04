@@ -1,7 +1,6 @@
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 
 declare global {
-  // eslint-disable-next-line no-var -- see global-setup.ts
   var __PG_CONTAINER__: StartedPostgreSqlContainer | undefined
 }
 

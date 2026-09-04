@@ -3,7 +3,6 @@ import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers
 import { createMigrationDataSource } from './e2e-data-source'
 
 declare global {
-  // eslint-disable-next-line no-var -- Jest globalSetup/globalTeardown contract: state must
   // survive as a plain global between the two hook modules, which are loaded independently.
   var __PG_CONTAINER__: StartedPostgreSqlContainer | undefined
 }
