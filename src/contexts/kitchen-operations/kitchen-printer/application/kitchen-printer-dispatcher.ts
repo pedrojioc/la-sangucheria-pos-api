@@ -1,4 +1,5 @@
 import { OrderSentToKitchenEvent } from '@contexts/orders/order/domain/events/order-sent-to-kitchen.event'
+import { OrderType } from '@contexts/orders/order/domain/order-type'
 import { DISCOVERED_DEVICE_STALE_TTL_MS } from '@contexts/kitchen-operations/printer-discovery/application/find-all/find-discovered-devices'
 import { Uuid } from '@shared/domain/value-objects/uuid'
 import { KitchenPrinterPort } from './ports/kitchen-printer.port'
@@ -9,7 +10,19 @@ import {
 import { KitchenAgentNotifierPort } from './ports/kitchen-agent-notifier.port'
 import { KitchenTicketPrintJobRepository } from '../domain/repositories/kitchen-ticket-print-job.repository'
 import { KitchenTicketPrintJob } from '../domain/kitchen-ticket-print-job'
+import { KitchenOrderType } from '../domain/kitchen-order-type'
 import { KitchenPrintTicket } from './kitchen-print-ticket'
+
+// Exhaustive translation from orders' OrderType into kitchen-printer's own
+// KitchenOrderType, at the cross-context boundary (Onion Rule 6). Using
+// Record<OrderType, KitchenOrderType> — not a switch with a default — means
+// adding a member to orders' OrderType without updating this map is a
+// TypeScript compile error, not a silent runtime fallthrough.
+const ORDER_TYPE_TRANSLATION: Record<OrderType, KitchenOrderType> = {
+  [OrderType.DINE_IN]: KitchenOrderType.DINE_IN,
+  [OrderType.DELIVERY]: KitchenOrderType.DELIVERY,
+  [OrderType.TAKEOUT]: KitchenOrderType.TAKEOUT
+}
 
 export class KitchenPrinterDispatcher {
   constructor(
@@ -55,7 +68,7 @@ export class KitchenPrinterDispatcher {
         printerAddress: station.printerAddress,
         usbIdentifier: station.usbIdentifier,
         sentAt: payload.sentAt,
-        orderType: payload.orderType,
+        orderType: ORDER_TYPE_TRANSLATION[payload.orderType],
         // Original dispatch is never a reprint. Manual reprint re-dispatches
         // through ReprintKitchenTicket with isReprint: true instead.
         isReprint: false,

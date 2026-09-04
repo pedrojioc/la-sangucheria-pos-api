@@ -5,7 +5,7 @@ import { KitchenTicketPrintJob } from '@contexts/kitchen-operations/kitchen-prin
 import { KitchenTicketPrintJobNotFound } from '@contexts/kitchen-operations/kitchen-printer/domain/exceptions/kitchen-ticket-print-job-not-found.exception'
 import { KitchenTicketPrintJobNotReprintable } from '@contexts/kitchen-operations/kitchen-printer/domain/exceptions/kitchen-ticket-print-job-not-reprintable.exception'
 import { KitchenPrintTicket } from '@contexts/kitchen-operations/kitchen-printer/application/kitchen-print-ticket'
-import { OrderType } from '@contexts/orders/order/domain/order-type'
+import { KitchenOrderType } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-order-type'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('ReprintKitchenTicket', () => {
@@ -21,7 +21,7 @@ describe('ReprintKitchenTicket', () => {
     printerAddress: null,
     usbIdentifier: 'LP-1',
     sentAt: new Date('2026-07-18T15:30:00Z'),
-    orderType: OrderType.DINE_IN,
+    orderType: KitchenOrderType.DINE_IN,
     isReprint: false,
     items: [{ productName: 'Choripan', quantity: 2, notes: null, modifiers: ['Extra queso'] }]
   })

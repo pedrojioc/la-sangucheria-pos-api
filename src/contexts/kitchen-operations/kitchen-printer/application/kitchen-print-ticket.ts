@@ -1,4 +1,4 @@
-import { OrderType } from '@contexts/orders/order/domain/order-type'
+import { KitchenOrderType } from '../domain/kitchen-order-type'
 
 export interface KitchenPrintTicket {
   ticketNumber: number
@@ -8,7 +8,7 @@ export interface KitchenPrintTicket {
   printerAddress: string | null
   usbIdentifier: string | null
   sentAt: Date
-  orderType: OrderType
+  orderType: KitchenOrderType
   isReprint: boolean
   items: Array<{
     productName: string

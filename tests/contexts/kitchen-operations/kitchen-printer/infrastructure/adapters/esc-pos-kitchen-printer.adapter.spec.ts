@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { KitchenPrintTicketMother } from '../../__mothers__/kitchen-print-ticket.mother'
 
 const mockPrinterInstance = {
@@ -21,7 +22,7 @@ jest.mock('node-thermal-printer', () => ({
 }))
 
 import { EscPosKitchenPrinterAdapter } from '@contexts/kitchen-operations/kitchen-printer/infrastructure/adapters/esc-pos-kitchen-printer.adapter'
-import { OrderType } from '@contexts/orders/order/domain/order-type'
+import { KitchenOrderType } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-order-type'
 
 describe('EscPosKitchenPrinterAdapter', () => {
   let adapter: EscPosKitchenPrinterAdapter
@@ -213,7 +214,7 @@ describe('EscPosKitchenPrinterAdapter', () => {
     })
 
     it('renders a centered/inverted PARA LLEVAR badge for TAKEOUT orders', async () => {
-      const ticket = KitchenPrintTicketMother.create({ orderType: OrderType.TAKEOUT })
+      const ticket = KitchenPrintTicketMother.create({ orderType: KitchenOrderType.TAKEOUT })
 
       await adapter.print(ticket)
 
@@ -226,7 +227,7 @@ describe('EscPosKitchenPrinterAdapter', () => {
     })
 
     it('renders a centered/inverted DELIVERY badge for DELIVERY orders', async () => {
-      const ticket = KitchenPrintTicketMother.create({ orderType: OrderType.DELIVERY })
+      const ticket = KitchenPrintTicketMother.create({ orderType: KitchenOrderType.DELIVERY })
 
       await adapter.print(ticket)
 
@@ -236,7 +237,7 @@ describe('EscPosKitchenPrinterAdapter', () => {
 
     it('renders no order-type badge for DINE_IN orders', async () => {
       const ticket = KitchenPrintTicketMother.create({
-        orderType: OrderType.DINE_IN,
+        orderType: KitchenOrderType.DINE_IN,
         tableLabel: 'Mesa 3'
       })
 
@@ -246,6 +247,23 @@ describe('EscPosKitchenPrinterAdapter', () => {
       expect(printedLines.some(line => line.includes('PARA LLEVAR'))).toBe(false)
       expect(printedLines.some(line => line.includes('DELIVERY'))).toBe(false)
       expect(printedLines).toEqual(expect.arrayContaining([expect.stringContaining('Mesa 3')]))
+    })
+
+    it('(boundary integrity) does not import OrderType from the orders context', () => {
+      // Source-level assertion, not behavioral: orders' OrderType and this
+      // module's KitchenOrderType are both string enums with byte-identical
+      // values, so a runtime badge assertion alone can never distinguish a
+      // translated ticket from an untranslated one. Read the adapter's own
+      // source to assert the leak import is gone (spec requirement:
+      // "ESC/POS adapter has no orders import").
+      const adapterSource = readFileSync(
+        require.resolve(
+          '@contexts/kitchen-operations/kitchen-printer/infrastructure/adapters/esc-pos-kitchen-printer.adapter'
+        ),
+        'utf-8'
+      )
+
+      expect(adapterSource).not.toContain('@contexts/orders/order/domain/order-type')
     })
 
     it('renders a REIMPRESIÓN stamp when isReprint is true', async () => {

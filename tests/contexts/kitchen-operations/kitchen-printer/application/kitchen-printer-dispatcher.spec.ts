@@ -5,6 +5,7 @@ import { KitchenAgentNotifierPort } from '@contexts/kitchen-operations/kitchen-p
 import { KitchenTicketPrintJobRepository } from '@contexts/kitchen-operations/kitchen-printer/domain/repositories/kitchen-ticket-print-job.repository'
 import { OrderSentToKitchenEvent } from '@contexts/orders/order/domain/events/order-sent-to-kitchen.event'
 import { OrderType } from '@contexts/orders/order/domain/order-type'
+import { KitchenOrderType } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-order-type'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('KitchenPrinterDispatcher', () => {
@@ -310,13 +311,12 @@ describe('KitchenPrinterDispatcher', () => {
     expect(ticket.items[0].modifiers).toEqual(['Extra queso', 'Sin cebolla'])
   })
 
-  it('threads sentAt and orderType from the event payload onto the ticket', async () => {
+  it('threads sentAt from the event payload onto the ticket', async () => {
     const stationId = UuidMother.random()
     const sentAt = new Date('2026-07-18T15:30:00Z')
 
     const event = buildEvent({
       sentAt,
-      orderType: OrderType.TAKEOUT,
       items: [
         {
           itemId: UuidMother.random(),
@@ -344,8 +344,54 @@ describe('KitchenPrinterDispatcher', () => {
 
     const ticket = printerPort.print.mock.calls[0][0]
     expect(ticket.sentAt).toBe(sentAt)
-    expect(ticket.orderType).toBe(OrderType.TAKEOUT)
   })
+
+  it.each([
+    [OrderType.DINE_IN, KitchenOrderType.DINE_IN],
+    [OrderType.DELIVERY, KitchenOrderType.DELIVERY],
+    [OrderType.TAKEOUT, KitchenOrderType.TAKEOUT]
+  ])(
+    'translates orders OrderType.%s into KitchenOrderType.%s on the ticket',
+    async (orderType, expected) => {
+      const stationId = UuidMother.random()
+
+      const event = buildEvent({
+        orderType,
+        items: [
+          {
+            itemId: UuidMother.random(),
+            stationId,
+            productName: 'Choripan',
+            quantity: 1,
+            notes: null,
+            modifiers: []
+          }
+        ]
+      })
+
+      stationResolver.resolvePrinterStations.mockResolvedValue([
+        {
+          stationId,
+          stationName: 'Parrilla',
+          connectionType: 'network',
+          printerAddress: '192.168.1.10',
+          usbIdentifier: null,
+          lastSeenAt: new Date()
+        }
+      ])
+
+      await dispatcher.run(event)
+
+      const ticket = printerPort.print.mock.calls[0][0]
+      // Type-level assertion: ticket.orderType must be statically typed as
+      // KitchenOrderType (not orders' OrderType) — this line fails to compile
+      // until KitchenPrintTicket.orderType is retyped (Phase 3) and the
+      // dispatcher actually translates (Phase 2), since string enum values are
+      // runtime-identical and toBe() alone can't distinguish them.
+      const typedOrderType: KitchenOrderType = ticket.orderType
+      expect(typedOrderType).toBe(expected)
+    }
+  )
 
   it('always sets isReprint to false on the ticket', async () => {
     const stationId = UuidMother.random()

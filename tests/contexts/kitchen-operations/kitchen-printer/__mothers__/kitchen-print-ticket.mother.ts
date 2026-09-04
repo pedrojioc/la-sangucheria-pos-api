@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker'
 import { KitchenPrintTicket } from '@contexts/kitchen-operations/kitchen-printer/application/kitchen-print-ticket'
-import { OrderType } from '@contexts/orders/order/domain/order-type'
+import { KitchenOrderType } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-order-type'
 
 export class KitchenPrintTicketMother {
   static create(params: Partial<KitchenPrintTicket> = {}): KitchenPrintTicket {
@@ -12,7 +12,7 @@ export class KitchenPrintTicketMother {
       printerAddress: params.printerAddress ?? '192.168.1.50',
       usbIdentifier: params.usbIdentifier ?? null,
       sentAt: params.sentAt ?? new Date(),
-      orderType: params.orderType ?? OrderType.DINE_IN,
+      orderType: params.orderType ?? KitchenOrderType.DINE_IN,
       isReprint: params.isReprint ?? false,
       items: params.items ?? [
         {

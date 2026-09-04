@@ -5,7 +5,7 @@ import { ReprintKitchenTicket } from '@contexts/kitchen-operations/kitchen-print
 import { KitchenTicketPrintJob } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-ticket-print-job'
 import { KitchenTicketPrintJobNotFound } from '@contexts/kitchen-operations/kitchen-printer/domain/exceptions/kitchen-ticket-print-job-not-found.exception'
 import { KitchenPrintTicket } from '@contexts/kitchen-operations/kitchen-printer/application/kitchen-print-ticket'
-import { OrderType } from '@contexts/orders/order/domain/order-type'
+import { KitchenOrderType } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-order-type'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('KitchenPrintJobController', () => {
@@ -22,7 +22,7 @@ describe('KitchenPrintJobController', () => {
     printerAddress: null,
     usbIdentifier: 'usb-device-1',
     sentAt: new Date(),
-    orderType: OrderType.DINE_IN,
+    orderType: KitchenOrderType.DINE_IN,
     isReprint: false,
     items: []
   })
