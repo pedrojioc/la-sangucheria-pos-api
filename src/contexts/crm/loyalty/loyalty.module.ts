@@ -1,6 +1,5 @@
 import { Module, OnModuleInit } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { CqrsModule } from '@nestjs/cqrs'
 
 import { LoyaltyAccountEntity } from './infrastructure/persistence/typeorm/loyalty-account.entity'
 import { LoyaltyAccountRepository } from './domain/repositories/loyalty-account.repository'
@@ -13,7 +12,7 @@ import { CreateLoyaltyAccountOnCustomerCreated } from './application/subscribers
 import { createProvider } from '@/core/utils/create-provider'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([LoyaltyAccountEntity]), CqrsModule],
+  imports: [TypeOrmModule.forFeature([LoyaltyAccountEntity])],
   providers: [
     { provide: LoyaltyAccountRepository, useClass: TypeOrmLoyaltyAccountRepository },
 

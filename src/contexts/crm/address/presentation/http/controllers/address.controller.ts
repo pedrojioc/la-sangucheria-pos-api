@@ -10,27 +10,29 @@ import {
   Put,
   UseInterceptors
 } from '@nestjs/common'
-import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 import { AddAddressRequest } from '../dto/add-address.request'
 import { UpdateAddressRequest } from '../dto/update-address.request'
-import { AddAddressCommand } from '../../../application/add/add-address.command'
-import { UpdateAddressCommand } from '../../../application/update/update-address.command'
-import { RemoveAddressCommand } from '../../../application/remove/remove-address.command'
-import { SetDefaultAddressCommand } from '../../../application/set-default/set-default-address.command'
-import { FindAddressesByCustomerQuery } from '../../../application/find-by-customer/find-addresses-by-customer.query'
+import { AddAddress } from '../../../application/add/add-address'
+import { UpdateAddress } from '../../../application/update/update-address'
+import { RemoveAddress } from '../../../application/remove/remove-address'
+import { SetDefaultAddress } from '../../../application/set-default/set-default-address'
+import { FindAddressesByCustomer } from '../../../application/find-by-customer/find-addresses-by-customer'
 import { AddressResponse } from '../../../application/dto/address.response'
 
 @Controller('customers/:customerId/addresses')
 export class AddressController {
   constructor(
-    private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus
+    private readonly addAddress: AddAddress,
+    private readonly updateAddress: UpdateAddress,
+    private readonly removeAddress: RemoveAddress,
+    private readonly setDefaultAddress: SetDefaultAddress,
+    private readonly findAddressesByCustomer: FindAddressesByCustomer
   ) {}
 
   @Get()
   findAll(@Param('customerId') customerId: string): Promise<AddressResponse[]> {
-    return this.queryBus.execute(new FindAddressesByCustomerQuery(customerId))
+    return this.findAddressesByCustomer.run(customerId)
   }
 
   @Post()
@@ -40,32 +42,28 @@ export class AddressController {
     @Param('customerId') customerId: string,
     @Body() dto: AddAddressRequest
   ): Promise<void> {
-    await this.commandBus.execute(
-      new AddAddressCommand(
-        dto.id,
-        customerId,
-        dto.label,
-        dto.street,
-        dto.neighborhood ?? null,
-        dto.city,
-        dto.reference ?? null,
-        dto.coordinates ?? null
-      )
+    await this.addAddress.run(
+      dto.id,
+      customerId,
+      dto.label,
+      dto.street,
+      dto.neighborhood ?? null,
+      dto.city,
+      dto.reference ?? null,
+      dto.coordinates ?? null
     )
   }
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateAddressRequest): Promise<void> {
-    await this.commandBus.execute(
-      new UpdateAddressCommand(
-        id,
-        dto.label,
-        dto.street,
-        dto.neighborhood ?? null,
-        dto.city,
-        dto.reference ?? null,
-        dto.coordinates ?? null
-      )
+    await this.updateAddress.run(
+      id,
+      dto.label,
+      dto.street,
+      dto.neighborhood ?? null,
+      dto.city,
+      dto.reference ?? null,
+      dto.coordinates ?? null
     )
   }
 
@@ -73,7 +71,7 @@ export class AddressController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseInterceptors(TransactionInterceptor)
   async remove(@Param('customerId') customerId: string, @Param('id') id: string): Promise<void> {
-    await this.commandBus.execute(new RemoveAddressCommand(id, customerId))
+    await this.removeAddress.run(id, customerId)
   }
 
   @Post(':id/set-default')
@@ -82,6 +80,6 @@ export class AddressController {
     @Param('customerId') customerId: string,
     @Param('id') id: string
   ): Promise<void> {
-    await this.commandBus.execute(new SetDefaultAddressCommand(id, customerId))
+    await this.setDefaultAddress.run(id, customerId)
   }
 }

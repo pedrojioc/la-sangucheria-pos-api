@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { CqrsModule } from '@nestjs/cqrs'
 
 import { AddressEntity } from './infrastructure/persistence/typeorm/address.entity'
 import { AddressRepository } from './domain/repositories/address.repository'
@@ -16,27 +15,12 @@ import { RemoveAddress } from './application/remove/remove-address'
 import { SetDefaultAddress } from './application/set-default/set-default-address'
 import { FindAddressesByCustomer } from './application/find-by-customer/find-addresses-by-customer'
 
-import { AddAddressHandler } from './application/add/add-address.handler'
-import { UpdateAddressHandler } from './application/update/update-address.handler'
-import { RemoveAddressHandler } from './application/remove/remove-address.handler'
-import { SetDefaultAddressHandler } from './application/set-default/set-default-address.handler'
-import { FindAddressesByCustomerHandler } from './application/find-by-customer/find-addresses-by-customer.handler'
-
 import { AddressController } from './presentation/http/controllers/address.controller'
 
 import { createProvider } from '@/core/utils/create-provider'
 
-const CommandHandlers = [
-  AddAddressHandler,
-  UpdateAddressHandler,
-  RemoveAddressHandler,
-  SetDefaultAddressHandler
-]
-
-const QueryHandlers = [FindAddressesByCustomerHandler]
-
 @Module({
-  imports: [TypeOrmModule.forFeature([AddressEntity]), CqrsModule, CustomerModule],
+  imports: [TypeOrmModule.forFeature([AddressEntity]), CustomerModule],
   controllers: [AddressController],
   providers: [
     { provide: AddressRepository, useClass: TypeOrmAddressRepository },
@@ -45,10 +29,7 @@ const QueryHandlers = [FindAddressesByCustomerHandler]
     createProvider(UpdateAddress, [AddressRepository, EventBus]),
     createProvider(RemoveAddress, [AddressRepository, CustomerRepository, EventBus]),
     createProvider(SetDefaultAddress, [AddressRepository, CustomerRepository, EventBus]),
-    createProvider(FindAddressesByCustomer, [AddressRepository]),
-
-    ...CommandHandlers,
-    ...QueryHandlers
+    createProvider(FindAddressesByCustomer, [AddressRepository])
   ],
   exports: [AddressRepository]
 })
