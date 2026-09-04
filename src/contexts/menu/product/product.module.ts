@@ -51,7 +51,10 @@ import { createProvider } from '@/core/utils/create-provider'
 import { LocalFileStorage } from '@/shared/infrastructure/storage/local/local-file-storage.service'
 import { FileStorageRepository } from '@/shared/domain/file-storage'
 import { FindProductCategory } from '@/contexts/menu/product-category/application/find/find-product-category'
-import { FindIngredient } from '@/contexts/inventory/ingredient/application/find/find-ingredient'
+
+// Ports (ACL)
+import { IngredientExistencePort } from '@/contexts/menu/product/application/ports/ingredient-existence.port'
+import { IngredientExistenceAdapter } from '@/contexts/menu/product/infrastructure/adapters/ingredient-existence.adapter'
 
 const CommandHandlers = [
   CreateProductCommandHandler,
@@ -81,6 +84,12 @@ const Subscribers = [OnProductRecipeSavedUpdateStrategySubscriber]
       useExisting: LocalFileStorage
     },
 
+    // PORTS (ACL)
+    {
+      provide: IngredientExistencePort,
+      useClass: IngredientExistenceAdapter
+    },
+
     // QUERY SERVICES
     {
       provide: ProductQueryService,
@@ -95,14 +104,14 @@ const Subscribers = [OnProductRecipeSavedUpdateStrategySubscriber]
     createProvider(CreateProduct, [
       ProductRepository,
       FindProductCategory,
-      FindIngredient,
+      IngredientExistencePort,
       FileStorageRepository,
       EventBus
     ]),
     createProvider(UpdateProduct, [
       ProductRepository,
       FindProductCategory,
-      FindIngredient,
+      IngredientExistencePort,
       FileStorageRepository,
       EventBus
     ]),

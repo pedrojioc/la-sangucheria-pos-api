@@ -9,13 +9,13 @@ import { FileStorageRepository } from '@/shared/domain/file-storage/repositories
 import { FileUploadPrimitives } from '@/shared/domain/file-storage/file-upload'
 import { ProductImageUpload } from '../../domain/product-image-upload'
 import { FindProductCategory } from '@/contexts/menu/product-category/application/find/find-product-category'
-import { FindIngredient } from '@/contexts/inventory/ingredient/application/find/find-ingredient'
+import { IngredientExistencePort } from '../ports/ingredient-existence.port'
 
 export class CreateProduct {
   constructor(
     private readonly productRepository: ProductRepository,
     private readonly findProductCategory: FindProductCategory,
-    private readonly findIngredient: FindIngredient,
+    private readonly ingredientExistence: IngredientExistencePort,
     private readonly fileStorage: FileStorageRepository,
     private readonly eventBus: EventBus
   ) {}
@@ -44,7 +44,7 @@ export class CreateProduct {
     }
 
     if (inventoryStrategyType === 'DIRECT' && ingredientId) {
-      await this.findIngredient.run(ingredientId)
+      await this.ingredientExistence.ensureExists(ingredientId)
     }
 
     let imageUrl: string | null = null
