@@ -13,6 +13,12 @@ import { JwtAuthGuard } from '@/contexts/iam/authentication/infrastructure/guard
 import { JwtService } from '@/contexts/iam/authentication/domain/services/jwt.service'
 import { signAccessToken } from './auth'
 
+// TODO(e2e-debt): the `let app/dataSource/http/authHeader` + `beforeAll`
+// destructuring boilerplate for consuming this context is duplicated
+// verbatim across kitchen-board-query.e2e-spec.ts,
+// purchase-reception-atomicity.e2e-spec.ts, and
+// ingredient-category.e2e-spec.ts. A shared setup helper could reduce this
+// repetition if a 4th+ spec adopts the same pattern.
 export interface E2eContext {
   app: INestApplication<App>
   dataSource: DataSource

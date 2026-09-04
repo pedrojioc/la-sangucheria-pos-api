@@ -65,19 +65,3 @@ export function createMigrationDataSource(): DataSource {
     migrationsTableName: 'migrations'
   })
 }
-
-/**
- * TEMPORARY COMPATIBILITY SHIM — PR1 of 3 ("container swap only").
- *
- * Kept so `kitchen-board-query.e2e-spec.ts` and `order-repository.e2e-spec.ts`
- * keep compiling and passing in this PR without also being migrated here.
- * The composable `truncateTables`/`resetDatabase` helper (design D6,
- * `tests/e2e/support/truncate.ts`) replaces this in PR2/PR3 (tasks 2.1,
- * 3.3), at which point both callers switch over and this function is
- * deleted. Behavior is unchanged from before this PR — only the connection
- * now targets the container instead of local Postgres.
- */
-export async function cleanOrderTables(dataSource: DataSource): Promise<void> {
-  await dataSource.query('DELETE FROM order_items')
-  await dataSource.query('DELETE FROM orders')
-}

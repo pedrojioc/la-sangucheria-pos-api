@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm'
+import { INestApplication } from '@nestjs/common'
 
 import { TypeOrmPurchaseOrderRepository } from '@contexts/procurement/purchase-order/infrastructure/persistence/typeorm/typeorm-purchase-order.repository'
 import { PurchaseOrderEntity } from '@contexts/procurement/purchase-order/infrastructure/persistence/typeorm/purchase-order.entity'
@@ -27,8 +28,10 @@ import { TypeOrmIngredientRepository } from '@contexts/inventory/ingredient/infr
 import { IngredientEntity } from '@contexts/inventory/ingredient/infrastructure/persistence/typeorm/ingredient.entity'
 import { UnitConversionRepository } from '@contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
+import { PurchaseOrderItemReceivedEvent } from '@contexts/procurement/purchase-order/domain/events/purchase-order-item-received.event'
 
-import { createE2eDataSource } from './support/e2e-data-source'
+import { bootstrapE2eApp, E2eContext } from './support/bootstrap-e2e-app'
+import { truncateTables, PURCHASE_RECEPTION_TABLES } from './support/truncate'
 
 /**
  * Real-Postgres coverage for the atomicity contract this change establishes:
@@ -36,13 +39,42 @@ import { createE2eDataSource } from './support/e2e-data-source'
  * or roll back TOGETHER, within the single transaction opened by
  * @UseInterceptors(TransactionInterceptor) on PurchaseOrderController.receive().
  *
- * Mirrors order-repository.e2e-spec.ts's style: no Nest container, concrete
- * classes wired by hand, driven inside
- * dataSource.transaction(manager => holder.run({ manager, pending: [], depth: 0 }, ...))
- * to simulate exactly what TransactionInterceptor does.
+ * HYBRID style (design "Spec Migration Plan"): the happy path converts to a
+ * real HTTP `PUT /purchase-orders/:id/receive` request via `bootstrapE2eApp()`
+ * — this is what satisfies the proposal's "controller + guard +
+ * TransactionInterceptor" success criterion, since `IngredientCategoryController`
+ * (the other exemplar) does not use `TransactionInterceptor`. NOTE: the live
+ * route is `PUT`, not `POST` as an earlier design draft assumed — verified
+ * against purchase-order.controller.ts:223-246 before writing this test.
+ *
+ * The two forced-rollback tests keep driving by hand
+ * (dataSource.transaction(manager => holder.run(...))) — spying on a
+ * DI-resolved repository through the HTTP boundary would require
+ * `overrideProvider`, which the design rejected as more fragile than the
+ * current explicit driving.
+ *
+ * The `MissingUnitOfWorkContext` guard test ALSO stays hand-wired, calling
+ * `registerItemReception.run()` directly with no ambient transaction. This is
+ * a deliberate deviation from the design doc's literal phrasing ("happy path
+ * + MissingUnitOfWorkContext guard -> HTTP"): the real controller applies
+ * `@UseInterceptors(TransactionInterceptor)` unconditionally, so there is no
+ * way to reach `PUT /purchase-orders/:id/receive` WITHOUT an ambient
+ * transaction — the guard this test protects (someone dropping the
+ * interceptor from the controller) can only be exercised by calling the use
+ * case directly, exactly as before. Converting it to HTTP would either be
+ * impossible or would silently stop testing what it claims to test.
+ *
+ * Arrange (seedLookupData/seedPurchaseOrder) stays hand-wired for all tests,
+ * matching kitchen-board-query.e2e-spec.ts's hybrid pattern — there is no
+ * single HTTP round trip that produces an ORDERED purchase order, and this
+ * change does not aim to add domain-lifecycle HTTP coverage (proposal
+ * non-goal).
  */
 describe('Purchase reception atomicity (e2e)', () => {
+  let app: INestApplication
   let dataSource: DataSource
+  let http: E2eContext['http']
+  let authHeader: E2eContext['authHeader']
   let holder: UnitOfWorkContextHolder
   let eventBus: EventBusRouter
 
@@ -59,15 +91,15 @@ describe('Purchase reception atomicity (e2e)', () => {
   let supplierId: string
   let ingredientCategoryId: string
 
-  const cleanPurchaseReceptionTables = async (ds: DataSource): Promise<void> => {
-    await ds.query('DELETE FROM inventory_levels')
-    await ds.query('DELETE FROM inventory_movements')
-    await ds.query('DELETE FROM inventory_batches')
-    await ds.query('DELETE FROM purchase_order_items')
-    await ds.query('DELETE FROM purchase_orders')
-    await ds.query(
-      "DELETE FROM event_store WHERE event_type = 'procurement.purchase_order.item_received'"
-    )
+  // `truncateTables` handles the 5 domain tables (design D6/composable
+  // truncation requirement); `event_store` is shared across specs/contexts,
+  // so it keeps a scoped DELETE rather than joining PURCHASE_RECEPTION_TABLES
+  // (which would need a blanket TRUNCATE of a table other specs also write).
+  const cleanPurchaseReceptionState = async (ds: DataSource): Promise<void> => {
+    await truncateTables(ds, PURCHASE_RECEPTION_TABLES)
+    await ds.query('DELETE FROM event_store WHERE event_type = $1', [
+      PurchaseOrderItemReceivedEvent.EVENT_NAME
+    ])
   }
 
   const seedLookupData = async (ds: DataSource): Promise<void> => {
@@ -148,8 +180,11 @@ describe('Purchase reception atomicity (e2e)', () => {
   }
 
   beforeAll(async () => {
-    dataSource = createE2eDataSource()
-    await dataSource.initialize()
+    const context = await bootstrapE2eApp()
+    app = context.app
+    dataSource = context.dataSource
+    http = context.http
+    authHeader = context.authHeader
 
     holder = new UnitOfWorkContextHolder()
 
@@ -205,39 +240,39 @@ describe('Purchase reception atomicity (e2e)', () => {
   })
 
   afterAll(async () => {
-    await cleanPurchaseReceptionTables(dataSource)
-    await dataSource.destroy()
+    await cleanPurchaseReceptionState(dataSource)
+    await app.close()
   })
 
   beforeEach(async () => {
-    await cleanPurchaseReceptionTables(dataSource)
+    await cleanPurchaseReceptionState(dataSource)
     await seedLookupData(dataSource)
   })
 
   it('commits purchase order and inventory writes together on the happy path', async () => {
     const { purchaseOrderId, itemId } = await seedPurchaseOrder()
 
-    await dataSource.transaction(manager => {
-      const context: UnitOfWorkContext = { manager, pending: [], depth: 0 }
-      return holder.run(context, () =>
-        registerItemReception.run(
-          purchaseOrderId,
-          [
-            {
-              purchaseOrderItemId: itemId,
-              notReceived: false,
-              quantityReceived: 10,
-              quantityReceivedUnitId: unitId,
-              unitCost: 5000,
-              notes: null
-            }
-          ],
-          null,
-          false,
-          UuidMother.random()
-        )
-      )
-    })
+    const response = await http()
+      .put(`/purchase-orders/${purchaseOrderId}/receive`)
+      .set(...(await authHeader()))
+      // TODO(e2e-debt): this reception-item payload object is copy-pasted
+      // verbatim 4 times in this file (here and around lines ~314-322,
+      // ~409-417, ~464-472). Extract into a local factory/builder function
+      // in this spec file if a 5th near-identical payload is ever added.
+      .send({
+        items: [
+          {
+            purchaseOrderItemId: itemId,
+            notReceived: false,
+            quantityReceived: 10,
+            quantityReceivedUnitId: unitId,
+            unitCost: 5000,
+            notes: null
+          }
+        ]
+      })
+
+    expect(response.status).toBe(200)
 
     const itemRow = await dataSource.query(
       'SELECT quantity_received FROM purchase_order_items WHERE id = $1',
@@ -349,8 +384,8 @@ describe('Purchase reception atomicity (e2e)', () => {
     expect(levelRows).toHaveLength(0)
 
     const outboxRows = await dataSource.query(
-      "SELECT * FROM event_store WHERE event_type = 'procurement.purchase_order.item_received' AND aggregate_id = $1",
-      [purchaseOrderId]
+      'SELECT * FROM event_store WHERE event_type = $1 AND aggregate_id = $2',
+      [PurchaseOrderItemReceivedEvent.EVENT_NAME, purchaseOrderId]
     )
     expect(outboxRows).toHaveLength(0)
   })

@@ -3,11 +3,11 @@ import { DataSource } from 'typeorm'
 const EXCLUDED_TABLES = ['migrations']
 
 /**
- * Composable, table-list-driven truncation (design D6), replacing the
- * order-specific `cleanOrderTables()` compatibility shim in
+ * Composable, table-list-driven truncation (design D6), which replaced the
+ * order-specific `cleanOrderTables()` compatibility shim previously in
  * `e2e-data-source.ts` (spec requirement "Composable truncation between
- * tests"). Removed once its remaining callers — `order-repository` and
- * `kitchen-board-query` — switch over in PR3 (tasks 3.2/3.3).
+ * tests"). `order-repository.e2e-spec.ts` and `kitchen-board-query.e2e-spec.ts`
+ * now use this via `ORDER_TABLES`, and the shim has been deleted.
  */
 export async function truncateTables(ds: DataSource, tables: string[]): Promise<void> {
   if (tables.length === 0) {
@@ -50,10 +50,15 @@ export async function resetDatabase(ds: DataSource): Promise<void> {
  * calling `resetDatabase()`. Listed child-before-parent for readability only
  * — `TRUNCATE ... CASCADE` does not require FK-dependency ordering. Wired
  * into `order-repository.e2e-spec.ts` / `kitchen-board-query.e2e-spec.ts` and
- * `purchase-reception-atomicity.e2e-spec.ts` respectively in PR3 (tasks 3.1-3.3).
+ * `purchase-reception-atomicity.e2e-spec.ts` respectively.
  */
 export const ORDER_TABLES = ['order_items', 'orders']
 
+// TODO(e2e-debt): PURCHASE_RECEPTION_TABLES (and ORDER_TABLES above) are
+// hand-maintained literal arrays, duplicating what resetDatabase() already
+// derives dynamically via information_schema specifically to avoid this
+// maintenance trap — either derive this list the same way or drop it in
+// favor of always calling resetDatabase().
 export const PURCHASE_RECEPTION_TABLES = [
   'inventory_levels',
   'inventory_movements',

@@ -207,6 +207,7 @@ tests/
 ```bash
 pnpm start:dev
 pnpm test / pnpm test:watch / pnpm test:cov
+pnpm test:e2e   # Docker required — Testcontainers-backed Postgres
 pnpm lint / pnpm format
 name=X pnpm migration:generate
 pnpm migration:run / pnpm migration:revert
@@ -244,6 +245,15 @@ pnpm seed:run / pnpm db:reset
 - No database in unit tests (mock repositories)
 - AAA structure (Arrange, Act, Assert)
 
+### e2e Testing (`tests/e2e/`, `pnpm test:e2e`)
+
+- **Postgres via Testcontainers.** `pnpm test:e2e` starts an ephemeral `postgres:16-alpine` container in Jest `globalSetup` (`tests/e2e/support/global-setup.ts`), runs all migrations against it automatically, and tears it down in `globalTeardown`. No local Postgres install, no manual `pnpm migration:run` step. Docker must be running.
+- **No escape hatch.** There is no `E2E_DB_URL` (or equivalent) env override — the container is the only supported connection path. `createE2eDataSource()` (`tests/e2e/support/e2e-data-source.ts`) throws a clear error if run outside `pnpm test:e2e`.
+- **HTTP-boundary pattern is the default** for new specs: `bootstrapE2eApp()` (`tests/e2e/support/bootstrap-e2e-app.ts`) boots a full `AppModule` (mirroring `main.ts`'s guard/pipe/filter/interceptor wiring) and returns `{ app, dataSource, http, authHeader }` for driving real requests through `supertest`. `signAccessToken()`/`authHeader()` mint a real JWT via the app's `JwtService` — no user/role seeding needed, `JwtStrategy` never touches the DB. See `ingredient-category.e2e-spec.ts` for the canonical example.
+- **Documented exception:** `order-repository.e2e-spec.ts` stays hand-wired (direct `TypeOrmOrderRepository` calls, no HTTP). It asserts persistence-mapping internals (replace-children DELETE vs UPDATE, EXISTS-subquery filtering) that no HTTP endpoint exposes — converting it would weaken the assertions. Any other hand-wired spec must carry the same kind of stated reason in a comment.
+- **Truncation:** use `truncateTables(ds, tables)` or `resetDatabase(ds)` from `tests/e2e/support/truncate.ts` between tests — not ad hoc `DELETE`/`TRUNCATE` queries.
+- Run with `pnpm test:e2e` (`--runInBand`, Docker required). `pnpm test` (unit) never touches a database.
+
 ---
 
 ## SDD Orchestrator
@@ -252,4 +262,4 @@ pnpm seed:run / pnpm db:reset
 - `/sdd-init` `/sdd-explore` `/sdd-new` `/sdd-ff` `/sdd-apply` `/sdd-verify` `/sdd-archive`
 - Convention files: `~/.claude/skills/_shared/`
 
-**Last Updated:** 2026-03-07 | **Version:** 2.0.0
+**Last Updated:** 2026-09-03 | **Version:** 2.1.0
