@@ -31,6 +31,9 @@ describe('PrintKitchenTicketOnOrderSent', () => {
       sentAt: new Date(),
       tableId: null,
       tableLabel: null,
+      // OrderSentToKitchenEvent is orders' own event shape — OrderType is the
+      // correct type here. Only the KitchenPrintTicket/ticket-assertion side
+      // of this subscriber's boundary is translated (in the dispatcher).
       orderType: OrderType.DINE_IN
     })
 

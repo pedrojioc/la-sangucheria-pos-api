@@ -2,7 +2,7 @@ import { FindUnprintedPrintJobs } from '@contexts/kitchen-operations/kitchen-pri
 import { KitchenTicketPrintJobRepository } from '@contexts/kitchen-operations/kitchen-printer/domain/repositories/kitchen-ticket-print-job.repository'
 import { KitchenTicketPrintJob } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-ticket-print-job'
 import { KitchenPrintTicket } from '@contexts/kitchen-operations/kitchen-printer/application/kitchen-print-ticket'
-import { OrderType } from '@contexts/orders/order/domain/order-type'
+import { KitchenOrderType } from '@contexts/kitchen-operations/kitchen-printer/domain/kitchen-order-type'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('FindUnprintedPrintJobs', () => {
@@ -17,7 +17,7 @@ describe('FindUnprintedPrintJobs', () => {
     printerAddress: null,
     usbIdentifier: 'usb-device-1',
     sentAt: new Date(),
-    orderType: OrderType.DINE_IN,
+    orderType: KitchenOrderType.DINE_IN,
     isReprint: false,
     items: []
   })

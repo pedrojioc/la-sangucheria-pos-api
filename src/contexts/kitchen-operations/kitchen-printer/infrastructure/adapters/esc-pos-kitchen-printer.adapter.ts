@@ -3,14 +3,14 @@ import { Injectable } from '@nestjs/common'
 const { ThermalPrinter, PrinterTypes } = require('node-thermal-printer')
 import { KitchenPrinterPort } from '../../application/ports/kitchen-printer.port'
 import { KitchenPrintTicket } from '../../application/kitchen-print-ticket'
-import { OrderType } from '@contexts/orders/order/domain/order-type'
+import { KitchenOrderType } from '../../domain/kitchen-order-type'
 
 const TCP_TIMEOUT_MS = 3000
 const DEFAULT_PRINTER_TYPE = 'EPSON'
 
-const ORDER_TYPE_BADGE_LABEL: Partial<Record<OrderType, string>> = {
-  [OrderType.TAKEOUT]: 'PARA LLEVAR',
-  [OrderType.DELIVERY]: 'DELIVERY'
+const ORDER_TYPE_BADGE_LABEL: Partial<Record<KitchenOrderType, string>> = {
+  [KitchenOrderType.TAKEOUT]: 'PARA LLEVAR',
+  [KitchenOrderType.DELIVERY]: 'DELIVERY'
 }
 
 // eslint-disable-next-line no-control-regex
