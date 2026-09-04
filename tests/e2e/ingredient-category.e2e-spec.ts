@@ -51,7 +51,7 @@ describe('IngredientCategoryController (e2e)', () => {
 
       const response = await http()
         .post('/ingredient-categories')
-        .set(...authHeader())
+        .set(...(await authHeader()))
         .send({ id, name: 'Bebidas', isActive: true })
 
       expect(response.status).toBe(201)
@@ -68,7 +68,7 @@ describe('IngredientCategoryController (e2e)', () => {
     it('rejects an invalid body with 400 and class-validator messages, proving ValidationPipe is wired', async () => {
       const response = await http()
         .post('/ingredient-categories')
-        .set(...authHeader())
+        .set(...(await authHeader()))
         .send({ id: 'not-a-uuid', name: 'x' })
 
       expect(response.status).toBe(400)
@@ -83,13 +83,13 @@ describe('IngredientCategoryController (e2e)', () => {
 
       await http()
         .post('/ingredient-categories')
-        .set(...authHeader())
+        .set(...(await authHeader()))
         .send({ id, name: 'Postres', description: 'Dulces', isActive: true })
         .expect(201)
 
       const response = await http()
         .get(`/ingredient-categories/${id}`)
-        .set(...authHeader())
+        .set(...(await authHeader()))
 
       expect(response.status).toBe(200)
       expect(response.body).toMatchObject({
@@ -107,14 +107,14 @@ describe('IngredientCategoryController (e2e)', () => {
 
       await http()
         .post('/ingredient-categories')
-        .set(...authHeader())
+        .set(...(await authHeader()))
         .send({ id, name: 'Entradas', isActive: true })
         .expect(201)
 
       const response = await http()
         .get('/ingredient-categories')
         .query({ page: 1, pageSize: 10 })
-        .set(...authHeader())
+        .set(...(await authHeader()))
 
       expect(response.status).toBe(200)
       expect(response.body.meta).toMatchObject({ page: 1, pageSize: 10 })

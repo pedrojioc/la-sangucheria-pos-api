@@ -14,7 +14,12 @@ export async function truncateTables(ds: DataSource, tables: string[]): Promise<
     return
   }
 
-  const quoted = tables.map(table => `"${table}"`).join(', ')
+  // Postgres identifier escaping: double any embedded `"` before wrapping in
+  // quotes. Defensive hardening only — today's callers pass hardcoded
+  // literals or information_schema-derived names, but this is an exported
+  // function taking a bare `string[]` with no validation, and PR3 adds more
+  // callers.
+  const quoted = tables.map(table => `"${table.replace(/"/g, '""')}"`).join(', ')
   await ds.query(`TRUNCATE TABLE ${quoted} RESTART IDENTITY CASCADE`)
 }
 

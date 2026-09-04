@@ -1,6 +1,7 @@
 import { ClassSerializerInterceptor, INestApplication, ValidationPipe } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { Test } from '@nestjs/testing'
+import { NestExpressApplication } from '@nestjs/platform-express'
 import { DataSource } from 'typeorm'
 import cookieParser from 'cookie-parser'
 import request from 'supertest'
@@ -9,13 +10,14 @@ import type { App } from 'supertest/types'
 import { AppModule } from '@/app.module'
 import { DomainExceptionFilter } from '@/core/filters/domain-exception.filter'
 import { JwtAuthGuard } from '@/contexts/iam/authentication/infrastructure/guards/jwt-auth.guard'
+import { JwtService } from '@/contexts/iam/authentication/domain/services/jwt.service'
 import { signAccessToken } from './auth'
 
 export interface E2eContext {
   app: INestApplication<App>
   dataSource: DataSource
   http: () => ReturnType<typeof request>
-  authHeader: () => [string, string]
+  authHeader: () => Promise<[string, string]>
 }
 
 /**
@@ -32,6 +34,12 @@ export interface E2eContext {
  * production diff.
  */
 export function configureE2eApp(app: INestApplication): void {
+  // Express 5 defaults `query parser` to 'simple', which cannot parse the
+  // bracket-notation filters (`?filters[field]=op:value`) CriteriaRequest
+  // relies on (main.ts:18) — without this, filtered-search specs would see
+  // buildFilters() silently return [] instead of applying the filter.
+  ;(app as unknown as NestExpressApplication).set('query parser', 'extended')
+
   app.use(cookieParser())
 
   app.useGlobalPipes(
@@ -68,12 +76,22 @@ export async function bootstrapE2eApp(): Promise<E2eContext> {
   await app.init()
 
   const dataSource = app.get(DataSource)
-  const token = signAccessToken()
+  // Resolved under the `JwtService` provide token (AuthenticationModule
+  // registers `{ provide: JwtService, useClass: Rs256JwtService }`) — the
+  // instance IS Rs256JwtService, so calling generateAccessToken() here
+  // exercises the real production signing logic, not a hand-rolled copy.
+  const jwtService = app.get(JwtService)
 
   return {
     app,
     dataSource,
     http: () => request(app.getHttpServer()),
-    authHeader: () => ['Authorization', `Bearer ${token}`]
+    // Mints a fresh token on every call (not once at bootstrap) so no
+    // individual request's auth depends on how long prior tests in the same
+    // file took to run relative to JWT_ACCESS_EXPIRATION.
+    authHeader: async () => {
+      const token = await signAccessToken(jwtService)
+      return ['Authorization', `Bearer ${token}`]
+    }
   }
 }

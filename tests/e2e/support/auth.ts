@@ -1,4 +1,4 @@
-import * as jwt from 'jsonwebtoken'
+import { JwtService } from '@/contexts/iam/authentication/domain/services/jwt.service'
 
 export interface SignAccessTokenOptions {
   userId?: string
@@ -11,37 +11,24 @@ const DEFAULT_USERNAME = 'e2e-test-user'
 const DEFAULT_EMAIL = 'e2e-test-user@example.test'
 
 /**
- * Mints an access token in-process with the ephemeral RS256 keypair
- * `global-setup.ts` forces into `process.env` (design D3/D4). No DB user,
- * role, or argon2 hash is seeded, and no `/auth/login` round trip happens —
- * `JwtStrategy.validate()` only maps the token payload, it never touches the
- * database, so signing the token directly is sufficient to exercise the real
- * `JwtAuthGuard` end to end.
+ * Mints an access token via the real `Rs256JwtService.generateAccessToken()`
+ * (resolved from the app's DI container under the `JwtService` provide
+ * token, design D3/D4) instead of hand-rolling `jwt.sign()`. This keeps the
+ * harness's token payload/signing-options contract bound to production code
+ * — if `Rs256JwtService` ever changes shape, the harness changes with it
+ * instead of silently drifting. No DB user, role, or argon2 hash is seeded,
+ * and no `/auth/login` round trip happens — `JwtStrategy.validate()` only
+ * maps the token payload, it never touches the database, so signing the
+ * token directly is sufficient to exercise the real `JwtAuthGuard` end to
+ * end.
  */
-export function signAccessToken(options: SignAccessTokenOptions = {}): string {
-  const privateKey = process.env.JWT_PRIVATE_KEY
-  const issuer = process.env.JWT_ISSUER
-  const audience = process.env.JWT_AUDIENCE
-  const expiresIn = process.env.JWT_ACCESS_EXPIRATION
-
-  if (!privateKey || !issuer || !audience || !expiresIn) {
-    throw new Error(
-      'JWT_PRIVATE_KEY/JWT_ISSUER/JWT_AUDIENCE/JWT_ACCESS_EXPIRATION are not set. ' +
-        'signAccessToken() must run after tests/e2e/support/global-setup.ts has forced them ' +
-        '(only true when running via `pnpm test:e2e`).'
-    )
-  }
-
-  const payload = {
-    sub: options.userId ?? DEFAULT_USER_ID,
+export function signAccessToken(
+  jwtService: JwtService,
+  options: SignAccessTokenOptions = {}
+): Promise<string> {
+  return jwtService.generateAccessToken({
+    id: options.userId ?? DEFAULT_USER_ID,
     username: options.username ?? DEFAULT_USERNAME,
     email: options.email ?? DEFAULT_EMAIL
-  }
-
-  return jwt.sign(payload, privateKey, {
-    algorithm: 'RS256',
-    issuer,
-    audience,
-    expiresIn
-  } as jwt.SignOptions)
+  })
 }
