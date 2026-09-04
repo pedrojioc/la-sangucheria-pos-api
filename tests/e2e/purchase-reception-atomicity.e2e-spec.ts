@@ -28,6 +28,7 @@ import { TypeOrmIngredientRepository } from '@contexts/inventory/ingredient/infr
 import { IngredientEntity } from '@contexts/inventory/ingredient/infrastructure/persistence/typeorm/ingredient.entity'
 import { UnitConversionRepository } from '@contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
+import { PurchaseOrderItemReceivedEvent } from '@contexts/procurement/purchase-order/domain/events/purchase-order-item-received.event'
 
 import { bootstrapE2eApp, E2eContext } from './support/bootstrap-e2e-app'
 import { truncateTables, PURCHASE_RECEPTION_TABLES } from './support/truncate'
@@ -96,9 +97,9 @@ describe('Purchase reception atomicity (e2e)', () => {
   // (which would need a blanket TRUNCATE of a table other specs also write).
   const cleanPurchaseReceptionState = async (ds: DataSource): Promise<void> => {
     await truncateTables(ds, PURCHASE_RECEPTION_TABLES)
-    await ds.query(
-      "DELETE FROM event_store WHERE event_type = 'procurement.purchase_order.item_received'"
-    )
+    await ds.query('DELETE FROM event_store WHERE event_type = $1', [
+      PurchaseOrderItemReceivedEvent.EVENT_NAME
+    ])
   }
 
   const seedLookupData = async (ds: DataSource): Promise<void> => {
@@ -254,6 +255,10 @@ describe('Purchase reception atomicity (e2e)', () => {
     const response = await http()
       .put(`/purchase-orders/${purchaseOrderId}/receive`)
       .set(...(await authHeader()))
+      // TODO(e2e-debt): this reception-item payload object is copy-pasted
+      // verbatim 4 times in this file (here and around lines ~314-322,
+      // ~409-417, ~464-472). Extract into a local factory/builder function
+      // in this spec file if a 5th near-identical payload is ever added.
       .send({
         items: [
           {
@@ -379,8 +384,8 @@ describe('Purchase reception atomicity (e2e)', () => {
     expect(levelRows).toHaveLength(0)
 
     const outboxRows = await dataSource.query(
-      "SELECT * FROM event_store WHERE event_type = 'procurement.purchase_order.item_received' AND aggregate_id = $1",
-      [purchaseOrderId]
+      'SELECT * FROM event_store WHERE event_type = $1 AND aggregate_id = $2',
+      [PurchaseOrderItemReceivedEvent.EVENT_NAME, purchaseOrderId]
     )
     expect(outboxRows).toHaveLength(0)
   })

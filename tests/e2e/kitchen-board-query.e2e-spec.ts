@@ -1,18 +1,46 @@
-import { DataSource, Repository } from 'typeorm'
+import { DataSource } from 'typeorm'
 import { INestApplication } from '@nestjs/common'
 
-import { TypeOrmOrderRepository } from '@contexts/orders/order/infrastructure/persistence/typeorm/typeorm-order.repository'
-import { OrderEntity } from '@contexts/orders/order/infrastructure/persistence/typeorm/order.entity'
-import { OrderItemEntity } from '@contexts/orders/order/infrastructure/persistence/typeorm/order-item.entity'
+import { OrderRepository } from '@contexts/orders/order/domain/repositories/order.repository'
 import { OrderStatus } from '@contexts/orders/order/domain/order-status'
 import { OrderMother } from '@test/contexts/orders/order/__mothers__/order.mother'
 import { OrderItemMother } from '@test/contexts/orders/order/__mothers__/order-item.mother'
 import { UuidMother } from '@test/shared/__mothers__/UuidMother'
-import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
-import { KitchenBoardOrderGroup } from '@contexts/kitchen-operations/kitchen-board/application/dto/kitchen-board.response'
 
 import { bootstrapE2eApp, E2eContext } from './support/bootstrap-e2e-app'
 import { truncateTables, ORDER_TABLES } from './support/truncate'
+
+/**
+ * HTTP-response shape for `GET /kitchen-operations/board`. Mirrors
+ * `KitchenBoardOrderGroup` field-for-field EXCEPT the date fields, which
+ * travel as ISO strings over real HTTP+JSON (there is no `Date` instance on
+ * the wire) — casting the raw response body to the domain DTO type here
+ * would silently lie about the runtime shape (finding #2).
+ */
+interface KitchenBoardItemHttpResponse {
+  id: string
+  itemId: string
+  itemName: string
+  stationId: string | null
+  status: string
+  quantity: number
+  notes: string | null
+  modifiers: Record<string, unknown>[]
+  sentAt: string
+  readyAt: string | null
+  deliveredAt: string | null
+  cancelledAt: string | null
+}
+
+interface KitchenBoardOrderGroupHttpResponse {
+  orderId: string
+  orderNumber: string
+  orderStatus: string
+  tableId: string | null
+  tableLabel: string | null
+  oldestSentAt: string
+  items: KitchenBoardItemHttpResponse[]
+}
 
 /**
  * Real-Postgres coverage for the kitchen board read path, closing the gap
@@ -22,10 +50,11 @@ import { truncateTables, ORDER_TABLES } from './support/truncate'
  * SQL against Postgres.
  *
  * HYBRID style (design "Spec Migration Plan"): Arrange stays hand-wired
- * (`TypeOrmOrderRepository` to build fixtures directly against the
- * container-backed DataSource) — there is no HTTP endpoint to build an order
- * with specific item statuses, and adding one is out of scope (proposal
- * non-goal, domain coverage). Act converts to a real HTTP
+ * (`OrderRepository`, resolved from the app's own DI container, to build
+ * fixtures directly against the container-backed DataSource) — there is no
+ * HTTP endpoint to build an order with specific item statuses, and adding
+ * one is out of scope (proposal non-goal, domain coverage). Act converts to
+ * a real HTTP
  * `GET /kitchen-operations/board` request via `bootstrapE2eApp()`, so the
  * query service is reached through the real `KitchenBoardController`, the
  * global `JwtAuthGuard`, and `ClassSerializerInterceptor` — not just the
@@ -36,9 +65,7 @@ describe('KitchenBoardController (e2e)', () => {
   let dataSource: DataSource
   let http: E2eContext['http']
   let authHeader: E2eContext['authHeader']
-  let orderRepository: Repository<OrderEntity>
-  let itemRepository: Repository<OrderItemEntity>
-  let repository: TypeOrmOrderRepository
+  let repository: OrderRepository
 
   beforeAll(async () => {
     const context = await bootstrapE2eApp()
@@ -47,17 +74,19 @@ describe('KitchenBoardController (e2e)', () => {
     http = context.http
     authHeader = context.authHeader
 
-    orderRepository = dataSource.getRepository(OrderEntity)
-    itemRepository = dataSource.getRepository(OrderItemEntity)
-    repository = new TypeOrmOrderRepository(
-      orderRepository,
-      itemRepository,
-      dataSource,
-      new UnitOfWorkContextHolder()
-    )
+    // Resolved from the same Nest DI container `bootstrapE2eApp()` already
+    // built, instead of hand-constructing a second, independently-wired
+    // `TypeOrmOrderRepository` — the Arrange step must exercise the exact
+    // repository wiring the app under test actually uses (finding #4).
+    repository = app.get(OrderRepository)
   })
 
   afterAll(async () => {
+    // Leave the shared, container-backed database as clean as beforeEach
+    // would — without this, the last test's rows survive until whichever
+    // spec file Jest schedules next (`--runInBand`, one shared Postgres
+    // across the whole e2e run) truncates them itself (finding #1).
+    await truncateTables(dataSource, ORDER_TABLES)
     await app.close()
   })
 
@@ -65,14 +94,14 @@ describe('KitchenBoardController (e2e)', () => {
     await truncateTables(dataSource, ORDER_TABLES)
   })
 
-  const getBoard = async (stationId?: string): Promise<KitchenBoardOrderGroup[]> => {
+  const getBoard = async (stationId?: string): Promise<KitchenBoardOrderGroupHttpResponse[]> => {
     const response = await http()
       .get('/kitchen-operations/board')
       .query(stationId ? { stationId } : {})
       .set(...(await authHeader()))
 
     expect(response.status).toBe(200)
-    return response.body as KitchenBoardOrderGroup[]
+    return response.body as KitchenBoardOrderGroupHttpResponse[]
   }
 
   it('produces exactly one board group with items: [] for an OPEN order with zero order_items rows', async () => {

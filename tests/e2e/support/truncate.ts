@@ -54,6 +54,11 @@ export async function resetDatabase(ds: DataSource): Promise<void> {
  */
 export const ORDER_TABLES = ['order_items', 'orders']
 
+// TODO(e2e-debt): PURCHASE_RECEPTION_TABLES (and ORDER_TABLES above) are
+// hand-maintained literal arrays, duplicating what resetDatabase() already
+// derives dynamically via information_schema specifically to avoid this
+// maintenance trap — either derive this list the same way or drop it in
+// favor of always calling resetDatabase().
 export const PURCHASE_RECEPTION_TABLES = [
   'inventory_levels',
   'inventory_movements',
