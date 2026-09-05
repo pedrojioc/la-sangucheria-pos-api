@@ -9,46 +9,50 @@ import {
   Post,
   Put
 } from '@nestjs/common'
-import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import { CreateRoleRequest } from '../dto/create-role.request'
 import { UpdateRoleRequest } from '../dto/update-role.request'
-import { CreateRoleCommand } from '../../../application/create/create-role.command'
-import { UpdateRoleCommand } from '../../../application/update/update-role.command'
-import { DeleteRoleCommand } from '../../../application/delete/delete-role.command'
-import { FindRoleQuery } from '../../../application/find/find-role.query'
-import { FindAllRolesQuery } from '../../../application/find-all/find-all-roles.query'
+import { CreateRole } from '../../../application/create/create-role'
+import { UpdateRole } from '../../../application/update/update-role'
+import { DeleteRole } from '../../../application/delete/delete-role'
+import { FindRole } from '../../../application/find/find-role'
+import { FindAllRoles } from '../../../application/find-all/find-all-roles'
 import { RoleResponse } from '../../../application/dto/role.response'
 
 @Controller('roles')
 export class RoleController {
   constructor(
-    private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus
+    private readonly createRole: CreateRole,
+    private readonly updateRole: UpdateRole,
+    private readonly deleteRole: DeleteRole,
+    private readonly findRole: FindRole,
+    private readonly findAllRoles: FindAllRoles
   ) {}
 
   @Post()
   async create(@Body() dto: CreateRoleRequest): Promise<void> {
-    await this.commandBus.execute(new CreateRoleCommand(dto.id, dto.name, dto.description ?? null))
+    await this.createRole.run(dto.id, dto.name, dto.description ?? null)
   }
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateRoleRequest): Promise<void> {
-    await this.commandBus.execute(new UpdateRoleCommand(id, dto.name, dto.description ?? null))
+    await this.updateRole.run(id, dto.name, dto.description ?? null)
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('id') id: string): Promise<void> {
-    await this.commandBus.execute(new DeleteRoleCommand(id))
+    await this.deleteRole.run(id)
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<RoleResponse> {
-    return this.queryBus.execute(new FindRoleQuery(id))
+    const role = await this.findRole.run(id)
+    return RoleResponse.fromDomain(role)
   }
 
   @Get()
   async findAll(): Promise<RoleResponse[]> {
-    return this.queryBus.execute(new FindAllRolesQuery())
+    const roles = await this.findAllRoles.run()
+    return roles.map(RoleResponse.fromDomain)
   }
 }
