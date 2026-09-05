@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common'
-import { CqrsModule } from '@nestjs/cqrs'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { PassportModule } from '@nestjs/passport'
 
@@ -24,11 +23,8 @@ import { JwtService } from './domain/services/jwt.service'
 
 // Application
 import { Login } from './application/login/login'
-import { LoginHandler } from './application/login/login.handler'
 import { RefreshTokenUseCase } from './application/refresh-token/refresh-token'
-import { RefreshTokenHandler } from './application/refresh-token/refresh-token.handler'
 import { Logout } from './application/logout/logout'
-import { LogoutHandler } from './application/logout/logout.handler'
 
 // Presentation
 import { AuthController } from './presentation/http/controllers/auth.controller'
@@ -56,16 +52,8 @@ const useCaseProviders = [
   createProvider(Logout, [RefreshTokenRepository, EventBus])
 ]
 
-const commandHandlers = [LoginHandler, RefreshTokenHandler, LogoutHandler]
-
 @Module({
-  imports: [
-    CqrsModule,
-    TypeOrmModule.forFeature([RefreshTokenEntity]),
-    PassportModule,
-    UserModule,
-    RoleModule
-  ],
+  imports: [TypeOrmModule.forFeature([RefreshTokenEntity]), PassportModule, UserModule, RoleModule],
   controllers: [AuthController],
   providers: [
     // Repositories
@@ -90,10 +78,7 @@ const commandHandlers = [LoginHandler, RefreshTokenHandler, LogoutHandler]
     RolesGuard,
 
     // Use Cases
-    ...useCaseProviders,
-
-    // Handlers
-    ...commandHandlers
+    ...useCaseProviders
   ],
   exports: [JwtAuthGuard, JwtRefreshGuard, RolesGuard, JwtService]
 })

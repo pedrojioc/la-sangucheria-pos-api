@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { CqrsModule } from '@nestjs/cqrs'
 import { RoleModule } from '@contexts/iam/role/role.module'
 
 // Entities
@@ -26,12 +25,6 @@ import { DeactivateUser } from './application/deactivate/deactivate-user'
 import { ActivateUser } from './application/activate/activate-user'
 import { SearchUsersByCriteria } from './application/search-by-criteria/search-users-by-criteria'
 
-// Handlers
-// NOTE: FindUserHandler is kept temporarily — authentication.module.ts (Phase 3, not yet
-// migrated) still calls it via QueryBus for GET /auth/me. Deleted in Phase 3 together with
-// find-user.query.ts / find-user.handler.ts.
-import { FindUserHandler } from './application/find/find-user.handler'
-
 // Controllers
 import { UserController } from './presentation/http/controllers/user.controller'
 
@@ -43,7 +36,7 @@ import { createProvider } from '@/core/utils/create-provider'
 import { EventBus } from '@/shared/domain/events'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity]), CqrsModule, RoleModule],
+  imports: [TypeOrmModule.forFeature([UserEntity]), RoleModule],
   controllers: [UserController],
   providers: [
     // Repositories
@@ -64,10 +57,7 @@ import { EventBus } from '@/shared/domain/events'
     createProvider(SearchUsersByCriteria, [UserQueryService]),
 
     // Guards
-    RolesGuard,
-
-    // Handlers (see NOTE above — deferred to Phase 3)
-    FindUserHandler
+    RolesGuard
   ],
   exports: [UserRepository, PasswordHasher, FindUser, RegisterUser]
 })
