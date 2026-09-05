@@ -27,12 +27,10 @@ import { ActivateUser } from './application/activate/activate-user'
 import { SearchUsersByCriteria } from './application/search-by-criteria/search-users-by-criteria'
 
 // Handlers
-import { RegisterUserHandler } from './application/register/register-user.handler'
+// NOTE: FindUserHandler is kept temporarily — authentication.module.ts (Phase 3, not yet
+// migrated) still calls it via QueryBus for GET /auth/me. Deleted in Phase 3 together with
+// find-user.query.ts / find-user.handler.ts.
 import { FindUserHandler } from './application/find/find-user.handler'
-import { UpdateUserHandler } from './application/update/update-user.handler'
-import { DeactivateUserHandler } from './application/deactivate/deactivate-user.handler'
-import { ActivateUserHandler } from './application/activate/activate-user.handler'
-import { SearchUsersByCriteriaHandler } from './application/search-by-criteria/search-users-by-criteria.handler'
 
 // Controllers
 import { UserController } from './presentation/http/controllers/user.controller'
@@ -43,14 +41,6 @@ import { RolesGuard } from '@contexts/iam/authentication/infrastructure/guards/r
 // Utils
 import { createProvider } from '@/core/utils/create-provider'
 import { EventBus } from '@/shared/domain/events'
-
-const CommandHandlers = [
-  RegisterUserHandler,
-  UpdateUserHandler,
-  DeactivateUserHandler,
-  ActivateUserHandler
-]
-const QueryHandlers = [FindUserHandler, SearchUsersByCriteriaHandler]
 
 @Module({
   imports: [TypeOrmModule.forFeature([UserEntity]), CqrsModule, RoleModule],
@@ -76,9 +66,8 @@ const QueryHandlers = [FindUserHandler, SearchUsersByCriteriaHandler]
     // Guards
     RolesGuard,
 
-    // Handlers
-    ...CommandHandlers,
-    ...QueryHandlers
+    // Handlers (see NOTE above — deferred to Phase 3)
+    FindUserHandler
   ],
   exports: [UserRepository, PasswordHasher, FindUser, RegisterUser]
 })

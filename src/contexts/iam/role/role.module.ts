@@ -11,16 +11,7 @@ import { DeleteRole } from './application/delete/delete-role'
 import { FindRole } from './application/find/find-role'
 import { FindAllRoles } from './application/find-all/find-all-roles'
 
-import { CreateRoleHandler } from './application/create/create-role.handler'
-import { UpdateRoleHandler } from './application/update/update-role.handler'
-import { DeleteRoleHandler } from './application/delete/delete-role.handler'
-import { FindRoleHandler } from './application/find/find-role.handler'
-import { FindAllRolesHandler } from './application/find-all/find-all-roles.handler'
-
 import { RoleController } from './presentation/http/controllers/role.controller'
-
-const CommandHandlers = [CreateRoleHandler, UpdateRoleHandler, DeleteRoleHandler]
-const QueryHandlers = [FindRoleHandler, FindAllRolesHandler]
 
 @Module({
   imports: [TypeOrmModule.forFeature([RoleEntity])],
@@ -31,9 +22,7 @@ const QueryHandlers = [FindRoleHandler, FindAllRolesHandler]
     createProvider(UpdateRole, [RoleRepository]),
     createProvider(DeleteRole, [RoleRepository]),
     createProvider(FindRole, [RoleRepository]),
-    createProvider(FindAllRoles, [RoleRepository]),
-    ...CommandHandlers,
-    ...QueryHandlers
+    createProvider(FindAllRoles, [RoleRepository])
   ],
   exports: [RoleRepository, FindRole]
 })
