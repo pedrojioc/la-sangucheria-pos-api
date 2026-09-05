@@ -25,43 +25,52 @@ export class TypeOrmEmployeeQueryService implements EmployeeQueryService {
 
     const [entities, total] = await qb.getManyAndCount()
 
-    const items: EmployeeResponse[] = entities.map(
-      entity =>
-        new EmployeeResponse(
-          entity.id,
-          entity.firstName,
-          entity.lastName,
-          entity.position
-            ? {
-                id: entity.position.id,
-                name: entity.position.name,
-                description: entity.position.description
-              }
-            : null,
-          entity.phone,
-          entity.email,
-          entity.address,
-          entity.hireDate,
-          entity.status,
-          entity.notes,
-          entity.userId,
-          entity.salaryAmount !== null &&
-          entity.salaryBasis !== null &&
-          entity.paymentFrequency !== null
-            ? {
-                amount: Number(entity.salaryAmount),
-                basis: entity.salaryBasis,
-                paymentFrequency: entity.paymentFrequency
-              }
-            : null
-        )
-    )
-
     return PaginatedResult.create(
-      items,
+      entities.map(entity => this.toResponse(entity)),
       total,
       criteria.pagination?.page || 1,
       criteria.pagination?.pageSize || 20
+    )
+  }
+
+  async findById(id: string): Promise<EmployeeResponse | null> {
+    const entity = await this.repository
+      .createQueryBuilder('employee')
+      .leftJoinAndSelect('employee.position', 'position')
+      .where('employee.id = :id', { id })
+      .getOne()
+
+    return entity ? this.toResponse(entity) : null
+  }
+
+  private toResponse(entity: EmployeeEntity): EmployeeResponse {
+    return new EmployeeResponse(
+      entity.id,
+      entity.firstName,
+      entity.lastName,
+      entity.position
+        ? {
+            id: entity.position.id,
+            name: entity.position.name,
+            description: entity.position.description
+          }
+        : null,
+      entity.phone,
+      entity.email,
+      entity.address,
+      entity.hireDate,
+      entity.status,
+      entity.notes,
+      entity.userId,
+      entity.salaryAmount !== null &&
+      entity.salaryBasis !== null &&
+      entity.paymentFrequency !== null
+        ? {
+            amount: Number(entity.salaryAmount),
+            basis: entity.salaryBasis,
+            paymentFrequency: entity.paymentFrequency
+          }
+        : null
     )
   }
 }

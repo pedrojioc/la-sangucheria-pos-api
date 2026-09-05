@@ -4,4 +4,5 @@ import { EmployeeResponse } from '../dto/employee.response'
 
 export abstract class EmployeeQueryService {
   abstract search(criteria: Criteria): Promise<PaginatedResult<EmployeeResponse>>
+  abstract findById(id: string): Promise<EmployeeResponse | null>
 }
