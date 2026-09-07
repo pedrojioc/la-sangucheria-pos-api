@@ -21,14 +21,12 @@ import { UpdateIngredientCategoryCommandHandler } from '@contexts/inventory/ingr
 
 // Query Handlers
 import { FindIngredientCategoryHandler } from '@contexts/inventory/ingredient-category/application/find/find-ingredient-category.handler'
-import { FindAllIngredientCategoryHandler } from '@contexts/inventory/ingredient-category/application/find-all/find-all-ingredient-category.handler'
 import { SearchIngredientCategoriesByCriteriaHandler } from '@contexts/inventory/ingredient-category/application/search-by-criteria/search-ingredient-categories-by-criteria.handler'
 
 // Use Cases
 import { CreateIngredientCategory } from '@contexts/inventory/ingredient-category/application/create/create-ingredient-category'
 import { UpdateIngredientCategory } from '@contexts/inventory/ingredient-category/application/update/update-ingredient-category'
 import { FindIngredientCategory } from '@contexts/inventory/ingredient-category/application/find/find-ingredient-category'
-import { FindAllIngredientCategories } from '@contexts/inventory/ingredient-category/application/find-all/find-all-ingredient-category'
 import { SearchIngredientCategoriesByCriteria } from '@contexts/inventory/ingredient-category/application/search-by-criteria/search-ingredient-categories-by-criteria'
 
 // Controllers
@@ -42,11 +40,7 @@ const CommandHandlers = [
   UpdateIngredientCategoryCommandHandler
 ]
 
-const QueryHandlers = [
-  FindIngredientCategoryHandler,
-  FindAllIngredientCategoryHandler,
-  SearchIngredientCategoriesByCriteriaHandler
-]
+const QueryHandlers = [FindIngredientCategoryHandler, SearchIngredientCategoriesByCriteriaHandler]
 
 @Module({
   imports: [TypeOrmModule.forFeature([IngredientCategoryEntity])],
@@ -72,7 +66,6 @@ const QueryHandlers = [
       FindIngredientCategory
     ]),
     createProvider(FindIngredientCategory, [IngredientCategoryRepository]),
-    createProvider(FindAllIngredientCategories, [IngredientCategoryRepository]),
     createProvider(SearchIngredientCategoriesByCriteria, [IngredientCategoryQueryService]),
 
     // COMMAND HANDLERS
