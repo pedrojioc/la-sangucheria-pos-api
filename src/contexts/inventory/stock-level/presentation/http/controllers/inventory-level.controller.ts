@@ -1,11 +1,11 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common'
-import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import { SearchInventoryLevelsRequest } from '../dto/search-inventory-levels.request'
 import { RegisterManualAdjustmentRequest } from '../dto/register-manual-adjustment.request'
-import { SearchInventoryLevelsByCriteriaQuery } from '../../../application/search-by-criteria/search-inventory-levels-by-criteria.query'
-import { GetInventoryLevelStatisticsQuery } from '../../../application/get-statistics/get-inventory-level-statistics.query'
-import { RegisterManualAdjustmentCommand } from '../../../application/register-manual-adjustment/register-manual-adjustment.command'
+import { SearchInventoryLevelsByCriteria } from '../../../application/search-by-criteria/search-inventory-levels-by-criteria'
+import { GetInventoryLevelStatistics } from '../../../application/get-statistics/get-inventory-level-statistics'
+import { RegisterManualAdjustment } from '../../../application/register-manual-adjustment/register-manual-adjustment'
 import { PaginatedInventoryLevelListResponse } from '../../../application/dto/paginated-inventory-level-list.response'
+import { InventoryLevelListItemResponse } from '../../../application/dto/inventory-level-list-item.response'
 import { InventoryLevelStatistics } from '../../../application/dto/inventory-level-statistics'
 
 /**
@@ -24,21 +24,25 @@ import { InventoryLevelStatistics } from '../../../application/dto/inventory-lev
 @Controller('inventory-levels')
 export class InventoryLevelController {
   constructor(
-    private readonly queryBus: QueryBus,
-    private readonly commandBus: CommandBus
+    private readonly searchInventoryLevelsByCriteria: SearchInventoryLevelsByCriteria,
+    private readonly getInventoryLevelStatistics: GetInventoryLevelStatistics,
+    private readonly registerManualAdjustment: RegisterManualAdjustment
   ) {}
 
   @Get('summary')
   async getSummary(): Promise<InventoryLevelStatistics> {
-    return this.queryBus.execute(new GetInventoryLevelStatisticsQuery())
+    return this.getInventoryLevelStatistics.run()
   }
 
   @Get()
   async search(
     @Query() dto: SearchInventoryLevelsRequest
   ): Promise<PaginatedInventoryLevelListResponse> {
-    const criteria = dto.toCriteria()
-    return this.queryBus.execute(new SearchInventoryLevelsByCriteriaQuery(criteria))
+    const result = await this.searchInventoryLevelsByCriteria.run(dto.toCriteria())
+    const data = result.paginated.data.map(item =>
+      InventoryLevelListItemResponse.fromReadModel(item)
+    )
+    return new PaginatedInventoryLevelListResponse(data, result.paginated.meta, result.stats)
   }
 
   @Post(':ingredientId/adjustments')
@@ -47,13 +51,13 @@ export class InventoryLevelController {
     @Param('ingredientId') ingredientId: string,
     @Body() dto: RegisterManualAdjustmentRequest
   ): Promise<{ id: string }> {
-    const command = new RegisterManualAdjustmentCommand(
+    const id = await this.registerManualAdjustment.run(
       ingredientId,
       dto.type,
       dto.quantity,
       dto.note ?? null,
       null // performedBy: se integrará cuando haya autenticación
     )
-    return this.commandBus.execute(command)
+    return { id }
   }
 }
