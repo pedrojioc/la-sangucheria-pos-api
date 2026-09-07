@@ -15,14 +15,6 @@ import { TypeOrmIngredientCategoryQueryService } from '@contexts/inventory/ingre
 // Events
 import { EventBus } from '@/shared/domain/events'
 
-// Command Handlers
-import { CreateIngredientCategoryCommandHandler } from '@contexts/inventory/ingredient-category/application/create/create-ingredient-category.handler'
-import { UpdateIngredientCategoryCommandHandler } from '@contexts/inventory/ingredient-category/application/update/update-ingredient-category.handler'
-
-// Query Handlers
-import { FindIngredientCategoryHandler } from '@contexts/inventory/ingredient-category/application/find/find-ingredient-category.handler'
-import { SearchIngredientCategoriesByCriteriaHandler } from '@contexts/inventory/ingredient-category/application/search-by-criteria/search-ingredient-categories-by-criteria.handler'
-
 // Use Cases
 import { CreateIngredientCategory } from '@contexts/inventory/ingredient-category/application/create/create-ingredient-category'
 import { UpdateIngredientCategory } from '@contexts/inventory/ingredient-category/application/update/update-ingredient-category'
@@ -34,13 +26,6 @@ import { IngredientCategoryController } from '@contexts/inventory/ingredient-cat
 
 // Utils
 import { createProvider } from '@/core/utils/create-provider'
-
-const CommandHandlers = [
-  CreateIngredientCategoryCommandHandler,
-  UpdateIngredientCategoryCommandHandler
-]
-
-const QueryHandlers = [FindIngredientCategoryHandler, SearchIngredientCategoriesByCriteriaHandler]
 
 @Module({
   imports: [TypeOrmModule.forFeature([IngredientCategoryEntity])],
@@ -66,13 +51,7 @@ const QueryHandlers = [FindIngredientCategoryHandler, SearchIngredientCategories
       FindIngredientCategory
     ]),
     createProvider(FindIngredientCategory, [IngredientCategoryRepository]),
-    createProvider(SearchIngredientCategoriesByCriteria, [IngredientCategoryQueryService]),
-
-    // COMMAND HANDLERS
-    ...CommandHandlers,
-
-    // QUERY HANDLERS
-    ...QueryHandlers
+    createProvider(SearchIngredientCategoriesByCriteria, [IngredientCategoryQueryService])
   ],
   exports: [IngredientCategoryRepository, FindIngredientCategory]
 })
