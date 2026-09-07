@@ -42,7 +42,6 @@ import { RegisterPurchase } from '@/contexts/inventory/batch/application/registe
 import { SearchInventoryLevelsByCriteriaHandler } from './application/search-by-criteria/search-inventory-levels-by-criteria.handler'
 import { GetInventoryLevelStatisticsHandler } from './application/get-statistics/get-inventory-level-statistics.handler'
 import { RegisterManualAdjustmentHandler } from './application/register-manual-adjustment/register-manual-adjustment.handler'
-import { RegisterPurchaseHandler } from '@/contexts/inventory/batch/application/register-purchase/register-purchase.handler'
 
 // Subscribers
 import { CreateInventoryLevelOnIngredientCreated } from './application/subscribers/create-inventory-level-on-ingredient-created'
@@ -132,7 +131,6 @@ import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversi
     SearchInventoryLevelsByCriteriaHandler,
     GetInventoryLevelStatisticsHandler,
     RegisterManualAdjustmentHandler,
-    RegisterPurchaseHandler,
 
     // Event Subscribers
     {
