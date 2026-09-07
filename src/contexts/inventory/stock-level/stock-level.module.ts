@@ -1,6 +1,5 @@
 import { Module, OnModuleInit } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { CqrsModule } from '@nestjs/cqrs'
 
 // Entities
 import { InventoryMovementEntity } from './infrastructure/persistence/typeorm/inventory-movement.entity'
@@ -38,11 +37,6 @@ import { AddProducedStock } from './application/add-produced-stock/add-produced-
 import { InitializeInventoryLevel } from './application/initialize-inventory-level/initialize-inventory-level'
 import { RegisterPurchase } from '@/contexts/inventory/batch/application/register-purchase/register-purchase'
 
-// Handlers
-import { SearchInventoryLevelsByCriteriaHandler } from './application/search-by-criteria/search-inventory-levels-by-criteria.handler'
-import { GetInventoryLevelStatisticsHandler } from './application/get-statistics/get-inventory-level-statistics.handler'
-import { RegisterManualAdjustmentHandler } from './application/register-manual-adjustment/register-manual-adjustment.handler'
-
 // Subscribers
 import { CreateInventoryLevelOnIngredientCreated } from './application/subscribers/create-inventory-level-on-ingredient-created'
 import { RegisterPurchaseOnItemReceived } from './application/subscribers/register-purchase-on-item-received'
@@ -61,7 +55,6 @@ import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversi
 @Module({
   imports: [
     TypeOrmModule.forFeature([InventoryMovementEntity, InventoryLevelEntity]),
-    CqrsModule,
     InventoryBatchModule,
     IngredientModule
   ],
@@ -126,11 +119,6 @@ import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversi
     // Use Cases - Queries
     createProvider(SearchInventoryLevelsByCriteria, [InventoryLevelQueryService]),
     createProvider(GetInventoryLevelStatistics, [InventoryLevelStatisticsQueryService]),
-
-    // Handlers
-    SearchInventoryLevelsByCriteriaHandler,
-    GetInventoryLevelStatisticsHandler,
-    RegisterManualAdjustmentHandler,
 
     // Event Subscribers
     {

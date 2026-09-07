@@ -31,10 +31,10 @@ export class IngredientController {
       dto.ingredientCategoryId,
       dto.unitId,
       dto.preferredSupplierId || null,
-      dto.minimumStock || null,
-      dto.maximumStock || null,
+      dto.minimumStock ?? null,
+      dto.maximumStock ?? null,
       dto.isPerishable,
-      dto.shelfLifeDays || null,
+      dto.shelfLifeDays ?? null,
       dto.storageLocation || null,
       dto.isActive
     )
