@@ -7,8 +7,10 @@ import {
   Body,
   Param,
   HttpCode,
-  HttpStatus
+  HttpStatus,
+  UseInterceptors
 } from '@nestjs/common'
+import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 import { CreateRecipeRequest } from '../dto/create-recipe.request'
 import { UpdateRecipeRequest } from '../dto/update-recipe.request'
 import { RecipeResponse } from '@contexts/kitchen/recipe/application/dto/recipe.response'
@@ -30,6 +32,7 @@ export class RecipeController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(TransactionInterceptor)
   async create(@Body() dto: CreateRecipeRequest): Promise<void> {
     await this.createRecipe.run(dto.id, dto.name, dto.items, dto.recipeYield, dto.description)
   }
@@ -46,12 +49,14 @@ export class RecipeController {
 
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(TransactionInterceptor)
   async update(@Param('id') id: string, @Body() dto: UpdateRecipeRequest): Promise<void> {
     await this.updateRecipe.run(id, dto.name, dto.items, dto.recipeYield, dto.description)
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(TransactionInterceptor)
   async delete(@Param('id') id: string): Promise<void> {
     await this.deleteRecipe.run(id)
   }

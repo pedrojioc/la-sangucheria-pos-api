@@ -70,14 +70,33 @@ describe('TypeOrmRecipeRepository (ambient UnitOfWork wiring)', () => {
       create: jest.fn(entity => entity),
       save: scopedSave
     } as unknown as Repository<RecipeEntity>
-    const getRepository = jest.fn().mockReturnValue(scopedRepository)
+
+    const scopedItemSave = jest.fn()
+    const scopedItemDelete = jest.fn()
+    const scopedItemRepository = {
+      create: jest.fn(entity => entity),
+      save: scopedItemSave,
+      delete: scopedItemDelete
+    } as unknown as Repository<RecipeItemEntity>
+
+    const getRepository = jest.fn().mockImplementation(target => {
+      if (target === RecipeItemEntity) {
+        return scopedItemRepository
+      }
+      return scopedRepository
+    })
     const ambientManager = { getRepository } as unknown as EntityManager
     const context: UnitOfWorkContext = { manager: ambientManager, pending: [], depth: 0 }
 
     await holder.run(context, () => repository.save(buildRecipe()))
 
     expect(getRepository).toHaveBeenCalledWith(RecipeEntity)
+    expect(getRepository).toHaveBeenCalledWith(RecipeItemEntity)
     expect(scopedSave).toHaveBeenCalledTimes(1)
+    expect(scopedItemDelete).toHaveBeenCalledTimes(1)
+    expect(scopedItemSave).toHaveBeenCalledTimes(1)
     expect(defaultRepository.save).not.toHaveBeenCalled()
+    expect(defaultItemRepository.save).not.toHaveBeenCalled()
+    expect(defaultItemRepository.delete).not.toHaveBeenCalled()
   })
 })
