@@ -12,15 +12,6 @@ import { TypeOrmRecipeRepository } from '@/contexts/kitchen/recipe/infrastructur
 // Events
 import { EventBus } from '@/shared/domain/events'
 
-// Command Handlers
-import { CreateRecipeHandler } from '@/contexts/kitchen/recipe/application/create/create-recipe.handler'
-import { UpdateRecipeHandler } from '@/contexts/kitchen/recipe/application/update/update-recipe.handler'
-import { DeleteRecipeHandler } from '@/contexts/kitchen/recipe/application/delete/delete-recipe.handler'
-
-// Query Handlers
-import { FindRecipeHandler } from '@/contexts/kitchen/recipe/application/find/find-recipe.handler'
-import { SearchAllRecipesHandler } from '@/contexts/kitchen/recipe/application/search-all/search-all-recipes.handler'
-
 // Use Cases
 import { CreateRecipe } from '@/contexts/kitchen/recipe/application/create/create-recipe'
 import { UpdateRecipe } from '@/contexts/kitchen/recipe/application/update/update-recipe'
@@ -33,10 +24,6 @@ import { RecipeController } from '@/contexts/kitchen/recipe/presentation/http/co
 
 // Utils
 import { createProvider } from '@/core/utils/create-provider'
-
-const CommandHandlers = [CreateRecipeHandler, UpdateRecipeHandler, DeleteRecipeHandler]
-
-const QueryHandlers = [FindRecipeHandler, SearchAllRecipesHandler]
 
 @Module({
   imports: [TypeOrmModule.forFeature([RecipeEntity, RecipeItemEntity])],
@@ -53,13 +40,7 @@ const QueryHandlers = [FindRecipeHandler, SearchAllRecipesHandler]
     createProvider(UpdateRecipe, [RecipeRepository, EventBus]),
     createProvider(DeleteRecipe, [RecipeRepository, EventBus]),
     createProvider(FindRecipe, [RecipeRepository]),
-    createProvider(SearchAllRecipes, [RecipeRepository]),
-
-    // COMMAND HANDLERS
-    ...CommandHandlers,
-
-    // QUERY HANDLERS
-    ...QueryHandlers
+    createProvider(SearchAllRecipes, [RecipeRepository])
   ],
   exports: [RecipeRepository, FindRecipe]
 })
