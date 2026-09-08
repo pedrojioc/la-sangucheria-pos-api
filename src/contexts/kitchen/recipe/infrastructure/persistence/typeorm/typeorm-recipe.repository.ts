@@ -88,6 +88,7 @@ export class TypeOrmRecipeRepository
   }
 
   async delete(id: RecipeId): Promise<void> {
+    await this.itemRepository.delete({ recipeId: id.value })
     await this.repo.delete({ id: id.value })
   }
 
@@ -97,13 +98,13 @@ export class TypeOrmRecipeRepository
       .map(item =>
         RecipeItem.fromPrimitives({
           ingredientId: item.ingredientId,
-          quantity: item.quantity,
+          quantity: Number(item.quantity),
           unitId: item.unitId
         })
       )
 
     const recipeYield = RecipeYield.fromPrimitives({
-      value: entity.yieldQuantity,
+      value: Number(entity.yieldQuantity),
       unitId: entity.yieldUnitId,
       description: entity.yieldDescription
     })
