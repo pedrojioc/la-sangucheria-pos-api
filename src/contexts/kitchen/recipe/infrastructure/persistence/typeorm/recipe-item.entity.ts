@@ -1,11 +1,11 @@
-import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm'
 import { RecipeEntity } from './recipe.entity'
 import { IngredientEntity } from '@/contexts/inventory/ingredient/infrastructure/persistence/typeorm/ingredient.entity'
 import { UnitEntity } from '@/contexts/shared-kernel/unit/infrastructure/persistence/typeorm/unit.entity'
 
 @Entity('recipe_items')
 export class RecipeItemEntity {
-  @PrimaryColumn('uuid')
+  @PrimaryGeneratedColumn('uuid')
   id: string
 
   @Column({ type: 'uuid', name: 'recipe_id' })
