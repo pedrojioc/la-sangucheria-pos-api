@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { CqrsModule } from '@nestjs/cqrs'
 import { DataSource } from 'typeorm'
 import { EventBus } from '@/shared/domain/events'
 import { createProvider } from '@/core/utils/create-provider'
@@ -31,19 +30,11 @@ import { FindPreparationRecipeDetail } from './application/find/find-preparation
 import { SearchPreparationRecipesByCriteria } from './application/search-by-criteria/search-preparation-recipes-by-criteria'
 import { RegisterTransformation } from './application/register/register-transformation'
 
-import { CreatePreparationRecipeHandler } from './application/create/create-preparation-recipe.handler'
-import { SearchPreparationRecipesByCriteriaHandler } from './application/search-by-criteria/search-preparation-recipes-by-criteria.handler'
-import { RegisterTransformationHandler } from './application/register/register-transformation.handler'
-
 import { PreparationRecipeController } from './presentation/http/controllers/preparation-recipe.controller'
 import { IngredientTransformationController } from './presentation/http/controllers/ingredient-transformation.controller'
 
-const CommandHandlers = [CreatePreparationRecipeHandler, RegisterTransformationHandler]
-const QueryHandlers = [SearchPreparationRecipesByCriteriaHandler]
-
 @Module({
   imports: [
-    CqrsModule,
     TypeOrmModule.forFeature([
       PreparationRecipeEntity,
       PreparationRecipeIngredientEntity,
@@ -84,10 +75,7 @@ const QueryHandlers = [SearchPreparationRecipesByCriteriaHandler]
       FifoInventoryService,
       TransformationUnitOfWork,
       EventBus
-    ]),
-
-    ...CommandHandlers,
-    ...QueryHandlers
+    ])
   ]
 })
 export class TransformationModule {}
