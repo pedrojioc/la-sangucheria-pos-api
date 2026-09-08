@@ -17,14 +17,26 @@ export class TypeOrmRecipeRepository
   extends TransactionalRepository<RecipeEntity>
   implements RecipeRepository
 {
+  private readonly defaultItemRepository: Repository<RecipeItemEntity>
+  private readonly uowContextHolder: UnitOfWorkContextHolder
+
   constructor(
     @InjectRepository(RecipeEntity)
     repository: Repository<RecipeEntity>,
     @InjectRepository(RecipeItemEntity)
-    private readonly itemRepository: Repository<RecipeItemEntity>,
+    defaultItemRepository: Repository<RecipeItemEntity>,
     uow: UnitOfWorkContextHolder
   ) {
     super(repository, uow)
+    this.defaultItemRepository = defaultItemRepository
+    this.uowContextHolder = uow
+  }
+
+  private get itemRepository(): Repository<RecipeItemEntity> {
+    const manager = this.uowContextHolder.currentManager()
+    return manager
+      ? manager.getRepository<RecipeItemEntity>(this.defaultItemRepository.target)
+      : this.defaultItemRepository
   }
 
   async save(recipe: Recipe): Promise<void> {
