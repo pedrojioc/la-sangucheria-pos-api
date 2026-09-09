@@ -38,19 +38,22 @@ Corré los tests después de cada cambio.
 
 ```
 Lee el hallazgo #2 de docs/architecture/onion-architecture-conformance-audit.md
-(register-item-reception.ts). Cargá completas las skills onion-architecture,
+(register-purchase.ts, RESOLVED — ver sdd/fix-register-item-reception-port
+para el fix ya aplicado). Cargá completas las skills onion-architecture,
 onion-application y onion-infrastructure (.claude/skills/), incluyendo
-references/rationale.md, antes de tocar código. El fix toca tanto el use
+references/rationale.md, antes de tocar código. El fix tocó tanto el use
 case (application/) como el nuevo adapter (infrastructure/), así que las
 reglas de ambas capas aplican.
 
 Diseñá el/los puerto(s) necesarios en application/ports/ de
-procurement/purchase-order y sus adapters en infrastructure/adapters/,
+inventory/batch y sus adapters en infrastructure/adapters/,
 usando EstablishmentSettingsPort/TypeOrmEstablishmentSettingsAdapter
 (orders/order) como referencia exacta de la forma correcta.
 
 No toques ningún otro hallazgo en esta sesión.
 ```
+
+`purchase-order-validation.service.ts` (`procurement/purchase-order`) is a separate, still-open concern flagged during the same investigation — a different violation mechanism (domain-layer `IngredientId` import plus infra raw-SQL against `inventory`'s entity table). It was explicitly out of scope for the finding #2 fix and remains unaddressed.
 
 Ejemplo para el hallazgo #1 (mismo patrón, distinto archivo):
 
@@ -119,7 +122,7 @@ Repetir cambiando `crm` por el siguiente contexto en cada sesión sucesiva.
 | # | Finding | Severity | Category | Governing rule |
 |---|---|---|---|---|
 | 1 | `deduct-ingredients-on-order-closed.ts` imports `menu`/`inventory` domain+application directly, no port | High | Cross-context | `onion-architecture` Rule 4 |
-| 2 | `register-item-reception.ts` imports `inventory`+`shared-kernel` domain directly (3 contexts, no port) | High | Cross-context | `onion-architecture` Rule 4 |
+| 2 | `register-purchase.ts` imported `shared-kernel` unit-conversion domain directly, no port — **RESOLVED**, see `sdd/fix-register-item-reception-port` | High | Cross-context | `onion-architecture` Rule 4 |
 | 3 | Kitchen-printer subscriber leaks `orders`' `OrderType` into its own local DTO (event push, not a pull call) | Medium | Cross-context (event) | `onion-application` Rule 6 |
 | 4 | `create-product.ts` calls sibling use cases directly, no port | Low | Cross-context | `onion-architecture` Rule 4 |
 | 5 | Two competing use-case orchestration styles (plain `.run()` vs `@nestjs/cqrs` bus) across contexts | High | Application | `onion-architecture` Rule 3 |
@@ -152,24 +155,20 @@ Imports two `menu` domain repositories and one `inventory` use case directly int
 
 **Fix direction:** define a port in `orders/order/application/ports/` (e.g. `InventoryDeductionPort`) covering what this subscriber needs, implement the adapter in `orders/order/infrastructure/adapters/` calling `menu`'s and `inventory`'s public use cases — never their domain repositories.
 
-### 2. `register-item-reception.ts` — High
+### 2. `register-purchase.ts` — High — RESOLVED
 
-**File:** `src/contexts/procurement/purchase-order/application/register-item-reception/register-item-reception.ts`
+**File:** `src/contexts/inventory/batch/application/register-purchase/register-purchase.ts`, method `convertToBaseUnit()`
+
+**Correction note:** this finding originally misidentified the violation site as `procurement/purchase-order/application/register-item-reception/register-item-reception.ts`. Live verification during `sdd/fix-register-item-reception-port` showed `register-item-reception.ts` was already clean — it imports only `EventBus` and its own `purchase-order` domain types, no cross-context reach at all. The real Rule 4 violation was one level downstream, in `inventory/batch`'s `RegisterPurchase` use case:
 
 ```typescript
-import { IngredientRepository } from '@contexts/inventory/ingredient/domain/repositories/ingredient.repository'
-import { IngredientId } from '@contexts/inventory/ingredient/domain/ingredient-id'
-import { UnitConversionRepository } from '@contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
-import { UnitConversionNotFound } from '@contexts/shared-kernel/unit-conversion/domain/exceptions/unit-conversion-not-found.exception'
-import { InventoryBatch } from '@contexts/inventory/batch/domain/inventory-batch'
-import { InventoryMovement } from '@contexts/inventory/stock-level/domain/inventory-movement'
-import { InventoryLevel } from '@contexts/inventory/stock-level/domain/inventory-level'
-import { MovementType } from '@contexts/inventory/stock-level/domain/movement-type'
+import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
+import { UnitConversionNotFound } from '@/contexts/shared-kernel/unit-conversion/domain/exceptions/unit-conversion-not-found.exception'
 ```
 
-The most severe instance found: **8 domain objects imported directly from 2 other bounded contexts** (`inventory`, `shared-kernel`), no port at all. `procurement` has zero abstraction over its dependency on `inventory`'s internals — a change to any of `IngredientRepository`, `InventoryBatch`, `InventoryMovement`, `InventoryLevel`, or `MovementType` breaks this use case directly.
+`RegisterPurchase` (in `inventory/batch`) called `UnitConversionRepository.findByUnits()` directly and caught `UnitConversionNotFound` from `shared-kernel`'s domain layer — two imports crossing into another bounded context's domain, no port. The other ~6 imports this finding originally listed (`IngredientRepository`, `InventoryBatch`, `InventoryMovement`, `InventoryLevel`, `MovementType`, etc.) are intra-`inventory` (batch/ingredient/stock-level are sibling modules of the same bounded context) and are not a Rule 4 violation — no port warranted for those.
 
-**Fix direction:** this one needs more than a single port — it likely needs a small set of them (e.g. an `InventoryReceptionPort` covering ingredient lookup + batch/movement recording, a `UnitConversionPort` for the conversion lookup), implemented by adapters in `procurement/purchase-order/infrastructure/adapters/` that call `inventory`'s and `shared-kernel`'s public use cases.
+**Fix (resolved):** one port, not two. `UnitConversionPort` (`inventory/batch/application/ports/unit-conversion.port.ts`), implemented by `SharedKernelUnitConversionAdapter` (`inventory/batch/infrastructure/adapters/`), calling a new Open Host Service `GetConversionFactor` in `shared-kernel/unit-conversion/application/`. See `sdd/fix-register-item-reception-port` (spec/design/tasks) for the full rationale, including why the fix adds a use case to `shared-kernel` rather than reusing the existing `ConvertQuantity` (ADR-1: `ConvertQuantity` drops inverse-rule synthesis and would be a functional regression).
 
 ### 3. Kitchen-printer subscribers — Medium
 

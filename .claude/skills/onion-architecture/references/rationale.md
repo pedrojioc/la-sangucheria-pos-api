@@ -24,7 +24,7 @@ Sourced justification for each Hard Rule in `SKILL.md`, plus what the reference 
 ## Rule 4 — Cross-bounded-context calls via Port/ACL
 
 - Not a Palermo/Onion-specific rule — this is the Anti-Corruption Layer pattern from DDD strategic design (Eric Evans), a natural extension of the same Dependency Inversion idea applied at the bounded-context boundary instead of the layer boundary.
-- Project check: the project has one well-executed example (`orders/order` uses `EstablishmentSettingsPort`, `StationRoutingPort`, `TableLabelPort`, explicitly labeled `// PORTS (ACL)` in `order.module.ts`), but everywhere else — `deduct-ingredients-on-order-closed.ts`, `register-item-reception.ts`, `create-product.ts`, kitchen-printer subscribers — imports another context's domain/application objects directly. This skill generalizes the one correct pattern found and requires it everywhere.
+- Project check: the project has one well-executed example (`orders/order` uses `EstablishmentSettingsPort`, `StationRoutingPort`, `TableLabelPort`, explicitly labeled `// PORTS (ACL)` in `order.module.ts`), but everywhere else — `deduct-ingredients-on-order-closed.ts`, `register-purchase.ts`, `create-product.ts`, kitchen-printer subscribers — imports another context's domain/application objects directly. This skill generalizes the one correct pattern found and requires it everywhere. (`register-purchase.ts`'s violation — `inventory/batch` importing `shared-kernel/unit-conversion`'s domain repository directly — was fixed via `UnitConversionPort`/`SharedKernelUnitConversionAdapter`; see `docs/architecture/onion-architecture-conformance-audit.md` finding #2.)
 
 ## Rule 5 — Response DTOs live in Application, with `fromAggregate` factory
 
