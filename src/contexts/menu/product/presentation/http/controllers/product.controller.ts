@@ -17,26 +17,27 @@ import {
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 
-import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import { CreateProductRequest } from '../dto/create-product.request'
 import { UpdateProductRequest } from '../dto/update-product.request'
 import { SearchProductsRequest } from '../dto/search-products.request'
-import { CreateProductCommand } from '@contexts/menu/product/application/create/create-product.command'
-import { UpdateProductCommand } from '@contexts/menu/product/application/update/update-product.command'
-import { DeleteProductCommand } from '@contexts/menu/product/application/delete/delete-product.command'
-import { SearchProductsByCriteriaQuery } from '@contexts/menu/product/application/search-by-criteria/search-products-by-criteria.query'
+import { CreateProduct } from '@contexts/menu/product/application/create/create-product'
+import { UpdateProduct } from '@contexts/menu/product/application/update/update-product'
+import { DeleteProduct } from '@contexts/menu/product/application/delete/delete-product'
+import { SearchProductsByCriteria } from '@contexts/menu/product/application/search-by-criteria/search-products-by-criteria'
+import { ProductListItemResponse } from '@contexts/menu/product/application/dto/product-list-item.response'
 import { PaginatedProductListResponse } from '@contexts/menu/product/application/dto/paginated-product-list.response'
-import { FindProductWithOptionsQuery } from '@contexts/menu/product-option/application/find-product-with-options/find-product-with-options.query'
-import { ProductWithOptionsResponse } from '@contexts/menu/product-option/application/dto/product-with-options.response'
 import { FileAdapter } from '@/shared/presentation/dto/file-adapter'
-import { GenerateProductSkuQuery } from '@contexts/menu/product/application/generate-sku/generate-product-sku.query'
+import { GenerateProductSku } from '@contexts/menu/product/application/generate-sku/generate-product-sku'
 import { GenerateProductSkuResponse } from '@contexts/menu/product/application/dto/generate-product-sku.response'
 
 @Controller('products')
 export class ProductController {
   constructor(
-    private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus
+    private readonly createProduct: CreateProduct,
+    private readonly updateProduct: UpdateProduct,
+    private readonly deleteProduct: DeleteProduct,
+    private readonly searchProductsByCriteria: SearchProductsByCriteria,
+    private readonly generateProductSku: GenerateProductSku
   ) {}
 
   @Post()
@@ -55,7 +56,7 @@ export class ProductController {
     )
     file?: Express.Multer.File
   ): Promise<void> {
-    const command = new CreateProductCommand(
+    await this.createProduct.run(
       dto.id,
       dto.name,
       dto.categoryId,
@@ -69,28 +70,18 @@ export class ProductController {
       dto.displayOrder,
       dto.tags
     )
-
-    await this.commandBus.execute(command)
   }
 
   @Get('generate-sku')
   async generateSku(): Promise<GenerateProductSkuResponse> {
-    const query = new GenerateProductSkuQuery()
-    const sku = await this.queryBus.execute<GenerateProductSkuQuery, string>(query)
-    return GenerateProductSkuResponse.create(sku)
+    return GenerateProductSkuResponse.create(await this.generateProductSku.run())
   }
 
   @Get()
   async search(@Query() dto: SearchProductsRequest): Promise<PaginatedProductListResponse> {
-    const criteria = dto.toCriteria()
-    const query = new SearchProductsByCriteriaQuery(criteria)
-    return this.queryBus.execute(query)
-  }
-
-  @Get(':id')
-  async findById(@Param('id') id: string): Promise<ProductWithOptionsResponse> {
-    const query = new FindProductWithOptionsQuery(id)
-    return this.queryBus.execute(query)
+    const result = await this.searchProductsByCriteria.run(dto.toCriteria())
+    const data = result.data.map(item => ProductListItemResponse.fromReadModel(item))
+    return new PaginatedProductListResponse(data, result.meta)
   }
 
   @Put(':id')
@@ -110,7 +101,7 @@ export class ProductController {
     )
     file?: Express.Multer.File
   ): Promise<void> {
-    const command = new UpdateProductCommand(
+    await this.updateProduct.run(
       id,
       dto.name,
       dto.categoryId,
@@ -124,14 +115,11 @@ export class ProductController {
       dto.displayOrder,
       dto.tags
     )
-
-    await this.commandBus.execute(command)
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('id') id: string): Promise<void> {
-    const command = new DeleteProductCommand(id)
-    await this.commandBus.execute(command)
+    await this.deleteProduct.run(id)
   }
 }

@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { CqrsModule } from '@nestjs/cqrs'
 
 // Entities
 import { OptionGroupEntity } from './infrastructure/persistence/typeorm/option-group.entity'
@@ -36,25 +35,19 @@ import { AssignProductOptionGroups } from './application/assign/assign-product-o
 import { FindProductWithOptions } from './application/find-product-with-options/find-product-with-options'
 import { SearchOptionGroupsByCriteria } from './application/search-by-criteria/search-option-groups-by-criteria'
 
-// CQRS Handlers
-import { FindProductWithOptionsHandler } from './application/find-product-with-options/find-product-with-options.handler'
-import { SearchOptionGroupsByCriteriaHandler } from './application/search-by-criteria/search-option-groups-by-criteria.handler'
-
 // Query service interfaces
 import { OptionGroupQueryService } from './application/services/option-group-query.service'
 
 // Controllers
 import { OptionGroupController } from './presentation/http/controllers/option-group.controller'
 import { ProductOptionGroupController } from './presentation/http/controllers/product-option-group.controller'
+import { ProductWithOptionsController } from './presentation/http/controllers/product-with-options.controller'
 
 // Utils
 import { createProvider } from '@core/utils/create-provider'
 
-const QueryHandlers = [FindProductWithOptionsHandler, SearchOptionGroupsByCriteriaHandler]
-
 @Module({
   imports: [
-    CqrsModule,
     TypeOrmModule.forFeature([
       OptionGroupEntity,
       OptionItemEntity,
@@ -64,7 +57,7 @@ const QueryHandlers = [FindProductWithOptionsHandler, SearchOptionGroupsByCriter
     ]),
     ProductModule
   ],
-  controllers: [OptionGroupController, ProductOptionGroupController],
+  controllers: [OptionGroupController, ProductOptionGroupController, ProductWithOptionsController],
   providers: [
     // REPOSITORIES
     {
@@ -95,11 +88,8 @@ const QueryHandlers = [FindProductWithOptionsHandler, SearchOptionGroupsByCriter
       ProductOptionGroupRepository
     ]),
     createProvider(FindProductWithOptions, [TypeOrmProductWithOptionsQueryService]),
-    createProvider(SearchOptionGroupsByCriteria, [OptionGroupQueryService]),
-
-    // QUERY HANDLERS
-    ...QueryHandlers
+    createProvider(SearchOptionGroupsByCriteria, [OptionGroupQueryService])
   ],
-  exports: [OptionGroupRepository, ProductOptionGroupRepository, FindProductWithOptionsHandler]
+  exports: [OptionGroupRepository, ProductOptionGroupRepository]
 })
 export class ProductOptionModule {}

@@ -8,32 +8,35 @@ import {
   Param,
   Post,
   Put,
-  Query
+  Query,
+  UseInterceptors
 } from '@nestjs/common'
-import { QueryBus } from '@nestjs/cqrs'
+import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 import { CreateOptionGroupRequest } from '../dto/create-option-group.request'
 import { UpdateOptionGroupRequest } from '../dto/update-option-group.request'
 import { SearchOptionGroupsRequest } from '../dto/search-option-groups.request'
 import { OptionGroupResponse } from '../../../application/dto/option-group.response'
+import { OptionGroupListItemResponse } from '../../../application/dto/option-group-list-item.response'
 import { PaginatedOptionGroupListResponse } from '../../../application/dto/paginated-option-group-list.response'
 import { CreateOptionGroup } from '../../../application/create/create-option-group'
 import { UpdateOptionGroup } from '../../../application/update/update-option-group'
 import { DeactivateOptionGroup } from '../../../application/deactivate/deactivate-option-group'
 import { FindOptionGroup } from '../../../application/find/find-option-group'
-import { SearchOptionGroupsByCriteriaQuery } from '../../../application/search-by-criteria/search-option-groups-by-criteria.query'
+import { SearchOptionGroupsByCriteria } from '../../../application/search-by-criteria/search-option-groups-by-criteria'
 
 @Controller('option-groups')
 export class OptionGroupController {
   constructor(
-    private readonly queryBus: QueryBus,
     private readonly createOptionGroup: CreateOptionGroup,
     private readonly updateOptionGroup: UpdateOptionGroup,
     private readonly deactivateOptionGroup: DeactivateOptionGroup,
-    private readonly findOptionGroup: FindOptionGroup
+    private readonly findOptionGroup: FindOptionGroup,
+    private readonly searchOptionGroupsByCriteria: SearchOptionGroupsByCriteria
   ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(TransactionInterceptor)
   async create(@Body() dto: CreateOptionGroupRequest): Promise<void> {
     await this.createOptionGroup.run(
       dto.id,
@@ -48,7 +51,11 @@ export class OptionGroupController {
 
   @Get()
   async search(@Query() dto: SearchOptionGroupsRequest): Promise<PaginatedOptionGroupListResponse> {
-    return this.queryBus.execute(new SearchOptionGroupsByCriteriaQuery(dto.toCriteria()))
+    const result = await this.searchOptionGroupsByCriteria.run(dto.toCriteria())
+    return new PaginatedOptionGroupListResponse(
+      result.data.map(item => OptionGroupListItemResponse.fromReadModel(item)),
+      result.meta
+    )
   }
 
   @Get(':id')
@@ -59,6 +66,7 @@ export class OptionGroupController {
 
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(TransactionInterceptor)
   async update(@Param('id') id: string, @Body() dto: UpdateOptionGroupRequest): Promise<void> {
     await this.updateOptionGroup.run(
       id,
@@ -73,6 +81,7 @@ export class OptionGroupController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(TransactionInterceptor)
   async deactivate(@Param('id') id: string): Promise<void> {
     await this.deactivateOptionGroup.run(id)
   }
