@@ -15,15 +15,6 @@ import { TypeOrmProductCategoryQueryService } from '@/contexts/menu/product-cate
 // Events
 import { EventBus } from '@/shared/domain/events'
 
-// Command Handlers
-import { CreateProductCategoryHandler } from '@/contexts/menu/product-category/application/create/create-product-category.handler'
-import { UpdateProductCategoryCommandHandler } from '@/contexts/menu/product-category/application/update/update-product-category.handler'
-import { DeleteProductCategoryCommandHandler } from '@/contexts/menu/product-category/application/delete/delete-product-category.handler'
-
-// Query Handlers
-import { FindProductCategoryHander } from '@/contexts/menu/product-category/application/find/find-product-category.handler'
-import { SearchProductCategoriesByCriteriaHandler } from '@/contexts/menu/product-category/application/search-by-criteria/search-product-categories-by-criteria.handler'
-
 // Use Cases
 import { CreateProductCategory } from '@/contexts/menu/product-category/application/create/create-product-category'
 import { UpdateProductCategory } from '@/contexts/menu/product-category/application/update/update-product-category'
@@ -39,14 +30,6 @@ import { ReactOnCategoryCreated } from '@/contexts/menu/product-category/applica
 
 // Utils
 import { createProvider } from '@/core/utils/create-provider'
-
-const CommandHandlers = [
-  CreateProductCategoryHandler,
-  UpdateProductCategoryCommandHandler,
-  DeleteProductCategoryCommandHandler
-]
-
-const QueryHandlers = [FindProductCategoryHander, SearchProductCategoriesByCriteriaHandler]
 
 const Subscribers = [ReactOnCategoryCreated]
 
@@ -72,12 +55,6 @@ const Subscribers = [ReactOnCategoryCreated]
     createProvider(DeleteProductCategory, [ProductCategoryRepository, EventBus]),
     createProvider(FindProductCategory, [ProductCategoryRepository]),
     createProvider(SearchProductCategoriesByCriteria, [ProductCategoryQueryService]),
-
-    // COMMAND HANDLERS
-    ...CommandHandlers,
-
-    // QUERY HANDLERS
-    ...QueryHandlers,
 
     // SUBSCRIBERS
     ...Subscribers
