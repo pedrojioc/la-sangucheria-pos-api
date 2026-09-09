@@ -3,8 +3,7 @@ import { IngredientRepository } from '@contexts/inventory/ingredient/domain/repo
 import { InventoryBatchRepository } from '@contexts/inventory/batch/domain/repositories/inventory-batch.repository'
 import { InventoryMovementRepository } from '@contexts/inventory/stock-level/domain/repositories/inventory-movement.repository'
 import { InventoryLevelRepository } from '@contexts/inventory/stock-level/domain/repositories/inventory-level.repository'
-import { UnitConversionRepository } from '@contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
-import { UnitConversion } from '@contexts/shared-kernel/unit-conversion/domain/unit-conversion'
+import { UnitConversionPort } from '@contexts/inventory/batch/application/ports/unit-conversion.port'
 import { UnitConversionNotFound } from '@contexts/shared-kernel/unit-conversion/domain/exceptions/unit-conversion-not-found.exception'
 import { NotFoundException } from '@shared/domain/exceptions/domain.exception'
 import { EventBus } from '@shared/domain/events'
@@ -18,9 +17,9 @@ describe('RegisterPurchase', () => {
     const ingredientRepository = {
       search: jest.fn()
     } as unknown as jest.Mocked<IngredientRepository>
-    const unitConversionRepository = {
-      findByUnits: jest.fn()
-    } as unknown as jest.Mocked<UnitConversionRepository>
+    const unitConversionPort = {
+      getFactor: jest.fn()
+    } as unknown as jest.Mocked<UnitConversionPort>
     const batchRepository = { save: jest.fn() } as unknown as jest.Mocked<InventoryBatchRepository>
     const movementRepository = {
       save: jest.fn()
@@ -33,7 +32,7 @@ describe('RegisterPurchase', () => {
 
     const useCase = new RegisterPurchase(
       ingredientRepository,
-      unitConversionRepository,
+      unitConversionPort,
       batchRepository,
       movementRepository,
       levelRepository,
@@ -43,7 +42,7 @@ describe('RegisterPurchase', () => {
     return {
       useCase,
       ingredientRepository,
-      unitConversionRepository,
+      unitConversionPort,
       batchRepository,
       movementRepository,
       levelRepository,
@@ -91,7 +90,7 @@ describe('RegisterPurchase', () => {
       args.referenceCode
     )
 
-    expect(deps.unitConversionRepository.findByUnits).not.toHaveBeenCalled()
+    expect(deps.unitConversionPort.getFactor).not.toHaveBeenCalled()
     expect(deps.batchRepository.save).toHaveBeenCalledTimes(1)
     expect(deps.movementRepository.save).toHaveBeenCalledTimes(1)
     expect(deps.levelRepository.save).toHaveBeenCalledTimes(1)
@@ -106,13 +105,7 @@ describe('RegisterPurchase', () => {
     deps.levelRepository.findByIngredient.mockResolvedValue(null)
 
     const factor = 1000 // kg -> g
-    const conversionRule = UnitConversion.create(
-      UuidMother.random(),
-      purchaseUnitId,
-      baseUnitId,
-      factor
-    )
-    deps.unitConversionRepository.findByUnits.mockResolvedValue(conversionRule)
+    deps.unitConversionPort.getFactor.mockResolvedValue(factor)
 
     const args = runArgs({ ingredientId: ingredient.toPrimitives().id, unitId: purchaseUnitId })
     const quantity = 10
@@ -131,10 +124,7 @@ describe('RegisterPurchase', () => {
       args.referenceCode
     )
 
-    expect(deps.unitConversionRepository.findByUnits).toHaveBeenCalledWith(
-      purchaseUnitId,
-      baseUnitId
-    )
+    expect(deps.unitConversionPort.getFactor).toHaveBeenCalledWith(purchaseUnitId, baseUnitId)
 
     const savedBatch = deps.batchRepository.save.mock.calls[0][0]
     const primitives = savedBatch.toPrimitives()
@@ -174,7 +164,9 @@ describe('RegisterPurchase', () => {
     const purchaseUnitId = UuidMother.random()
     const ingredient = IngredientMother.create({ unitId: baseUnitId })
     deps.ingredientRepository.search.mockResolvedValue(ingredient)
-    deps.unitConversionRepository.findByUnits.mockResolvedValue(null)
+    deps.unitConversionPort.getFactor.mockRejectedValue(
+      new UnitConversionNotFound(purchaseUnitId, baseUnitId)
+    )
 
     const args = runArgs({ ingredientId: ingredient.toPrimitives().id, unitId: purchaseUnitId })
 
