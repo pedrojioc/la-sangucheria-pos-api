@@ -13,6 +13,7 @@ import { UnitConversionService } from './domain/services/unit-conversion.service
 
 // Use Cases
 import { ConvertQuantity } from './application/convert-quantity/convert-quantity'
+import { GetConversionFactor } from './application/get-conversion-factor/get-conversion-factor'
 
 // Factory helper
 import { createProvider } from '@/core/utils/create-provider'
@@ -42,13 +43,15 @@ import { createProvider } from '@/core/utils/create-provider'
     UnitConversionService,
 
     // Use Cases
-    createProvider(ConvertQuantity, [UnitConversionRepository, UnitConversionService])
+    createProvider(ConvertQuantity, [UnitConversionRepository, UnitConversionService]),
+    createProvider(GetConversionFactor, [UnitConversionRepository])
   ],
   exports: [
     // Exportar para uso en otros módulos
     UnitConversionRepository,
     UnitConversionService,
-    ConvertQuantity
+    ConvertQuantity,
+    GetConversionFactor
   ]
 })
 export class UnitConversionsModule {}
