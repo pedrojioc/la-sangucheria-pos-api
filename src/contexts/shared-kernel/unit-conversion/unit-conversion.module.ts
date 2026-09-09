@@ -1,6 +1,5 @@
 import { Module, Global } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { CqrsModule } from '@nestjs/cqrs'
 
 // Entities
 import { UnitConversionEntity } from './infrastructure/persistence/typeorm/unit-conversion.entity'
@@ -15,13 +14,8 @@ import { UnitConversionService } from './domain/services/unit-conversion.service
 // Use Cases
 import { ConvertQuantity } from './application/convert-quantity/convert-quantity'
 
-// Handlers
-import { ConvertQuantityHandler } from './application/convert-quantity/convert-quantity.handler'
-
 // Factory helper
 import { createProvider } from '@/core/utils/create-provider'
-
-const queryHandlers = [ConvertQuantityHandler]
 
 /**
  * UnitConversionsModule
@@ -36,7 +30,7 @@ const queryHandlers = [ConvertQuantityHandler]
  */
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([UnitConversionEntity]), CqrsModule],
+  imports: [TypeOrmModule.forFeature([UnitConversionEntity])],
   providers: [
     // Repositories
     {
@@ -48,10 +42,7 @@ const queryHandlers = [ConvertQuantityHandler]
     UnitConversionService,
 
     // Use Cases
-    createProvider(ConvertQuantity, [UnitConversionRepository, UnitConversionService]),
-
-    // Handlers
-    ...queryHandlers
+    createProvider(ConvertQuantity, [UnitConversionRepository, UnitConversionService])
   ],
   exports: [
     // Exportar para uso en otros módulos

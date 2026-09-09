@@ -16,16 +16,6 @@ import { TypeOrmUnitQueryService } from '@/contexts/shared-kernel/unit/infrastru
 // Events
 import { EventBus } from '@/shared/domain/events'
 
-// Command Handlers
-import { CreateUnitCommandHandler } from '@/contexts/shared-kernel/unit/application/create/create-unit.handler'
-import { UpdateUnitCommandHandler } from '@/contexts/shared-kernel/unit/application/update/update-unit.handler'
-import { DeleteUnitCommandHandler } from '@/contexts/shared-kernel/unit/application/delete/delete-unit.handler'
-
-// Query Handlers
-import { FindUnitQueryHandler } from '@/contexts/shared-kernel/unit/application/find/find-unit.handler'
-import { FindAllUnitsQueryHandler } from '@/contexts/shared-kernel/unit/application/find-all/find-all-units.handler'
-import { FindUnitConversionsQueryHandler } from '@/contexts/shared-kernel/unit/application/find-conversions/find-unit-conversions.handler'
-
 // Use Cases
 import { CreateUnit } from '@/contexts/shared-kernel/unit/application/create/create-unit'
 import { UpdateUnit } from '@/contexts/shared-kernel/unit/application/update/update-unit'
@@ -43,16 +33,6 @@ import { ReactOnUnitCreated } from '@/contexts/shared-kernel/unit/application/su
 // Utils
 import { createProvider } from '@/core/utils/create-provider'
 
-const CommandHandlers = [
-  CreateUnitCommandHandler,
-  UpdateUnitCommandHandler,
-  DeleteUnitCommandHandler
-]
-const QueryHandlers = [
-  FindUnitQueryHandler,
-  FindAllUnitsQueryHandler,
-  FindUnitConversionsQueryHandler
-]
 const Subscribers = [ReactOnUnitCreated]
 
 @Module({
@@ -72,12 +52,6 @@ const Subscribers = [ReactOnUnitCreated]
     createProvider(FindUnit, [UnitRepository]),
     createProvider(FindAllUnits, [UnitRepository]),
     createProvider(FindUnitConversions, [UnitQueryService]),
-
-    // COMMAND HANDLERS
-    ...CommandHandlers,
-
-    // QUERY HANDLERS
-    ...QueryHandlers,
 
     // SUBSCRIBERS
     ...Subscribers
