@@ -2,8 +2,7 @@ import { InventoryBatch } from '@contexts/inventory/batch/domain/inventory-batch
 import { InventoryBatchRepository } from '@contexts/inventory/batch/domain/repositories/inventory-batch.repository'
 import { IngredientRepository } from '@/contexts/inventory/ingredient/domain/repositories/ingredient.repository'
 import { IngredientId } from '@/contexts/inventory/ingredient/domain/ingredient-id'
-import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
-import { UnitConversionNotFound } from '@/contexts/shared-kernel/unit-conversion/domain/exceptions/unit-conversion-not-found.exception'
+import { UnitConversionPort } from '../ports/unit-conversion.port'
 import { NotFoundException } from '@/shared/domain/exceptions/domain.exception'
 import { EventBus } from '@/shared/domain/events'
 import { InventoryMovementRepository } from '@contexts/inventory/stock-level/domain/repositories/inventory-movement.repository'
@@ -41,7 +40,7 @@ import { Uuid } from '@/shared/domain/value-objects/uuid'
 export class RegisterPurchase {
   constructor(
     private readonly ingredientRepository: IngredientRepository,
-    private readonly unitConversionRepository: UnitConversionRepository,
+    private readonly unitConversionPort: UnitConversionPort,
     private readonly batchRepository: InventoryBatchRepository,
     private readonly movementRepository: InventoryMovementRepository,
     private readonly levelRepository: InventoryLevelRepository,
@@ -138,13 +137,7 @@ export class RegisterPurchase {
     toUnitId: string,
     unitCost: number
   ): Promise<{ convertedQuantity: number; convertedUnitId: string; convertedUnitCost: number }> {
-    const conversionRule = await this.unitConversionRepository.findByUnits(fromUnitId, toUnitId)
-
-    if (!conversionRule) {
-      throw new UnitConversionNotFound(fromUnitId, toUnitId)
-    }
-
-    const factor = conversionRule.getFactor().value
+    const factor = await this.unitConversionPort.getFactor(fromUnitId, toUnitId)
 
     return {
       convertedQuantity: quantity * factor,

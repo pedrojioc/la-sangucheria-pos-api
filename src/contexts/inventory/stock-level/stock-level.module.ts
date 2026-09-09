@@ -36,6 +36,8 @@ import { DeductIngredient } from './application/deduct/deduct-ingredient'
 import { AddProducedStock } from './application/add-produced-stock/add-produced-stock'
 import { InitializeInventoryLevel } from './application/initialize-inventory-level/initialize-inventory-level'
 import { RegisterPurchase } from '@/contexts/inventory/batch/application/register-purchase/register-purchase'
+import { UnitConversionPort } from '@/contexts/inventory/batch/application/ports/unit-conversion.port'
+import { SharedKernelUnitConversionAdapter } from '@/contexts/inventory/batch/infrastructure/adapters/unit-conversion.adapter'
 
 // Subscribers
 import { CreateInventoryLevelOnIngredientCreated } from './application/subscribers/create-inventory-level-on-ingredient-created'
@@ -50,7 +52,6 @@ import { createProvider } from '@/core/utils/create-provider'
 
 // Dependencies from other modules
 import { IngredientRepository } from '@/contexts/inventory/ingredient/domain/repositories/ingredient.repository'
-import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversion/domain/repositories/unit-conversion.repository'
 
 @Module({
   imports: [
@@ -83,6 +84,9 @@ import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversi
     // Domain Services
     { provide: FifoInventoryService, useClass: FifoInventoryService },
 
+    // PORTS (ACL)
+    { provide: UnitConversionPort, useClass: SharedKernelUnitConversionAdapter },
+
     // Use Cases - Commands
     createProvider(CreatePurchaseMovement, [InventoryMovementRepository, EventBus]),
     createProvider(UpdateInventoryLevel, [InventoryLevelRepository, EventBus]),
@@ -109,7 +113,7 @@ import { UnitConversionRepository } from '@/contexts/shared-kernel/unit-conversi
     createProvider(InitializeInventoryLevel, [InventoryLevelRepository]),
     createProvider(RegisterPurchase, [
       IngredientRepository,
-      UnitConversionRepository,
+      UnitConversionPort,
       InventoryBatchRepository,
       InventoryMovementRepository,
       InventoryLevelRepository,
