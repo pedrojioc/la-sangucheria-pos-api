@@ -89,14 +89,33 @@ describe('TypeOrmOptionGroupRepository (ambient UnitOfWork wiring)', () => {
       create: jest.fn(entity => entity),
       save: scopedSave
     } as unknown as Repository<OptionGroupEntity>
-    const getRepository = jest.fn().mockReturnValue(scopedRepository)
+
+    const scopedItemSave = jest.fn()
+    const scopedItemDelete = jest.fn()
+    const scopedItemRepository = {
+      create: jest.fn(entity => entity),
+      save: scopedItemSave,
+      delete: scopedItemDelete
+    } as unknown as Repository<OptionItemEntity>
+
+    const getRepository = jest.fn().mockImplementation(target => {
+      if (target === OptionItemEntity) {
+        return scopedItemRepository
+      }
+      return scopedRepository
+    })
     const ambientManager = { getRepository } as unknown as EntityManager
     const context: UnitOfWorkContext = { manager: ambientManager, pending: [], depth: 0 }
 
     await holder.run(context, () => repository.save(buildOptionGroup()))
 
     expect(getRepository).toHaveBeenCalledWith(OptionGroupEntity)
+    expect(getRepository).toHaveBeenCalledWith(OptionItemEntity)
     expect(scopedSave).toHaveBeenCalledTimes(1)
+    expect(scopedItemDelete).toHaveBeenCalledTimes(1)
+    expect(scopedItemSave).toHaveBeenCalledTimes(1)
     expect(defaultRepository.save).not.toHaveBeenCalled()
+    expect(defaultItemRepository.save).not.toHaveBeenCalled()
+    expect(defaultItemRepository.delete).not.toHaveBeenCalled()
   })
 })

@@ -15,16 +15,26 @@ export class TypeOrmOptionGroupRepository
   extends TransactionalRepository<OptionGroupEntity>
   implements OptionGroupRepository
 {
+  private readonly uowContextHolder: UnitOfWorkContextHolder
+
   constructor(
     @InjectRepository(OptionGroupEntity)
     repository: Repository<OptionGroupEntity>,
     @InjectRepository(OptionItemEntity)
-    private readonly itemRepository: Repository<OptionItemEntity>,
+    private readonly defaultItemRepository: Repository<OptionItemEntity>,
     @InjectRepository(ProductOptionGroupEntity)
     private readonly pivotRepository: Repository<ProductOptionGroupEntity>,
     uow: UnitOfWorkContextHolder
   ) {
     super(repository, uow)
+    this.uowContextHolder = uow
+  }
+
+  private get itemRepository(): Repository<OptionItemEntity> {
+    const manager = this.uowContextHolder.currentManager()
+    return manager
+      ? manager.getRepository<OptionItemEntity>(this.defaultItemRepository.target)
+      : this.defaultItemRepository
   }
 
   async save(group: OptionGroup): Promise<void> {

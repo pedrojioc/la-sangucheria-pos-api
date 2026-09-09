@@ -15,16 +15,6 @@ import { IngredientModule } from '@contexts/inventory/ingredient/ingredient.modu
 // Events
 import { EventBus } from '@/shared/domain/events'
 
-// Command Handlers
-import { CreateProductCommandHandler } from '@/contexts/menu/product/application/create/create-product.handler'
-import { UpdateProductCommandHandler } from '@/contexts/menu/product/application/update/update-product.handler'
-import { DeleteProductCommandHandler } from '@/contexts/menu/product/application/delete/delete-product.handler'
-
-// Query Handlers
-import { FindProductHandler } from '@/contexts/menu/product/application/find/find-product.handler'
-import { SearchProductsByCriteriaHandler } from '@/contexts/menu/product/application/search-by-criteria/search-products-by-criteria.handler'
-import { GenerateProductSkuHandler } from '@/contexts/menu/product/application/generate-sku/generate-product-sku.handler'
-
 // Use Cases
 import { CreateProduct } from '@/contexts/menu/product/application/create/create-product'
 import { UpdateProduct } from '@/contexts/menu/product/application/update/update-product'
@@ -55,18 +45,6 @@ import { FindProductCategory } from '@/contexts/menu/product-category/applicatio
 // Ports (ACL)
 import { IngredientExistencePort } from '@/contexts/menu/product/application/ports/ingredient-existence.port'
 import { IngredientExistenceAdapter } from '@/contexts/menu/product/infrastructure/adapters/ingredient-existence.adapter'
-
-const CommandHandlers = [
-  CreateProductCommandHandler,
-  UpdateProductCommandHandler,
-  DeleteProductCommandHandler
-]
-
-const QueryHandlers = [
-  FindProductHandler,
-  SearchProductsByCriteriaHandler,
-  GenerateProductSkuHandler
-]
 
 const Subscribers = [OnProductRecipeSavedUpdateStrategySubscriber]
 
@@ -122,12 +100,6 @@ const Subscribers = [OnProductRecipeSavedUpdateStrategySubscriber]
 
     // USE CASE (subscriber)
     createProvider(OnProductRecipeSavedUpdateStrategy, [ProductRepository]),
-
-    // COMMAND HANDLERS
-    ...CommandHandlers,
-
-    // QUERY HANDLERS
-    ...QueryHandlers,
 
     // SUBSCRIBERS
     ...Subscribers
