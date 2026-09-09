@@ -10,7 +10,6 @@ import {
   Query,
   UseInterceptors
 } from '@nestjs/common'
-import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import { CurrentUser } from '@/contexts/iam/shared/decorators/current-user.decorator'
 import { TransactionInterceptor } from '@shared/infrastructure/unit-of-work/transaction.interceptor'
 
@@ -22,24 +21,23 @@ import { OrderPurchaseOrderRequest } from '../dto/order-purchase-order.request'
 import { ReceivePurchaseOrderRequest } from '../dto/receive-purchase-order.request'
 import { CancelPurchaseOrderItemsRequest } from '../dto/cancel-purchase-order-items.request'
 
-// Commands
-import { CreatePurchaseOrderCommand } from '../../../application/create/create-purchase-order.command'
-import { UpdatePurchaseOrderCommand } from '../../../application/update/update-purchase-order.command'
-import { SubmitForApprovalCommand } from '../../../application/submit-for-approval/submit-for-approval.command'
-import { ApprovePurchaseOrderCommand } from '../../../application/approve/approve-purchase-order.command'
-import { RejectPurchaseOrderCommand } from '../../../application/reject/reject-purchase-order.command'
-import { OrderPurchaseOrderCommand } from '../../../application/order/order-purchase-order.command'
-import { RegisterItemReceptionCommand } from '../../../application/register-item-reception/register-item-reception.command'
-import { CancelPurchaseOrderItemsCommand } from '../../../application/cancel-items/cancel-purchase-order-items.command'
-import { ClosePurchaseOrderCommand } from '../../../application/close/close-purchase-order.command'
-
-// Queries
-import { FindPurchaseOrderQuery } from '../../../application/find/find-purchase-order.query'
-import { SearchPurchaseOrdersByCriteriaQuery } from '../../../application/search-by-criteria/search-purchase-orders-by-criteria.query'
+// Use Cases
+import { CreatePurchaseOrder } from '../../../application/create/create-purchase-order'
+import { UpdatePurchaseOrder } from '../../../application/update/update-purchase-order'
+import { SubmitForApproval } from '../../../application/submit-for-approval/submit-for-approval'
+import { ApprovePurchaseOrder } from '../../../application/approve/approve-purchase-order'
+import { RejectPurchaseOrder } from '../../../application/reject/reject-purchase-order'
+import { OrderPurchaseOrder } from '../../../application/order/order-purchase-order'
+import { RegisterItemReception } from '../../../application/register-item-reception/register-item-reception'
+import { CancelPurchaseOrderItems } from '../../../application/cancel-items/cancel-purchase-order-items'
+import { ClosePurchaseOrder } from '../../../application/close/close-purchase-order'
+import { FindPurchaseOrder } from '../../../application/find/find-purchase-order'
+import { SearchPurchaseOrdersByCriteria } from '../../../application/search-by-criteria/search-purchase-orders-by-criteria'
 
 // Response DTOs
 import { PurchaseOrderResponse } from '../../../application/dto/purchase-order.response'
 import { PaginatedPurchaseOrderListResponse } from '../../../application/dto/paginated-purchase-order-list.response'
+import { PurchaseOrderListItemResponse } from '../../../application/dto/purchase-order-list-item.response'
 
 // Request DTOs
 import { SearchPurchaseOrdersRequest } from '../dto/search-purchase-orders.request'
@@ -65,8 +63,17 @@ import { SearchPurchaseOrdersRequest } from '../dto/search-purchase-orders.reque
 @Controller('purchase-orders')
 export class PurchaseOrderController {
   constructor(
-    private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus
+    private readonly createPurchaseOrder: CreatePurchaseOrder,
+    private readonly updatePurchaseOrder: UpdatePurchaseOrder,
+    private readonly submitForApproval: SubmitForApproval,
+    private readonly approvePurchaseOrder: ApprovePurchaseOrder,
+    private readonly rejectPurchaseOrder: RejectPurchaseOrder,
+    private readonly orderPurchaseOrder: OrderPurchaseOrder,
+    private readonly registerItemReception: RegisterItemReception,
+    private readonly cancelPurchaseOrderItems: CancelPurchaseOrderItems,
+    private readonly closePurchaseOrder: ClosePurchaseOrder,
+    private readonly findPurchaseOrder: FindPurchaseOrder,
+    private readonly searchPurchaseOrdersByCriteria: SearchPurchaseOrdersByCriteria
   ) {}
 
   /**
@@ -81,7 +88,7 @@ export class PurchaseOrderController {
     @Body() dto: CreatePurchaseOrderRequest,
     @CurrentUser('userId') userId: string
   ): Promise<void> {
-    const command = new CreatePurchaseOrderCommand(
+    await this.createPurchaseOrder.run(
       dto.id,
       dto.supplierId,
       userId,
@@ -99,8 +106,6 @@ export class PurchaseOrderController {
         notes: item.notes ?? null
       }))
     )
-
-    await this.commandBus.execute(command)
   }
 
   /**
@@ -121,7 +126,7 @@ export class PurchaseOrderController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   async update(@Param('id') id: string, @Body() dto: UpdatePurchaseOrderRequest): Promise<void> {
-    const command = new UpdatePurchaseOrderCommand(
+    await this.updatePurchaseOrder.run(
       id,
       dto.supplierId,
       dto.expectedDeliveryDate ? new Date(dto.expectedDeliveryDate) : undefined,
@@ -137,8 +142,6 @@ export class PurchaseOrderController {
         notes: item.notes ?? null
       }))
     )
-
-    await this.commandBus.execute(command)
   }
 
   /**
@@ -147,12 +150,11 @@ export class PurchaseOrderController {
    */
   @Put(':id/submit')
   @HttpCode(HttpStatus.OK)
-  async submitForApproval(
+  async submitForApprovalAction(
     @Param('id') id: string,
     @CurrentUser('userId') userId: string
   ): Promise<void> {
-    const command = new SubmitForApprovalCommand(id, userId)
-    await this.commandBus.execute(command)
+    await this.submitForApproval.run(id, userId)
   }
 
   /**
@@ -163,8 +165,7 @@ export class PurchaseOrderController {
   @Put(':id/approve')
   @HttpCode(HttpStatus.OK)
   async approve(@Param('id') id: string, @CurrentUser('userId') userId: string): Promise<void> {
-    const command = new ApprovePurchaseOrderCommand(id, userId)
-    await this.commandBus.execute(command)
+    await this.approvePurchaseOrder.run(id, userId)
   }
 
   /**
@@ -179,8 +180,7 @@ export class PurchaseOrderController {
     @Body() dto: RejectPurchaseOrderRequest,
     @CurrentUser('userId') userId: string
   ): Promise<void> {
-    const command = new RejectPurchaseOrderCommand(id, userId, dto.reason ?? null)
-    await this.commandBus.execute(command)
+    await this.rejectPurchaseOrder.run(id, userId, dto.reason ?? null)
   }
 
   /**
@@ -196,13 +196,12 @@ export class PurchaseOrderController {
     @Body() dto: OrderPurchaseOrderRequest,
     @CurrentUser('userId') userId: string
   ): Promise<void> {
-    const command = new OrderPurchaseOrderCommand(
+    await this.orderPurchaseOrder.run(
       id,
       userId,
       dto.purchaseMethod,
       dto.purchaseMethodDetails ?? null
     )
-    await this.commandBus.execute(command)
   }
 
   /**
@@ -228,7 +227,7 @@ export class PurchaseOrderController {
     @Body() dto: ReceivePurchaseOrderRequest,
     @CurrentUser('userId') userId: string
   ): Promise<void> {
-    const command = new RegisterItemReceptionCommand(
+    await this.registerItemReception.run(
       purchaseOrderId,
       dto.items.map(item => ({
         purchaseOrderItemId: item.purchaseOrderItemId,
@@ -242,7 +241,6 @@ export class PurchaseOrderController {
       dto.closeOrder ?? false,
       userId
     )
-    await this.commandBus.execute(command)
   }
 
   /**
@@ -266,12 +264,7 @@ export class PurchaseOrderController {
     @Param('id') purchaseOrderId: string,
     @Body() dto: CancelPurchaseOrderItemsRequest
   ): Promise<void> {
-    const command = new CancelPurchaseOrderItemsCommand(
-      purchaseOrderId,
-      dto.itemId,
-      dto.reason ?? null
-    )
-    await this.commandBus.execute(command)
+    await this.cancelPurchaseOrderItems.run(purchaseOrderId, dto.itemId, dto.reason ?? null)
   }
 
   /**
@@ -282,8 +275,7 @@ export class PurchaseOrderController {
   @Put(':id/close')
   @HttpCode(HttpStatus.OK)
   async close(@Param('id') id: string, @CurrentUser('userId') userId: string): Promise<void> {
-    const command = new ClosePurchaseOrderCommand(id, userId)
-    await this.commandBus.execute(command)
+    await this.closePurchaseOrder.run(id, userId)
   }
 
   /**
@@ -292,8 +284,13 @@ export class PurchaseOrderController {
    */
   @Get(':id')
   async findById(@Param('id') id: string): Promise<PurchaseOrderResponse | null> {
-    const query = new FindPurchaseOrderQuery(id)
-    return this.queryBus.execute(query)
+    const readModel = await this.findPurchaseOrder.run(id)
+
+    if (!readModel) {
+      return null
+    }
+
+    return PurchaseOrderResponse.fromReadModel(readModel)
   }
 
   /**
@@ -312,7 +309,8 @@ export class PurchaseOrderController {
     @Query() dto: SearchPurchaseOrdersRequest
   ): Promise<PaginatedPurchaseOrderListResponse> {
     const criteria = dto.toCriteria()
-    const query = new SearchPurchaseOrdersByCriteriaQuery(criteria)
-    return this.queryBus.execute(query)
+    const result = await this.searchPurchaseOrdersByCriteria.run(criteria)
+    const data = result.data.map(item => PurchaseOrderListItemResponse.fromReadModel(item))
+    return new PaginatedPurchaseOrderListResponse(data, result.meta)
   }
 }

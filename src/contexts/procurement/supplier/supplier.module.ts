@@ -8,13 +8,6 @@ import { SupplierQueryService } from './application/services/supplier-query.serv
 import { TypeOrmSupplierQueryService } from './infrastructure/query-services/typeorm-supplier-query.service'
 import { EventBus } from '@/shared/domain/events'
 
-import { CreateSupplierHandler } from './application/create/create-supplier.handler'
-import { UpdateSupplierHandler } from './application/update/update-supplier.handler'
-import { FindSupplierHandler } from './application/find/find-supplier.handler'
-import { FindAllSuppliersHandler } from './application/find-all/find-all-supplier.handler'
-import { SearchSuppliersByCriteriaHandler } from './application/search-by-criteria/search-suppliers-by-criteria.handler'
-import { GetSupplierStatisticsHandler } from './application/get-statistics/get-supplier-statistics.handler'
-
 import { CreateSupplier } from './application/create/create-supplier'
 import { UpdateSupplier } from './application/update/update-supplier'
 import { FindSupplier } from './application/find/find-supplier'
@@ -26,13 +19,6 @@ import { ReactOnSupplierCreated } from './application/subscribers/react-on-suppl
 import { SupplierController } from './presentation/http/controllers/supplier.controller'
 import { createProvider } from '@/core/utils/create-provider'
 
-const CommandHandlers = [CreateSupplierHandler, UpdateSupplierHandler]
-const QueryHandlers = [
-  FindSupplierHandler,
-  FindAllSuppliersHandler,
-  SearchSuppliersByCriteriaHandler,
-  GetSupplierStatisticsHandler
-]
 const EventSubscribers = [ReactOnSupplierCreated]
 
 @Module({
@@ -49,8 +35,6 @@ const EventSubscribers = [ReactOnSupplierCreated]
     createProvider(SearchSuppliersByCriteria, [SupplierQueryService]),
     createProvider(GetSupplierStatistics, [SupplierRepository]),
 
-    ...CommandHandlers,
-    ...QueryHandlers,
     ...EventSubscribers
   ],
   exports: [SupplierRepository, CreateSupplier, FindSupplier]

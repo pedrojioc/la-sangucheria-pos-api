@@ -16,22 +16,6 @@ import { TypeOrmPurchaseOrderQueryService } from './infrastructure/query-service
 // Events
 import { EventBus } from '@/shared/domain/events'
 
-// Command Handlers
-import { CreatePurchaseOrderHandler } from './application/create/create-purchase-order.handler'
-import { UpdatePurchaseOrderHandler } from './application/update/update-purchase-order.handler'
-import { SubmitForApprovalHandler } from './application/submit-for-approval/submit-for-approval.handler'
-import { ApprovePurchaseOrderHandler } from './application/approve/approve-purchase-order.handler'
-import { RejectPurchaseOrderHandler } from './application/reject/reject-purchase-order.handler'
-import { OrderPurchaseOrderHandler } from './application/order/order-purchase-order.handler'
-import { RegisterItemReceptionHandler } from './application/register-item-reception/register-item-reception.handler'
-import { CancelPurchaseOrderItemsHandler } from './application/cancel-items/cancel-purchase-order-items.handler'
-import { ClosePurchaseOrderHandler } from './application/close/close-purchase-order.handler'
-
-// Query Handlers
-import { FindPurchaseOrderHandler } from './application/find/find-purchase-order.handler'
-import { FindPurchaseOrdersByStatusHandler } from './application/find-by-status/find-by-status.handler'
-import { SearchPurchaseOrdersByCriteriaHandler } from './application/search-by-criteria/search-purchase-orders-by-criteria.handler'
-
 // Use Cases
 import { CreatePurchaseOrder } from './application/create/create-purchase-order'
 import { UpdatePurchaseOrder } from './application/update/update-purchase-order'
@@ -55,24 +39,6 @@ import { TypeormPurchaseOrderValidationService } from './infrastructure/query-se
 import { PurchaseOrderValidationService } from './domain/services/purchase-order-validation.service'
 import { IngredientEntity } from '@/contexts/inventory/ingredient/infrastructure/persistence/typeorm/ingredient.entity'
 import { UserEntity } from '@/contexts/iam/user/infrastructure/persistence/typeorm/user.entity'
-
-const CommandHandlers = [
-  CreatePurchaseOrderHandler,
-  UpdatePurchaseOrderHandler,
-  SubmitForApprovalHandler,
-  ApprovePurchaseOrderHandler,
-  RejectPurchaseOrderHandler,
-  OrderPurchaseOrderHandler,
-  RegisterItemReceptionHandler,
-  CancelPurchaseOrderItemsHandler,
-  ClosePurchaseOrderHandler
-]
-
-const QueryHandlers = [
-  FindPurchaseOrderHandler,
-  FindPurchaseOrdersByStatusHandler,
-  SearchPurchaseOrdersByCriteriaHandler
-]
 
 @Module({
   imports: [
@@ -125,13 +91,7 @@ const QueryHandlers = [
     // USE CASES - Queries
     createProvider(FindPurchaseOrder, [PurchaseOrderQueryService]),
     createProvider(FindPurchaseOrdersByStatus, [PurchaseOrderQueryService]),
-    createProvider(SearchPurchaseOrdersByCriteria, [PurchaseOrderQueryService]),
-
-    // COMMAND HANDLERS
-    ...CommandHandlers,
-
-    // QUERY HANDLERS
-    ...QueryHandlers
+    createProvider(SearchPurchaseOrdersByCriteria, [PurchaseOrderQueryService])
   ],
   exports: [PurchaseOrderRepository, FindPurchaseOrder]
 })
