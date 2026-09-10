@@ -34,6 +34,9 @@ import { ReleaseTableOnOrderClosed } from '@contexts/orders/order/application/su
 import { ReleaseTableOnOrderCancelled } from '@contexts/orders/order/application/subscribers/release-table-on-order-cancelled'
 import { UpdateLifetimeValueOnOrderClosed } from '@contexts/orders/order/application/subscribers/update-lifetime-value-on-order-closed'
 import { DeductIngredientsOnOrderClosed } from '@contexts/orders/order/application/subscribers/deduct-ingredients-on-order-closed'
+import { ReserveIngredientsOnOrderSentToKitchen } from '@contexts/orders/order/application/subscribers/reserve-ingredients-on-order-sent-to-kitchen'
+import { ReleaseStockOnOrderItemCancelled } from '@contexts/orders/order/application/subscribers/release-stock-on-order-item-cancelled'
+import { ReleaseStockOnOrderCancelled } from '@contexts/orders/order/application/subscribers/release-stock-on-order-cancelled'
 
 import { OrderController } from '@contexts/orders/order/presentation/http/controllers/order.controller'
 import { KitchenController } from '@contexts/orders/order/presentation/http/controllers/kitchen.controller'
@@ -58,6 +61,8 @@ import { ProductDeductionPlanPort } from '@contexts/orders/order/application/por
 import { MenuProductDeductionPlanAdapter } from '@contexts/orders/order/infrastructure/adapters/menu-product-deduction-plan.adapter'
 import { IngredientDeductionPort } from '@contexts/orders/order/application/ports/ingredient-deduction.port'
 import { InventoryIngredientDeductionAdapter } from '@contexts/orders/order/infrastructure/adapters/inventory-ingredient-deduction.adapter'
+import { StockReservationPort } from '@contexts/orders/order/application/ports/stock-reservation.port'
+import { InventoryStockReservationAdapter } from '@contexts/orders/order/infrastructure/adapters/inventory-stock-reservation.adapter'
 
 import { EstablishmentModule } from '@contexts/establishment/establishment/establishment.module'
 
@@ -105,6 +110,10 @@ import { createProvider } from '@core/utils/create-provider'
     {
       provide: IngredientDeductionPort,
       useClass: InventoryIngredientDeductionAdapter
+    },
+    {
+      provide: StockReservationPort,
+      useClass: InventoryStockReservationAdapter
     },
 
     // USE CASES
@@ -180,9 +189,35 @@ import { createProvider } from '@core/utils/create-provider'
       provide: DeductIngredientsOnOrderClosed,
       useFactory: (
         productDeductionPlanPort: ProductDeductionPlanPort,
-        ingredientDeductionPort: IngredientDeductionPort
-      ) => new DeductIngredientsOnOrderClosed(productDeductionPlanPort, ingredientDeductionPort),
-      inject: [ProductDeductionPlanPort, IngredientDeductionPort]
+        ingredientDeductionPort: IngredientDeductionPort,
+        stockReservationPort: StockReservationPort
+      ) =>
+        new DeductIngredientsOnOrderClosed(
+          productDeductionPlanPort,
+          ingredientDeductionPort,
+          stockReservationPort
+        ),
+      inject: [ProductDeductionPlanPort, IngredientDeductionPort, StockReservationPort]
+    },
+    {
+      provide: ReserveIngredientsOnOrderSentToKitchen,
+      useFactory: (
+        productDeductionPlanPort: ProductDeductionPlanPort,
+        stockReservationPort: StockReservationPort
+      ) => new ReserveIngredientsOnOrderSentToKitchen(productDeductionPlanPort, stockReservationPort),
+      inject: [ProductDeductionPlanPort, StockReservationPort]
+    },
+    {
+      provide: ReleaseStockOnOrderItemCancelled,
+      useFactory: (stockReservationPort: StockReservationPort) =>
+        new ReleaseStockOnOrderItemCancelled(stockReservationPort),
+      inject: [StockReservationPort]
+    },
+    {
+      provide: ReleaseStockOnOrderCancelled,
+      useFactory: (stockReservationPort: StockReservationPort) =>
+        new ReleaseStockOnOrderCancelled(stockReservationPort),
+      inject: [StockReservationPort]
     }
   ],
   exports: [FindOrder, OrderRepository]
@@ -194,7 +229,10 @@ export class OrderModule implements OnModuleInit {
     private readonly releaseTableOnOrderClosed: ReleaseTableOnOrderClosed,
     private readonly releaseTableOnOrderCancelled: ReleaseTableOnOrderCancelled,
     private readonly updateLifetimeValueOnOrderClosed: UpdateLifetimeValueOnOrderClosed,
-    private readonly deductIngredientsOnOrderClosed: DeductIngredientsOnOrderClosed
+    private readonly deductIngredientsOnOrderClosed: DeductIngredientsOnOrderClosed,
+    private readonly reserveIngredientsOnOrderSentToKitchen: ReserveIngredientsOnOrderSentToKitchen,
+    private readonly releaseStockOnOrderItemCancelled: ReleaseStockOnOrderItemCancelled,
+    private readonly releaseStockOnOrderCancelled: ReleaseStockOnOrderCancelled
   ) {}
 
   onModuleInit(): void {
@@ -203,7 +241,10 @@ export class OrderModule implements OnModuleInit {
       this.releaseTableOnOrderClosed,
       this.releaseTableOnOrderCancelled,
       this.updateLifetimeValueOnOrderClosed,
-      this.deductIngredientsOnOrderClosed
+      this.deductIngredientsOnOrderClosed,
+      this.reserveIngredientsOnOrderSentToKitchen,
+      this.releaseStockOnOrderItemCancelled,
+      this.releaseStockOnOrderCancelled
     ])
   }
 }
