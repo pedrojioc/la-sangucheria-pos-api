@@ -202,6 +202,24 @@ export class TypeOrmTransformationUnitOfWork extends TransformationUnitOfWork {
         })
       }
 
+      async findByIngredientForUpdate(ingredientId: IngredientId): Promise<InventoryLevel | null> {
+        const entity = await repo
+          .createQueryBuilder('level')
+          .setLock('pessimistic_write')
+          .where('level.ingredient_id = :ingredientId', { ingredientId: ingredientId.value })
+          .getOne()
+        if (!entity) return null
+        return InventoryLevel.fromPrimitives({
+          id: entity.id,
+          ingredientId: entity.ingredientId,
+          currentQuantity: Number(entity.currentQuantity),
+          unitId: entity.unitId,
+          minimumQuantity: entity.minimumQuantity !== null ? Number(entity.minimumQuantity) : null,
+          maximumQuantity: entity.maximumQuantity !== null ? Number(entity.maximumQuantity) : null,
+          reorderPoint: entity.reorderPoint !== null ? Number(entity.reorderPoint) : null
+        })
+      }
+
       async findLowStock(): Promise<InventoryLevel[]> {
         return []
       }

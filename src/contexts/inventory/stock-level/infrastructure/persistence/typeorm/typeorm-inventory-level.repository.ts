@@ -51,6 +51,16 @@ export class TypeOrmInventoryLevelRepository
     return InventoryLevel.fromPrimitives(this.mapEntityToPrimitives(entity))
   }
 
+  async findByIngredientForUpdate(ingredientId: IngredientId): Promise<InventoryLevel | null> {
+    const entity = await this.manager
+      .createQueryBuilder(InventoryLevelEntity, 'level')
+      .setLock('pessimistic_write')
+      .where('level.ingredient_id = :ingredientId', { ingredientId: ingredientId.value })
+      .getOne()
+    if (!entity) return null
+    return InventoryLevel.fromPrimitives(this.mapEntityToPrimitives(entity))
+  }
+
   async findLowStock(): Promise<InventoryLevel[]> {
     const entities = await this.repo
       .createQueryBuilder('level')

@@ -13,6 +13,13 @@ export abstract class InventoryLevelRepository {
   abstract findByIngredient(ingredientId: IngredientId): Promise<InventoryLevel | null>
 
   /**
+   * Busca el nivel de inventario de un ingrediente bajo lock pesimista
+   * (SELECT ... FOR UPDATE), para uso dentro de una transacción que necesita
+   * serializar lecturas/escrituras concurrentes sobre la misma fila.
+   */
+  abstract findByIngredientForUpdate(ingredientId: IngredientId): Promise<InventoryLevel | null>
+
+  /**
    * Busca todos los ingredientes con stock bajo (below minimum)
    */
   abstract findLowStock(): Promise<InventoryLevel[]>
