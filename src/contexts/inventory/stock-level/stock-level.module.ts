@@ -4,12 +4,15 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 // Entities
 import { InventoryMovementEntity } from './infrastructure/persistence/typeorm/inventory-movement.entity'
 import { InventoryLevelEntity } from './infrastructure/persistence/typeorm/inventory-level.entity'
+import { StockReservationEntity } from './infrastructure/persistence/typeorm/stock-reservation.entity'
 
 // Repositories
 import { InventoryMovementRepository } from './domain/repositories/inventory-movement.repository'
 import { InventoryLevelRepository } from './domain/repositories/inventory-level.repository'
+import { StockReservationRepository } from './domain/repositories/stock-reservation.repository'
 import { TypeOrmInventoryMovementRepository } from './infrastructure/persistence/typeorm/typeorm-inventory-movement.repository'
 import { TypeOrmInventoryLevelRepository } from './infrastructure/persistence/typeorm/typeorm-inventory-level.repository'
+import { TypeOrmStockReservationRepository } from './infrastructure/persistence/typeorm/typeorm-stock-reservation.repository'
 
 // Batch dependencies
 import { InventoryBatchRepository } from '@/contexts/inventory/batch/domain/repositories/inventory-batch.repository'
@@ -38,6 +41,10 @@ import { InitializeInventoryLevel } from './application/initialize-inventory-lev
 import { RegisterPurchase } from '@/contexts/inventory/batch/application/register-purchase/register-purchase'
 import { UnitConversionPort } from '@/contexts/inventory/batch/application/ports/unit-conversion.port'
 import { SharedKernelUnitConversionAdapter } from '@/contexts/inventory/batch/infrastructure/adapters/unit-conversion.adapter'
+import { ReserveStock } from './application/reserve-stock/reserve-stock'
+import { ReleaseStockForItem } from './application/release-stock/release-stock-for-item'
+import { ReleaseStockForOrder } from './application/release-stock/release-stock-for-order'
+import { ConsumeStockReservation } from './application/consume-stock-reservation/consume-stock-reservation'
 
 // Subscribers
 import { CreateInventoryLevelOnIngredientCreated } from './application/subscribers/create-inventory-level-on-ingredient-created'
@@ -55,7 +62,11 @@ import { IngredientRepository } from '@/contexts/inventory/ingredient/domain/rep
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([InventoryMovementEntity, InventoryLevelEntity]),
+    TypeOrmModule.forFeature([
+      InventoryMovementEntity,
+      InventoryLevelEntity,
+      StockReservationEntity
+    ]),
     InventoryBatchModule,
     IngredientModule
   ],
@@ -69,6 +80,10 @@ import { IngredientRepository } from '@/contexts/inventory/ingredient/domain/rep
     {
       provide: InventoryLevelRepository,
       useClass: TypeOrmInventoryLevelRepository
+    },
+    {
+      provide: StockReservationRepository,
+      useClass: TypeOrmStockReservationRepository
     },
 
     // Query Services
@@ -119,6 +134,10 @@ import { IngredientRepository } from '@/contexts/inventory/ingredient/domain/rep
       InventoryLevelRepository,
       EventBus
     ]),
+    createProvider(ReserveStock, [StockReservationRepository, InventoryLevelRepository]),
+    createProvider(ReleaseStockForItem, [StockReservationRepository]),
+    createProvider(ReleaseStockForOrder, [StockReservationRepository]),
+    createProvider(ConsumeStockReservation, [StockReservationRepository, DeductIngredient]),
 
     // Use Cases - Queries
     createProvider(SearchInventoryLevelsByCriteria, [InventoryLevelQueryService]),
@@ -143,7 +162,11 @@ import { IngredientRepository } from '@/contexts/inventory/ingredient/domain/rep
     InventoryLevelRepository,
     GetIngredientFifoCost,
     DeductIngredient,
-    AddProducedStock
+    AddProducedStock,
+    ReserveStock,
+    ReleaseStockForItem,
+    ReleaseStockForOrder,
+    ConsumeStockReservation
   ]
 })
 export class StockLevelModule implements OnModuleInit {
