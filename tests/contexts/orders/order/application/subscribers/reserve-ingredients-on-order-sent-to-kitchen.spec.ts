@@ -55,10 +55,7 @@ describe('ReserveIngredientsOnOrderSentToKitchen', () => {
     }
   }
 
-  function buildEvent(
-    items: SentToKitchenItem[],
-    orderId?: string
-  ): OrderSentToKitchenEvent {
+  function buildEvent(items: SentToKitchenItem[], orderId?: string): OrderSentToKitchenEvent {
     const payload: OrderSentToKitchenPayload = {
       orderId: orderId ?? UuidMother.random(),
       orderNumber: '#001',
@@ -157,7 +154,10 @@ describe('ReserveIngredientsOnOrderSentToKitchen', () => {
   it('should aggregate lines across multiple items into a single reserve call', async () => {
     const directProductId = UuidMother.random()
     const directIngredientId = UuidMother.random()
-    const directPlan: ProductDeductionPlan = { strategy: 'DIRECT', ingredientId: directIngredientId }
+    const directPlan: ProductDeductionPlan = {
+      strategy: 'DIRECT',
+      ingredientId: directIngredientId
+    }
 
     const noneProductId = UuidMother.random()
     const nonePlan: ProductDeductionPlan = { strategy: 'NONE', ingredientId: null }

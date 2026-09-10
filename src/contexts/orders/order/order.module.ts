@@ -204,7 +204,8 @@ import { createProvider } from '@core/utils/create-provider'
       useFactory: (
         productDeductionPlanPort: ProductDeductionPlanPort,
         stockReservationPort: StockReservationPort
-      ) => new ReserveIngredientsOnOrderSentToKitchen(productDeductionPlanPort, stockReservationPort),
+      ) =>
+        new ReserveIngredientsOnOrderSentToKitchen(productDeductionPlanPort, stockReservationPort),
       inject: [ProductDeductionPlanPort, StockReservationPort]
     },
     {

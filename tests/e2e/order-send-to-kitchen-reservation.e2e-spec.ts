@@ -64,10 +64,7 @@ describe('Order send-to-kitchen stock reservation (e2e)', () => {
   let productCategoryId: string
   let recipeProductId: string
 
-  const seedLookupData = async (
-    ds: DataSource,
-    availableQuantity: number
-  ): Promise<void> => {
+  const seedLookupData = async (ds: DataSource, availableQuantity: number): Promise<void> => {
     ingredientCategoryId = UuidMother.random()
     unitId = UuidMother.random()
     ingredientId = UuidMother.random()
@@ -229,9 +226,7 @@ describe('Order send-to-kitchen stock reservation (e2e)', () => {
     expect(Number(reservationRows[0].quantity)).toBe(2)
     expect(reservationRows[0].ingredient_id).toBe(ingredientId)
 
-    const itemRow = await dataSource.query('SELECT status FROM order_items WHERE id = $1', [
-      itemId
-    ])
+    const itemRow = await dataSource.query('SELECT status FROM order_items WHERE id = $1', [itemId])
     expect(itemRow[0].status).toBe('SENT')
   })
 
@@ -257,9 +252,7 @@ describe('Order send-to-kitchen stock reservation (e2e)', () => {
     )
     expect(reservationRows).toHaveLength(0)
 
-    const itemRow = await dataSource.query('SELECT status FROM order_items WHERE id = $1', [
-      itemId
-    ])
+    const itemRow = await dataSource.query('SELECT status FROM order_items WHERE id = $1', [itemId])
     expect(itemRow[0].status).toBe('PENDING')
   })
 

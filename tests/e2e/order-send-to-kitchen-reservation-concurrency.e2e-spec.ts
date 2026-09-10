@@ -80,7 +80,13 @@ describe('Order send-to-kitchen stock reservation — concurrency (e2e)', () => 
       `INSERT INTO products
          (id, name, category_id, ingredient_id, price, is_active, display_order, sku, tags, inventory_strategy_type)
        VALUES ($1, $2, $3, $4, 10000, true, 0, $5, '{}', 'DIRECT')`,
-      [directProductId, 'Concurrency Test Product', productCategoryId, ingredientId, `SKU-CC-${shortSuffix}`]
+      [
+        directProductId,
+        'Concurrency Test Product',
+        productCategoryId,
+        ingredientId,
+        `SKU-CC-${shortSuffix}`
+      ]
     )
   }
 
@@ -161,11 +167,19 @@ describe('Order send-to-kitchen stock reservation — concurrency (e2e)', () => 
       http()
         .post(`/orders/${orderA.orderId}/kitchen`)
         .set(...auth)
-        .send({ ticketId: UuidMother.random(), itemIds: [orderA.itemId], sentBy: UuidMother.random() }),
+        .send({
+          ticketId: UuidMother.random(),
+          itemIds: [orderA.itemId],
+          sentBy: UuidMother.random()
+        }),
       http()
         .post(`/orders/${orderB.orderId}/kitchen`)
         .set(...auth)
-        .send({ ticketId: UuidMother.random(), itemIds: [orderB.itemId], sentBy: UuidMother.random() })
+        .send({
+          ticketId: UuidMother.random(),
+          itemIds: [orderB.itemId],
+          sentBy: UuidMother.random()
+        })
     ])
 
     // Both requests must SETTLE (no deadlock, no timeout, no crash) —
