@@ -4,6 +4,9 @@ import { ReleaseTableOnOrderClosed } from '@contexts/orders/order/application/su
 import { ReleaseTableOnOrderCancelled } from '@contexts/orders/order/application/subscribers/release-table-on-order-cancelled'
 import { UpdateLifetimeValueOnOrderClosed } from '@contexts/orders/order/application/subscribers/update-lifetime-value-on-order-closed'
 import { DeductIngredientsOnOrderClosed } from '@contexts/orders/order/application/subscribers/deduct-ingredients-on-order-closed'
+import { ReserveIngredientsOnOrderSentToKitchen } from '@contexts/orders/order/application/subscribers/reserve-ingredients-on-order-sent-to-kitchen'
+import { ReleaseStockOnOrderItemCancelled } from '@contexts/orders/order/application/subscribers/release-stock-on-order-item-cancelled'
+import { ReleaseStockOnOrderCancelled } from '@contexts/orders/order/application/subscribers/release-stock-on-order-cancelled'
 import { CreateLoyaltyAccountOnCustomerCreated } from '@contexts/crm/loyalty/application/subscribers/create-loyalty-account-on-customer-created'
 import { IssueBillingDocumentOnOrderClosed } from '@contexts/billing/invoice/application/subscribers/issue-billing-document-on-order-closed'
 import { PrintKitchenTicketOnOrderSent } from '@contexts/kitchen-operations/kitchen-printer/application/subscribers/print-kitchen-ticket-on-order-sent'
@@ -47,6 +50,9 @@ export const DISPATCH_CATEGORIES = new Map<SubscriberClass, DispatchCategory>([
   [ReleaseTableOnOrderCancelled, DispatchCategory.Synchronous],
   [UpdateLifetimeValueOnOrderClosed, DispatchCategory.Synchronous],
   [DeductIngredientsOnOrderClosed, DispatchCategory.Synchronous],
+  [ReserveIngredientsOnOrderSentToKitchen, DispatchCategory.Synchronous],
+  [ReleaseStockOnOrderItemCancelled, DispatchCategory.Synchronous],
+  [ReleaseStockOnOrderCancelled, DispatchCategory.Synchronous],
   [CreateLoyaltyAccountOnCustomerCreated, DispatchCategory.Synchronous],
   [IssueBillingDocumentOnOrderClosed, DispatchCategory.Deferred],
   [PrintKitchenTicketOnOrderSent, DispatchCategory.Deferred],
