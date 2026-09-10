@@ -5,7 +5,9 @@ import { InventoryLevelEntity } from '@/contexts/inventory/stock-level/infrastru
 import { TransactionalRepository } from '@shared/infrastructure/persistence/transactional-repository'
 import { UnitOfWorkContextHolder } from '@shared/infrastructure/unit-of-work/unit-of-work-context-holder'
 import { UnitOfWorkContext } from '@shared/infrastructure/unit-of-work/unit-of-work-context'
+import { IngredientId } from '@/contexts/inventory/ingredient/domain/ingredient-id'
 import { InventoryLevelMother } from '../__mothers__/inventory-level.mother'
+import { UuidMother } from '@test/shared/__mothers__/UuidMother'
 
 describe('TypeOrmInventoryLevelRepository (ambient UnitOfWork wiring)', () => {
   const buildDefaultRepository = (): Repository<InventoryLevelEntity> => {
@@ -54,5 +56,64 @@ describe('TypeOrmInventoryLevelRepository (ambient UnitOfWork wiring)', () => {
     expect(getRepository).toHaveBeenCalledWith(InventoryLevelEntity)
     expect(scopedSave).toHaveBeenCalledTimes(1)
     expect(defaultRepository.save).not.toHaveBeenCalled()
+  })
+
+  describe('findByIngredientForUpdate', () => {
+    it('locks the row via a pessimistic_write query builder and maps the result', async () => {
+      const defaultRepository = buildDefaultRepository()
+      const holder = new UnitOfWorkContextHolder()
+      const repository = new TypeOrmInventoryLevelRepository(defaultRepository, holder)
+
+      const level = InventoryLevelMother.random()
+      const primitives = level.toPrimitives()
+      const entity: Partial<InventoryLevelEntity> = {
+        id: primitives.id,
+        ingredientId: primitives.ingredientId,
+        currentQuantity: primitives.currentQuantity,
+        unitId: primitives.unitId,
+        minimumQuantity: primitives.minimumQuantity ?? 0,
+        maximumQuantity: primitives.maximumQuantity,
+        reorderPoint: primitives.reorderPoint
+      }
+
+      const getOne = jest.fn().mockResolvedValue(entity)
+      const where = jest.fn().mockReturnValue({ getOne })
+      const setLock = jest.fn().mockReturnValue({ where })
+      const createQueryBuilder = jest.fn().mockReturnValue({ setLock })
+      const ambientManager = { createQueryBuilder } as unknown as EntityManager
+      const context: UnitOfWorkContext = { manager: ambientManager, pending: [], depth: 0 }
+
+      const ingredientId = new IngredientId(primitives.ingredientId)
+
+      const result = await holder.run(context, () =>
+        repository.findByIngredientForUpdate(ingredientId)
+      )
+
+      expect(createQueryBuilder).toHaveBeenCalledWith(InventoryLevelEntity, 'level')
+      expect(setLock).toHaveBeenCalledWith('pessimistic_write')
+      expect(where).toHaveBeenCalledWith('level.ingredient_id = :ingredientId', {
+        ingredientId: primitives.ingredientId
+      })
+      expect(result?.toPrimitives()).toEqual(primitives)
+    })
+
+    it('returns null when no row is found', async () => {
+      const defaultRepository = buildDefaultRepository()
+      const holder = new UnitOfWorkContextHolder()
+      const repository = new TypeOrmInventoryLevelRepository(defaultRepository, holder)
+
+      const getOne = jest.fn().mockResolvedValue(null)
+      const where = jest.fn().mockReturnValue({ getOne })
+      const setLock = jest.fn().mockReturnValue({ where })
+      const createQueryBuilder = jest.fn().mockReturnValue({ setLock })
+      const ambientManager = { createQueryBuilder } as unknown as EntityManager
+      const context: UnitOfWorkContext = { manager: ambientManager, pending: [], depth: 0 }
+
+      const result = await holder.run(context, () =>
+        repository.findByIngredientForUpdate(new IngredientId(UuidMother.random()))
+      )
+
+      expect(result).toBeNull()
+    })
   })
 })
