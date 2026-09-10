@@ -3,6 +3,7 @@ import { DomainEventClass, DomainEventSubscriber } from '@shared/domain/events'
 import { OrderClosedEvent } from '../../domain/events/order-closed.event'
 import { ProductDeductionPlanPort } from '../ports/product-deduction-plan.port'
 import { IngredientDeductionPort } from '../ports/ingredient-deduction.port'
+import { StockReservationPort } from '../ports/stock-reservation.port'
 
 const DIRECT_DEDUCTION_UNIT_ID = 'unit'
 const DEDUCTION_REASON = 'Venta de orden'
@@ -11,7 +12,8 @@ const DEDUCTION_REASON = 'Venta de orden'
 export class DeductIngredientsOnOrderClosed implements DomainEventSubscriber<OrderClosedEvent> {
   constructor(
     private readonly productDeductionPlanPort: ProductDeductionPlanPort,
-    private readonly ingredientDeductionPort: IngredientDeductionPort
+    private readonly ingredientDeductionPort: IngredientDeductionPort,
+    private readonly stockReservationPort: StockReservationPort
   ) {}
 
   subscribedTo(): DomainEventClass[] {
@@ -22,7 +24,14 @@ export class DeductIngredientsOnOrderClosed implements DomainEventSubscriber<Ord
     const { orderId, items } = event.toPrimitives()
 
     for (const item of items) {
-      await this.deductForItem(orderId, item.productId, item.quantity)
+      const consumed = await this.stockReservationPort.consume(
+        orderId,
+        item.itemId,
+        DEDUCTION_REASON
+      )
+      if (!consumed) {
+        await this.deductForItem(orderId, item.productId, item.quantity)
+      }
     }
   }
 
