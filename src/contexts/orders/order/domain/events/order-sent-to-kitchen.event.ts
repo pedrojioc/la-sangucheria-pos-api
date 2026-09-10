@@ -12,6 +12,12 @@ export interface SentToKitchenItem {
   quantity: number
   notes: string | null
   modifiers: Array<{ name: string; price: number }>
+  /**
+   * v5 field — the source product id, needed downstream to resolve the
+   * stock-reservation deduction plan. Defaults to '' when deserializing
+   * v1-v4 payloads (backward compat).
+   */
+  productId: string
 }
 
 export interface OrderSentToKitchenPayload {
@@ -51,7 +57,7 @@ interface OrderSentToKitchenPayloadV1 {
 
 export class OrderSentToKitchenEvent extends DomainEvent {
   static readonly EVENT_NAME = 'order.sent_to_kitchen'
-  static readonly VERSION = 4
+  static readonly VERSION = 5
 
   constructor(
     payload: OrderSentToKitchenPayload,
@@ -82,6 +88,7 @@ export class OrderSentToKitchenEvent extends DomainEvent {
       const v1 = raw as unknown as OrderSentToKitchenPayloadV1
       const items: SentToKitchenItem[] = v1.itemIds.map(itemId => ({
         itemId,
+        productId: '',
         stationId: null,
         productName: '',
         quantity: 0,
@@ -110,10 +117,20 @@ export class OrderSentToKitchenEvent extends DomainEvent {
       )
     }
 
-    // v2/v3 payloads pre-date table context and/or order type — default missing fields for backward compat
+    // v2/v3/v4 payloads pre-date table context, order type and/or productId — default missing fields for backward compat
+    const rawItems = (raw as any).items as Array<Record<string, unknown>> | undefined
+    const items: SentToKitchenItem[] = (rawItems ?? []).map(item => ({
+      ...(item as Omit<SentToKitchenItem, 'productId'>),
+      productId: (item.productId as string | undefined) ?? ''
+    })) as SentToKitchenItem[]
+
     return new OrderSentToKitchenEvent(
       {
-        ...(raw as Omit<OrderSentToKitchenPayload, 'tableId' | 'tableLabel' | 'orderType'>),
+        ...(raw as Omit<
+          OrderSentToKitchenPayload,
+          'tableId' | 'tableLabel' | 'orderType' | 'items'
+        >),
+        items,
         tableId: (raw as any).tableId ?? null,
         tableLabel: (raw as any).tableLabel ?? null,
         orderType: (raw as any).orderType ?? OrderType.DINE_IN

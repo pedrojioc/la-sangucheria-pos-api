@@ -185,8 +185,81 @@ describe('Order.close() — enriched OrderClosedEvent payload', () => {
   })
 
   describe('VERSION bump', () => {
-    it('should have VERSION set to 2', () => {
-      expect(OrderClosedEvent.VERSION).toBe(2)
+    it('should have VERSION set to 3', () => {
+      expect(OrderClosedEvent.VERSION).toBe(3)
+    })
+  })
+
+  describe('Scenario: v3 payload carries itemId for reservation-to-item mapping', () => {
+    it('should include itemId per item, matching the closed item aggregate id', () => {
+      // Arrange
+      const order = buildOrderWithTwoItems()
+      const payments = [{ method: 'CASH' as const, amount: 40000 }]
+      const orderPrimitives = order.toPrimitives()
+      const [item1, item2] = orderPrimitives.items
+
+      // Act
+      order.close(payments, UuidMother.random())
+      const events = order.pullDomainEvents()
+      const closedEvent = events.find(
+        (e: DomainEvent) => e instanceof OrderClosedEvent
+      ) as OrderClosedEvent
+      const payload = closedEvent.toPrimitives()
+
+      // Assert
+      expect(payload.items).toHaveLength(2)
+      expect(payload.items[0].itemId).toBe(item1.id)
+      expect(payload.items[1].itemId).toBe(item2.id)
+    })
+
+    it('should default itemId to empty string when deserializing a v2 payload without it', () => {
+      // Arrange — v2 payload shape, no itemId field
+      const orderId = UuidMother.random()
+      const v2Payload = {
+        orderId,
+        orderNumber: 'ORD-2',
+        tableId: null,
+        customerId: null,
+        total: 10000,
+        tip: null,
+        currency: 'COP',
+        payments: null,
+        splits: null,
+        closedBy: null,
+        closedAt: new Date(),
+        subtotal: 10000,
+        discountTotal: 0,
+        taxBase: 10000,
+        taxAmount: 0,
+        taxConfig: { rate: 0, type: 'NONE', inclusive: false },
+        items: [
+          {
+            productId: UuidMother.random(),
+            productName: 'Choripan',
+            quantity: 1,
+            unitPrice: 10000,
+            lineTotal: 10000,
+            taxAmount: 0
+          }
+        ],
+        customerDocumentType: null,
+        customerDocumentNumber: null
+      }
+
+      // Act
+      const event = OrderClosedEvent.fromPrimitives({
+        aggregateId: orderId,
+        eventId: UuidMother.random(),
+        occurredOn: new Date(),
+        payload: v2Payload,
+        metadata: {},
+        version: 2
+      })
+
+      // Assert
+      const result = event.toPrimitives()
+      expect(result.items[0].itemId).toBe('')
+      expect(result.items[0].productId).toBe(v2Payload.items[0].productId)
     })
   })
 

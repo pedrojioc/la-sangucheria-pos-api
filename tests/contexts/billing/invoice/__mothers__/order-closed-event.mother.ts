@@ -26,6 +26,7 @@ export class OrderClosedEventMother {
       taxConfig: overrides.taxConfig ?? { rate: 0.19, type: 'IVA', inclusive: true },
       items: overrides.items ?? [
         {
+          itemId: UuidMother.random(),
           productId: UuidMother.random(),
           productName: faker.commerce.productName(),
           quantity: 1,

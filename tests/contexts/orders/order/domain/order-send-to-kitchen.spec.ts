@@ -157,8 +157,23 @@ describe('Order - sendToKitchen', () => {
       ).toThrow(OrderHasNoPendingItems)
     })
 
-    it('should set event VERSION to 4', () => {
-      expect(OrderSentToKitchenEvent.VERSION).toBe(4)
+    it('should set event VERSION to 5', () => {
+      expect(OrderSentToKitchenEvent.VERSION).toBe(5)
+    })
+
+    it('should include productId in the enriched item payload', () => {
+      const itemId = UuidMother.random()
+      const productId = UuidMother.random()
+      const order = OrderMother.create({
+        items: [OrderItemMother.pending({ id: itemId, productId })]
+      })
+
+      order.pullDomainEvents()
+      order.sendToKitchen(UuidMother.random(), [itemId], UuidMother.random())
+
+      const events = order.pullDomainEvents()
+      const payload = events.find(e => e instanceof OrderSentToKitchenEvent)!.toPrimitives()
+      expect(payload.items[0].productId).toBe(productId)
     })
 
     it('should include tableId and tableLabel in event payload when provided', () => {

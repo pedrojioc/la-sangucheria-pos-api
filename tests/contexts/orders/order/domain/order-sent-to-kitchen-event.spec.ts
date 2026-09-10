@@ -22,6 +22,7 @@ describe('OrderSentToKitchenEvent', () => {
         items: [
           {
             itemId,
+            productId: UuidMother.random(),
             stationId,
             productName: 'Choripan',
             quantity: 2,
@@ -62,7 +63,15 @@ describe('OrderSentToKitchenEvent', () => {
         ticketId,
         ticketNumber: 1,
         items: [
-          { itemId, stationId, productName: 'Hamburguesa', quantity: 1, notes: null, modifiers: [] }
+          {
+            itemId,
+            productId: UuidMother.random(),
+            stationId,
+            productName: 'Hamburguesa',
+            quantity: 1,
+            notes: null,
+            modifiers: []
+          }
         ],
         sentBy: 'waiter-1',
         sentAt,
@@ -143,6 +152,7 @@ describe('OrderSentToKitchenEvent', () => {
         items: [
           {
             itemId,
+            productId: UuidMother.random(),
             stationId: null,
             productName: 'Choripan',
             quantity: 1,
@@ -160,7 +170,6 @@ describe('OrderSentToKitchenEvent', () => {
       const event = new OrderSentToKitchenEvent(payload)
 
       expect(event.toPrimitives().orderType).toBe(OrderType.TAKEOUT)
-      expect(OrderSentToKitchenEvent.VERSION).toBe(4)
     })
 
     it('should default orderType to DINE_IN when deserializing v3 payload without orderType', () => {
@@ -314,6 +323,113 @@ describe('OrderSentToKitchenEvent', () => {
       })
 
       expect(event.toPrimitives().orderType).toBe(OrderType.DELIVERY)
+    })
+  })
+
+  describe('v5 payload — productId', () => {
+    it('should carry productId per item and have VERSION 5', () => {
+      const orderId = UuidMother.random()
+      const ticketId = UuidMother.random()
+      const itemId = UuidMother.random()
+      const productId = UuidMother.random()
+
+      const payload: OrderSentToKitchenPayload = {
+        orderId,
+        orderNumber: '#008',
+        ticketId,
+        ticketNumber: 1,
+        items: [
+          {
+            itemId,
+            productId,
+            stationId: null,
+            productName: 'Choripan',
+            quantity: 1,
+            notes: null,
+            modifiers: []
+          }
+        ],
+        sentBy: 'waiter-1',
+        sentAt: new Date(),
+        tableId: null,
+        tableLabel: null,
+        orderType: OrderType.DINE_IN
+      }
+
+      const event = new OrderSentToKitchenEvent(payload)
+
+      expect(event.toPrimitives().items[0].productId).toBe(productId)
+      expect(OrderSentToKitchenEvent.VERSION).toBe(5)
+    })
+
+    it('should default productId to empty string when deserializing a v4 payload without it', () => {
+      const orderId = UuidMother.random()
+      const ticketId = UuidMother.random()
+      const itemId = UuidMother.random()
+      const sentAt = new Date()
+
+      // v4 payload — no productId per item
+      const v4Payload = {
+        orderId,
+        orderNumber: '#009',
+        ticketId,
+        ticketNumber: 1,
+        items: [
+          {
+            itemId,
+            stationId: null,
+            productName: 'Empanada',
+            quantity: 1,
+            notes: null,
+            modifiers: []
+          }
+        ],
+        sentBy: 'waiter-1',
+        sentAt,
+        tableId: null,
+        tableLabel: null,
+        orderType: OrderType.TAKEOUT
+      }
+
+      const event = OrderSentToKitchenEvent.fromPrimitives({
+        aggregateId: orderId,
+        eventId: UuidMother.random(),
+        occurredOn: sentAt,
+        payload: v4Payload,
+        metadata: {},
+        version: 4
+      })
+
+      const result = event.toPrimitives()
+      expect(result.items[0].productId).toBe('')
+      expect(result.orderType).toBe(OrderType.TAKEOUT)
+    })
+
+    it('should default productId to empty string when deserializing a v1 payload', () => {
+      const orderId = UuidMother.random()
+      const ticketId = UuidMother.random()
+      const itemId1 = UuidMother.random()
+
+      const v1Payload = {
+        orderId,
+        ticketId,
+        ticketNumber: 1,
+        itemIds: [itemId1],
+        sentBy: 'waiter-1',
+        sentAt: new Date()
+      }
+
+      const event = OrderSentToKitchenEvent.fromPrimitives({
+        aggregateId: orderId,
+        eventId: UuidMother.random(),
+        occurredOn: new Date(),
+        payload: v1Payload,
+        metadata: {},
+        version: 1
+      })
+
+      const result = event.toPrimitives()
+      expect(result.items[0].productId).toBe('')
     })
   })
 

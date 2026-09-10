@@ -262,6 +262,7 @@ export class Order extends AggregateRoot {
       const primitives = item.toPrimitives()
       return {
         itemId: item.id.value,
+        productId: primitives.productId,
         stationId: primitives.stationId,
         productName: primitives.productName,
         quantity: primitives.quantity,
@@ -443,6 +444,7 @@ export class Order extends AggregateRoot {
           ? Math.round(((p.unitPrice * p.quantity) / orderTotal) * orderTaxAmount * 100) / 100
           : 0
       return {
+        itemId: item.id.value,
         productId: p.productId,
         productName: p.productName,
         quantity: p.quantity,

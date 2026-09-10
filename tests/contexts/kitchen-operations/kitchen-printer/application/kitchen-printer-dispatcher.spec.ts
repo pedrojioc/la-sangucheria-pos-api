@@ -70,7 +70,7 @@ describe('KitchenPrinterDispatcher', () => {
       orderNumber: '#001',
       ticketId: UuidMother.random(),
       ticketNumber: 1,
-      items: overrides.items ?? [],
+      items: (overrides.items ?? []).map(item => ({ ...item, productId: UuidMother.random() })),
       sentBy: 'waiter-1',
       sentAt: overrides.sentAt ?? new Date(),
       tableId: UuidMother.random(),

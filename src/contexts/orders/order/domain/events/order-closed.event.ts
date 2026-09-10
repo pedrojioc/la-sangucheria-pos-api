@@ -14,6 +14,12 @@ export interface OrderClosedItemPayload {
   lineTotal: number
   /** Proportional tax per item: item.lineTotal / order.total * order.taxAmount. Zero if order.total is 0. */
   taxAmount: number
+  /**
+   * v3 field — the closed order item's own aggregate id, needed downstream
+   * to look up a matching StockReservation by (orderId, itemId). Defaults
+   * to '' when deserializing v1/v2 payloads (backward compat).
+   */
+  itemId: string
 }
 
 export interface OrderClosedTaxConfigPayload {
@@ -47,7 +53,7 @@ export interface OrderClosedPayload {
 
 export class OrderClosedEvent extends DomainEvent {
   static readonly EVENT_NAME = 'order.closed'
-  static readonly VERSION = 2
+  static readonly VERSION = 3
 
   constructor(
     payload: OrderClosedPayload,
@@ -71,8 +77,18 @@ export class OrderClosedEvent extends DomainEvent {
   }
 
   static fromPrimitives(params: DomainEventFromPrimitivesParams): OrderClosedEvent {
+    const raw = params.payload as any
+    const rawItems = raw.items as Array<Record<string, unknown>> | undefined
+    const items: OrderClosedItemPayload[] = (rawItems ?? []).map(item => ({
+      ...(item as Omit<OrderClosedItemPayload, 'itemId'>),
+      itemId: (item.itemId as string | undefined) ?? ''
+    })) as OrderClosedItemPayload[]
+
     return new OrderClosedEvent(
-      params.payload as OrderClosedPayload,
+      {
+        ...(raw as Omit<OrderClosedPayload, 'items'>),
+        items
+      } as OrderClosedPayload,
       params.metadata,
       params.eventId,
       params.occurredOn
