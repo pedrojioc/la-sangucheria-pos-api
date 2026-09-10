@@ -64,15 +64,23 @@ describe('ReserveStock', () => {
     const okIngredientId = UuidMother.random()
     const unitId = 'unit'
 
-    levelRepository.findByIngredientForUpdate.mockImplementation(async (ingredientId) => {
+    levelRepository.findByIngredientForUpdate.mockImplementation(ingredientId => {
       if (ingredientId.value === shortIngredientId) {
-        return InventoryLevelMother.create({
-          ingredientId: shortIngredientId,
-          currentQuantity: 1,
+        return Promise.resolve(
+          InventoryLevelMother.create({
+            ingredientId: shortIngredientId,
+            currentQuantity: 1,
+            unitId
+          })
+        )
+      }
+      return Promise.resolve(
+        InventoryLevelMother.create({
+          ingredientId: okIngredientId,
+          currentQuantity: 10,
           unitId
         })
-      }
-      return InventoryLevelMother.create({ ingredientId: okIngredientId, currentQuantity: 10, unitId })
+      )
     })
     reservationRepository.sumActiveByIngredient.mockResolvedValue(0)
 
@@ -107,13 +115,15 @@ describe('ReserveStock', () => {
     const unitId = 'unit'
     const lockOrder: string[] = []
 
-    levelRepository.findByIngredientForUpdate.mockImplementation(async (ingredientId) => {
+    levelRepository.findByIngredientForUpdate.mockImplementation(ingredientId => {
       lockOrder.push(ingredientId.value)
-      return InventoryLevelMother.create({
-        ingredientId: ingredientId.value,
-        currentQuantity: 10,
-        unitId
-      })
+      return Promise.resolve(
+        InventoryLevelMother.create({
+          ingredientId: ingredientId.value,
+          currentQuantity: 10,
+          unitId
+        })
+      )
     })
     reservationRepository.sumActiveByIngredient.mockResolvedValue(0)
 

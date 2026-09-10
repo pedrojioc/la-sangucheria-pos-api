@@ -22,8 +22,14 @@ describe('ReleaseStockForOrder', () => {
 
   it('releases only ACTIVE reservations returned for the order', async () => {
     const orderId = UuidMother.random()
-    const active1 = StockReservationMother.create({ orderId, status: StockReservationStatus.ACTIVE })
-    const active2 = StockReservationMother.create({ orderId, status: StockReservationStatus.ACTIVE })
+    const active1 = StockReservationMother.create({
+      orderId,
+      status: StockReservationStatus.ACTIVE
+    })
+    const active2 = StockReservationMother.create({
+      orderId,
+      status: StockReservationStatus.ACTIVE
+    })
     reservationRepository.findActiveByOrder.mockResolvedValue([active1, active2])
 
     await releaseStockForOrder.run(orderId)
