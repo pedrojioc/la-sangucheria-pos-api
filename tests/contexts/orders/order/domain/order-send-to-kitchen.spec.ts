@@ -157,6 +157,22 @@ describe('Order - sendToKitchen', () => {
       ).toThrow(OrderHasNoPendingItems)
     })
 
+    it('should allow sending a newly added item to kitchen when order is READY, moving it back to IN_PROGRESS', () => {
+      const deliveredItemId = UuidMother.random()
+      const newItemId = UuidMother.random()
+      const order = OrderMother.create({
+        status: OrderStatus.READY,
+        items: [
+          OrderItemMother.delivered({ id: deliveredItemId }),
+          OrderItemMother.pending({ id: newItemId })
+        ]
+      })
+
+      order.sendToKitchen(UuidMother.random(), [newItemId], UuidMother.random())
+
+      expect(order.getStatus()).toBe(OrderStatus.IN_PROGRESS)
+    })
+
     it('should set event VERSION to 5', () => {
       expect(OrderSentToKitchenEvent.VERSION).toBe(5)
     })

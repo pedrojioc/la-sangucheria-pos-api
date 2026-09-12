@@ -490,8 +490,9 @@ export class Order extends AggregateRoot {
     )
   }
 
+  /** The tab stays open for edits until the order is CLOSED or CANCELLED. */
   private ensureCanBeModified(): void {
-    if (this.status !== OrderStatus.OPEN && this.status !== OrderStatus.IN_PROGRESS) {
+    if (this.status === OrderStatus.CLOSED || this.status === OrderStatus.CANCELLED) {
       throw new OrderCannotBeModified(this.status)
     }
   }

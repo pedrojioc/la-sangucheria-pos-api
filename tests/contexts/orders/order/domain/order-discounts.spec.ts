@@ -66,6 +66,23 @@ describe('Order - Item Discount', () => {
 
       expect(() => order.applyItemDiscount(itemId, discount)).toThrow(OrderCannotBeModified)
     })
+
+    it('should allow discount on a READY order (account still open)', () => {
+      const itemId = UuidMother.random()
+      const order = OrderMother.create({
+        status: OrderStatus.READY,
+        items: [OrderItemMother.delivered({ id: itemId, unitPrice: 25000, quantity: 1 })]
+      })
+
+      const discount = Discount.create(
+        DiscountType.EMPLOYEE,
+        DiscountMethod.PERCENTAGE,
+        10,
+        'user-1'
+      )
+
+      expect(() => order.applyItemDiscount(itemId, discount)).not.toThrow()
+    })
   })
 
   describe('removeItemDiscount', () => {
@@ -140,6 +157,17 @@ describe('Order - Order Discount', () => {
       const discount = Discount.create(DiscountType.PROMO, DiscountMethod.PERCENTAGE, 10, 'user-1')
 
       expect(() => order.applyOrderDiscount(discount)).toThrow(OrderCannotBeModified)
+    })
+
+    it('should allow discount on a READY order (account still open)', () => {
+      const order = OrderMother.create({
+        status: OrderStatus.READY,
+        items: [OrderItemMother.delivered({ unitPrice: 20000, quantity: 1 })]
+      })
+
+      const discount = Discount.create(DiscountType.PROMO, DiscountMethod.PERCENTAGE, 10, 'user-1')
+
+      expect(() => order.applyOrderDiscount(discount)).not.toThrow()
     })
   })
 
